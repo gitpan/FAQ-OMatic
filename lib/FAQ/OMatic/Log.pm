@@ -155,7 +155,7 @@ sub summarizeDay {
 				"$FAQ::OMatic::Config::metaDir/$date.uhdb", 400)) {
 			FAQ::OMatic::gripe('abort',
 				"FAQ::OMatic::Log::summarizeDay: Couldn't open "
-				."dbm file $FAQ::OMatic::Config::metaDir/$date.uhdb.");
+				."dbm file $FAQ::OMatic::Config::metaDir/$date.uhdb. ($!)");
 		}
 	}
 

@@ -201,7 +201,10 @@ sub saveToFile {
 			# These include lowercase keys (e.g. class, filename),
 			# and the Parts key, which we write explicitly later.
 		} else {
-			print FILE "$key: $self->{$key}\n";
+			my $value = $self->{$key};
+			$value =~ s/[\n\r]/ /g;	# don't allow CRs in a single-line field,
+									# that would corrupt the file format.
+			print FILE "$key: $value\n";
 		}
 	}
 	# now save the parts out
@@ -402,12 +405,14 @@ sub displayCoreHTML {
 	my $self = shift;
 	my $params = shift;	# ref to hash of display params
 	my $rt = "";		# return text
+	my $whatAmI = $self->whatAmI();
 
 	# we'll pass this to makeAref to get file param right in links
 	my @fixfn =('file'=>$self->{'filename'});
 
-	$rt .= FAQ::OMatic::Appearance::itemStart($params);
+	$rt .= FAQ::OMatic::Appearance::itemStart($params, $self);
 
+	my $titlebox = '';
 	# prefix item title with a path back to the root, so that user
 	# can find his way back up. (This replaces the old "Up to:" line.)
 	my ($titles,$filenames) = $self->getParentChain();
@@ -415,6 +420,8 @@ sub displayCoreHTML {
 		and ($self->{'filename'} eq 'trash')) {
 		# When we're in the trash, provide a way to get back to the
 		# top. (There should be some less-hackish way to do this.)
+		# TODO: such as whenever 1 isn't the rootmost item, make it appear so
+		# here.
 		my $topitem = new FAQ::OMatic::Item('1');
 		my $toptitle = $topitem->getTitle();
 		push @{$titles}, $toptitle;
@@ -426,18 +433,20 @@ sub displayCoreHTML {
 	my (@parentFilenames) = reverse @{$filenames};
 	my $i;
 	for ($i=0; $i<@parentTitles; $i++) {
-		$rt.=FAQ::OMatic::makeAref('-command'=>'faq',
+		$titlebox.=FAQ::OMatic::makeAref('-command'=>'faq',
 					'-params'=>$params,
 					'-changedParams'=>{"file"=>$parentFilenames[$i]})
 			.$parentTitles[$i]
 			."</a>:";
 	}
-	$rt.="<br>" if (@parentTitles);
-	$rt.="<b>$thisTitle</b>";
+	$titlebox.="<br>" if (@parentTitles);
+	$titlebox.="<b>$thisTitle</b>";
+
+	$rt.=$titlebox;
 
 	if ($params->{'showModerator'}) {
-		$rt .= "<br>Moderator: "
-			.FAQ::OMatic::Auth::getInheritedProperty($self, 'Moderator');
+		my $mod = FAQ::OMatic::Auth::getInheritedProperty($self, 'Moderator');
+		$rt .= "<br>Moderator: <a href=\"mailto:$mod\">$mod</a>";
 		$rt .= " <i>(inherited from parent)</i>" if (not $self->{'Moderator'});
 		$rt .= "\n";
 	}
@@ -447,7 +456,6 @@ sub displayCoreHTML {
 		$rt .= "<br>";
 		$rt .= $FAQ::OMatic::Appearance::editStart;
 				#."Edit Item: ";
-		my $whatAmI = $self->whatAmI();
 		$rt .= FAQ::OMatic::button(
 			FAQ::OMatic::makeAref('-command'=>'editItem',
 					'-params'=>$params,
@@ -734,10 +742,12 @@ sub displayItemEditor {
 		$rt .= "<br>Send mail to the moderator "
 				."<select name=\"_MailModerator\">\n";
 		$rt .= "<option value=\"1\"";
-		$rt .= " SELECTED" if ($self->{'MailModerator'} eq '1');
+		$rt .= " SELECTED" if (defined($self->{'MailModerator'})
+								and ($self->{'MailModerator'} eq '1'));
 		$rt .= "> whenever someone modifies this item.\n";
 		$rt .= "<option value=\"0\"";
-		$rt .= " SELECTED" if ($self->{'MailModerator'} eq '0');
+		$rt .= " SELECTED" if (defined($self->{'MailModerator'})
+								and ($self->{'MailModerator'} eq '0'));
 		$rt .= "> never.\n";
 		$rt .= "<option value=\"\"";
 		$rt .= " SELECTED" if (not defined $self->{'MailModerator'});
@@ -747,16 +757,16 @@ sub displayItemEditor {
 		# Permission info
 		$rt .= "<br>";
 		$rt .= $self->permissionBox('PermAddPart');
-		$rt .= " may add new parts to me.\n";
+		$rt .= " may add new text parts to this page.\n";
 	
 		$rt .= "<br>";
 		$rt .= $self->permissionBox('PermEditPart');
-		$rt .= " may edit and delete existing parts from me.\n";
+		$rt .= " may edit and delete existing parts from this page.\n";
 	
 		$rt .= "<br>";
 		$rt .= $self->permissionBox('PermEditItem');
 		$rt .= " may edit my item configuration, "
-			."including adding and moving subitems.\n";
+			."including adding and moving answers and subcategories.\n";
 
 		$rt .= "<br>";
 		$rt .= $self->permissionBox('PermModOptions');

@@ -331,7 +331,8 @@ sub invoke {
 		die "bang, $!, $@!\n"
 	}
 	print HTTPSOCK "GET $url HTTP/1.0\n\n";
-	FAQ::OMatic::flush('HTTPSOCK');
+	FAQ::OMatic::flush(FAQ::OMatic::maintenance::HTTPSOCK);
+		# Thanks to Miro Jurisic <meeroh@MIT.EDU> for this fix.
 
 	my @reply = <HTTPSOCK>;
 	close HTTPSOCK;

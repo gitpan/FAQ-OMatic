@@ -282,16 +282,10 @@ sub displayPartEditor {
 	$rt .= "<input type=hidden name=\"checkSequenceNumber\" value=\""
 		.$item->{'SequenceNumber'}."\">\n";
 
-	if ($self->{'Type'} eq 'directory') {
-		#FAQ::OMatic::gripe('error', "You can't directly edit a directory part.");
-		# --now you can
-		$rt .= "<textarea cols=80 rows=$rows name=_newText>";
-	} elsif ($self->{'Type'} eq 'monospaced') {
-		# no hard wrap
-		$rt .= "<textarea cols=80 rows=$rows name=_newText>";
-	} else {
-		$rt .= "<textarea cols=80 rows=$rows name=_newText wrap=hard>";
-	}
+	# no text boxes wrap anymore -- it breaks long URLs.
+	# (thanks to Billy Naylor <banjo@actrix.gen.nz> for the fix)
+	$rt .= "<textarea cols=80 rows=$rows name=_newText>";
+
 	my $text = $self->{'Text'};
 	$text =~ s/&/&amp;/gs;		# all browsers I've met correctly
 	$text =~ s/</&lt;/gs;		# convert textarea entities into the real thing

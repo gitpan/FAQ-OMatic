@@ -60,7 +60,7 @@ sub main {
 		if ($params->{'_fromChangePass'}) {
 			my $secret = FAQ::OMatic::Auth::getRandomHex();
 			my $restart = $params->{'_restart'} ||
-				FAQ::OMatic::makeARef('faq', {}, 'url', 0, 'blastAll');
+				FAQ::OMatic::makeAref('faq', {}, 'url', 0, 'blastAll');
 			my $saveurl = FAQ::OMatic::makeAref($restart,
 				{'auth'=>'','pass'=>'','id'=>''}, 'url', 'saveTransients');
 	

@@ -71,8 +71,7 @@ sub main {
 		'moveItem',		'submitMove',
 		'install',		'maintenance',
 		'editGroups',	'submitGroup',
-		'pickerImage',	'checkedImage',		'uncheckedImage',
-		'spaceImage'
+		'img'
 	);
 	
 	use CGI;

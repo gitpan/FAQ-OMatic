@@ -33,6 +33,7 @@
 ###
 
 package FAQ::OMatic::Appearance;
+use FAQ::OMatic::ImageRef;
 
 # These control the overall appearance of the page (background color/gif,
 # title string). Please leave the string in the footer that identifies
@@ -159,7 +160,8 @@ sub cPageFooter {
 	$page.="</tr>\n";
 
 	$page.=	"<tr><td colspan=$numCells align=center>\n"
-			."The <a href=\"http://www.dartmouth.edu/cgi-bin/cgiwrap/jonh/faq.pl\">Faq-O-Matic</a> is by <a href=\"http://www.cs.dartmouth.edu/~jonh\">Jon&nbsp;Howell</a>.\n"
+#			."The <a href=\"http://www.dartmouth.edu/cgi-bin/cgiwrap/jonh/faq.pl\">Faq-O-Matic</a> is by <a href=\"http://www.cs.dartmouth.edu/~jonh\">Jon&nbsp;Howell</a>.\n"
+			."This is a <a href=\"http://www.dartmouth.edu/cgi-bin/cgiwrap/jonh/faq.pl\">Faq-O-Matic</a>.\n"
 			."</td></tr>"
 			."</table>"
 			.partEnd({})
@@ -206,20 +208,24 @@ sub helpButton {
 # output.)
 sub itemStart {
 	my $params = shift;
+	my $item = shift;
 	my $alreadyStart = $params->{'_as'} || '';	# info hidden away in $params
+
+	my $spacer = FAQ::OMatic::ImageRef::getImageRefCA('', '', $item->whatAmI());
+
 	if (not $alreadyStart) {
 		$params->{'_as'} = 1;
 		if (not $params->{'simple'}) {
 			return
-				"<table width=100%><tr><td bgcolor=$FAQ::OMatic::Config::itemBarColor>"
-				."&nbsp;</td><td>\n";
+				"<table width=100%><tr><td bgcolor=$FAQ::OMatic::Config::itemBarColor valign=top align=center>"
+				."$spacer</td><td>\n";
 		} else {
 			return "";
 		}
 	} else {
 		if (not $params->{'simple'}) {
-			return "</td></tr><tr><td bgcolor=$FAQ::OMatic::Config::itemBarColor>"
-					."&nbsp;</td><td>\n";
+			return "</td></tr><tr><td bgcolor=$FAQ::OMatic::Config::itemBarColor valign=top align=center>"
+					."$spacer</td><td>\n";
 		} else {
 			return "<p>";
 		}

@@ -71,7 +71,9 @@ sub main {
 
 my %knownSteps = map {$_=>$_} qw(
 	default			askMeta			configMeta		initConfig
-	mainMenu		askItem			configItem		askConfig
+	mainMenu		
+#	askItem			
+	configItem		askConfig
 	firstItem		initMetaFiles					setConfig
 	maintenance		makeSecure
 	colorSampler	askColor		setColor
@@ -137,15 +139,49 @@ sub askMetaStep {
 	}
 	$stubMeta.="<b>".$FAQ::OMatic::dispatch::meta."</b>";
 
-	$rt.="Starting a new FAQ in $stubMeta.\n";
-	$rt.="<a href=\""
-		.installUrl('configMeta')."\">Click here to continue</a>.<p>\n";
+	$rt.="<a href=\"".installUrl('configMeta')."\">Click here</a> "
+		."to create $stubMeta.<p>\n";
 
 	$rt.="If you want to change the CGI stub to point to another directory,"
 		." edit the script and then\n";
 	$rt.="<a href=\""
 		.installUrl('default')
 		."\">click here to use the new location</a>.<p>\n";
+
+	$rt.=<<__EOF__;
+FAQ-O-Matic stores files in two main directories.
+<p>
+The <b>meta/</b> directory path is encoded in your CGI stub ($0).
+It contains:
+<ul>
+<li>the <b>config</b> file that tells FAQ-O-Matic where everything
+else lives. That's why the CGI stub needs to know where meta/ is, so
+it can figure out the rest of its configuration.
+<li>the <b>idfile</b> file that lists user identities. Therefore, meta/
+should not be accessible via the web server.
+<li>the <b>RCS/</b> subdirectory that tracks revisions to FAQ items.
+<li>various hint files that are used as FAQ-O-Matic runs. These can be
+regenerated automatically.
+</ul>
+<p>
+The <b>serve/</b> directory contains three subdirectories <b>item/</b>,
+<b>cache/</b>, and <b>bags/</b>. These directories are created and
+populated by the FAQ-O-Matic CGI, but should be directly accessible via
+the web server (without invoking the CGI).
+<ul>
+<li>serve/item/ contains only FAQ-O-Matic formatted
+source files, which encode both user-entered text and the hierarchical
+structure of the answers and categories in the FAQ. These files are only
+accessed through the web server (rather than the CGI) when another FAQ-O-Matic
+is mirroring this one.
+<li>serve/cache/ contains a cache of automatically-generated HTML versions of
+FAQ answers and categories. When possible, the CGI directs users to the
+cache to reduce load on the server. (CGI hits are far more expensive than
+regular file loads.)
+<li>serve/bags/ contains image files and other ``bags of bits.'' Bit-bags can
+be linked to or inlined into FAQ items (in the case of images).
+</ul>
+__EOF__
 
 	displayMessage($rt);
 }
@@ -168,17 +204,18 @@ sub configMetaStep {
 		doStep('askMeta');
 		return;
 	}
-	if (not -d "$meta/RCS/.") {
+	my $rcsDir = FAQ::OMatic::concatDir($meta, "/RCS/");
+	if (not -d $rcsDir) {
 		# try mkdir
-		if (not mkdir("$meta/RCS", 0700)) {
-			displayMessage("I couldn't create <b>$meta/RCS/</b>: $!");
+		if (not mkdir($rcsDir, 0700)) {
+			displayMessage("I couldn't create <b>$rcsDir</b>: $!");
 			doStep('askMeta');
 			return;
 		}
-		displayMessage("Created <b>$meta/RCS/</b>.");
+		displayMessage("Created <b>$rcsDir</b>.");
 	}
-	if (not -w "$meta/RCS/.") {
-		displayMessage("I don't have write permission to <b>$meta/RCS/</b>.");
+	if (not -w "$rcsDir.") {
+		displayMessage("I don't have write permission to <b>$rcsDir</b>.");
 		doStep('askMeta');
 		return;
 	}
@@ -229,8 +266,8 @@ sub initConfigStep {
 			'$linkColor'		=> "'#3030c0'",
 			'$vlinkColor'		=> "'#3030c0'",
 			'$version'			=> "'$FAQ::OMatic::VERSION'",
-			'$cacheDir'			=> "''",
-			'$cacheURL'			=> "''"
+			'$serveDir'			=> "''",
+			'$serveURL'			=> "''"
 		};
 	
 		writeConfig($map);
@@ -284,63 +321,67 @@ sub mainMenuStep {
 
 	$rt.="<h3>Configuration Main Menu (install module)</h3>\n";
 	$rt.="<ol>Perform these tasks in order to prepare a new FAQ-O-Matic:\n";
-	$rt.="<li><a href=\"".installUrl('askItem')."\">"
-			.checkBoxFor('askItem')
-			."Define item directory.</a>\n";
-	$rt.="<li><a href=\"".installUrl('askConfig')."\">"
+	$rt.="<p><li><a href=\"".installUrl('askConfig')."\">"
 			.checkBoxFor('askConfig')
 			."Define configuration parameters.</a>\n";
-	$rt.="<li><a href=\"".installUrl('firstItem')."\">"
+	$rt.="<p><li><a href=\"".installUrl('configItem')."\">"
+			.checkBoxFor('configItem')
+			."Create item, cache, and bags directories.</a>\n";
+	$rt.="<p><li>".checkBoxFor('nothing')
+			."If you are upgrading, copy the contents of your old "
+			."item/ directory to <tt>"
+			.$FAQ::OMatic::Config::itemDir."</tt> now.\n";
+	$rt.="<p><li><a href=\"".installUrl('firstItem')."\">"
 			.checkBoxFor('firstItem')
 			."Create an initial category and a trash can.</a>\n";
-	$rt.="<li><a href=\"".installUrl('maintenance')."\">"
+	$rt.="<p><li><a href=\"".installUrl('maintenance')."\">"
 			.checkBoxFor('maintenance')
 			."Set up the maintenance cron job</a>\n";
 	if ($maintenanceSecret) {
-		$rt.="<li><a href=\"".installUrl('', 'url', 'maintenance')
+		$rt.="<p><li><a href=\"".installUrl('', 'url', 'maintenance')
 				."&secret=$maintenanceSecret\">"
 				.checkBoxFor('manualMaintenance')
 				."Run maintenance script manually now.</a>\n";
 	} else {
-			$rt.="<li>"
+			$rt.="<p><li>"
 				.checkBoxFor('manualMaintenance')
 				."Run maintenance script manually now (Need to set up "
 				."the maintenance cron job first).\n";
 	}
 	if (not $FAQ::OMatic::Config::secureInstall) {
 		if ($FAQ::OMatic::Config::mailCommand and $FAQ::OMatic::Config::adminAuth) {
-			$rt.="<li><a href=\"".installUrl('makeSecure')."\">"
+			$rt.="<p><li><a href=\"".installUrl('makeSecure')."\">"
 				.checkBoxFor('makeSecure')
 				."Turn on installer security.</a>\n";
 		} else {
-			$rt.="<li>"
+			$rt.="<p><li>"
 				.checkBoxFor('makeSecure')
 				."Turn on installer security (Need to configure "
 				."\$mailCommand and \$adminAuth).\n";
 		}
 	} else {
-		$rt.="<li>"
+		$rt.="<p><li>"
 			.checkBoxFor('makeSecure')
 			."(Installer security is on.)\n";
 	}
-	$rt.="<li>".checkBoxFor('nothing')
+	$rt.="<p><li>".checkBoxFor('nothing')
 			."<a href=\"".installUrl('', 'url', 'editGroups')."\">"
 			."Define groups</a> (optional).\n";
-	$rt.="<li>".checkBoxFor('nothing')
+	$rt.="<p><li>".checkBoxFor('nothing')
 			."<a href=\"".installUrl('colorSampler')."\">"
 			."Select colors for your Faq-O-Matic</a> (optional).\n";
-	$rt.="<li>".checkBoxFor('nothing')
+	$rt.="<p><li>".checkBoxFor('nothing')
 			."<a href=\"".installUrl('mainMenu')."\">"
 			."Bookmark this link to be able to return to this menu.</a>\n";
-	$rt.="<li>".checkBoxFor('nothing')
+	$rt.="<p><li>".checkBoxFor('nothing')
 			."<a href=\"".installUrl('','url','stats')."\">"
 			."Bookmark this link to the statistics page.</a>\n";
 	if ($FAQ::OMatic::Config::secureInstall) {
-		$rt.="<li>".checkBoxFor('nothing')
+		$rt.="<p><li>".checkBoxFor('nothing')
 				."<a href=\"".installUrl('', 'url', 'faq')."\">"
 				."Go to the Faq-O-Matic.</a>\n";
 	} else {
-		$rt.="<li>".checkBoxFor('nothing')
+		$rt.="<p><li>".checkBoxFor('nothing')
 			."Go to the Faq-O-Matic (need to turn on installer security)";
 	}
 	$rt.="</ol>\n";
@@ -363,8 +404,11 @@ sub checkBoxFor {
 	my $done = '';
 
 	my $rt = "<img border=0 src=\"";
-	$done = 1 if (($thing eq 'askItem') && (-d "$FAQ::OMatic::Config::itemDir/."));
 	$done = 1 if (($thing eq 'askConfig') && ($FAQ::OMatic::Config::adminAuth));
+	$done = 1 if (($thing eq 'configItem')
+		&& (-d "$FAQ::OMatic::Config::itemDir/.")
+		&& (-d "$FAQ::OMatic::Config::cacheDir/.")
+		&& (-d "$FAQ::OMatic::Config::bagsDir/."));
 	$done = 1 if (($thing eq 'firstItem') && (-f "$FAQ::OMatic::Config::itemDir/1"));
 	$done = 1
 		if (($thing eq 'maintenance') && ($FAQ::OMatic::Config::maintenanceSecret));
@@ -373,56 +417,84 @@ sub checkBoxFor {
 					&& (-f "$FAQ::OMatic::Config::metaDir/lastMaintenance"));
 
 	if ($thing eq 'nothing') {
-		$rt.=installUrl('', 'url', 'spaceImage');
+		$rt.=installUrl('', 'url', 'img', 'space');
 	} elsif ($done) {
-		$rt.=installUrl('', 'url', 'checkedImage');
+		$rt.=installUrl('', 'url', 'img', 'checked');
 	} else {
-		$rt.=installUrl('', 'url', 'uncheckedImage');
+		$rt.=installUrl('', 'url', 'img', 'unchecked');
 	}
 	$rt.="\"> ";
 	return $rt;
 }
 
-sub askItemStep {
-	my $rt = '';
-
-	my $dflItem = stripQuotes(readConfig()->{'$itemDir'});
-
-	$rt.="Faq-O-Matic needs a writable directory in which to store\n";
-	$rt.="FAQ item data. Frequently, this is just a subdirectory of\n";
-	$rt.="the <b>meta/</b> directory. If you have an existing Faq-O-Matic 2\n";
-	$rt.="installation, you can enter the path to its <b>item/</b> here,\n";
-	$rt.="and this installation will use those existing items.\n";
-	$rt.=installUrl('configItem', 'GET');
-	$rt.="<input type=input size=60 name=item value=\"$dflItem\">\n";
-	$rt.="<input type=submit name=junk value=\"Define\">\n";
-	$rt.="</form>\n";
-	displayMessage($rt);
-}
+# sub askItemStep {
+# 	my $rt = '';
+# 
+# 	my $dflItem = stripQuotes(readConfig()->{'$itemDir'});
+# 
+# 	$rt.="Faq-O-Matic needs a writable directory in which to store\n";
+# 	$rt.="FAQ item data. Frequently, this is just a subdirectory of\n";
+# 	$rt.="the <b>meta/</b> directory. If you have an existing Faq-O-Matic 2\n";
+# 	$rt.="installation, you can enter the path to its <b>item/</b> here,\n";
+# 	$rt.="and this installation will use those existing items.\n";
+# 	$rt.=installUrl('configItem', 'GET');
+# 	$rt.="<input type=input size=60 name=item value=\"$dflItem\">\n";
+# 	$rt.="<input type=submit name=junk value=\"Define\">\n";
+# 	$rt.="</form>\n";
+# 	displayMessage($rt);
+# }
 
 sub configItemStep {
 	my $rt.='';
 
-	$item = $cgi->param('item');
-	if (not -d "$item/.") {
-		if (not mkdir($item, 0700)) {
-			displayMessage("I couldn't create <b>$item</b>: $!");
-			doStep('askItem');
+	# create item, cache, and bags directories.
+	createDir('$item',	'/item/');
+	createDir('$cache', '/cache/');
+	createDir('$bags',	'/bags/');
+
+	doStep('mainMenu');
+}
+
+sub createDir {
+	my $dirSymbol = shift;
+	my $dirSuffix = shift;
+
+	my $dirPath =
+		FAQ::OMatic::concatDir($FAQ::OMatic::Config::serveDir, $dirSuffix);
+	my $dirUrl =
+		FAQ::OMatic::concatDir($FAQ::OMatic::Config::serveURL, $dirSuffix);
+
+	if (not -d $dirPath) {
+		if (not mkdir($dirPath, 0700)) {
+			dirFail("I couldn't create $dirSymbol"."Dir = <b>$dirPath</b>: $!");
 			return;
 		}
-		displayMessage("Created <b>$item</b>.");
+		displayMessage("Created <b>$dirPath</b>.");
 	}
-	if (not -w "$item/.") {
-		displayMessage("I don't have write permission to <b>$item</b>.");
-		doStep('askItem');
+	if (not -w "$dirPath/.") {
+		dirFail("I don't have write permission to <b>$dirPath</b>.");
+		return;
+	}
+	if (not chmod 0755, $dirPath) {
+		dirFail("I wasn't able to change the permissions on <b>$dirPath</b> "
+			."to 755 (readable/searchable by all).");
 		return;
 	}
 
 	my $map = readConfig();
-	$map->{'$itemDir'} = "'".$item."'";
+	$map->{$dirSymbol."Dir"} = "'".$dirPath."'";
+	$map->{$dirSymbol."URL"} = "'".$dirUrl."'";
 	writeConfig($map);
-	displayMessage("updated config file: \$itemDir = <b>$item</b>");
+	displayMessage("updated config file: $dirSymbol"."Dir = <b>$dirPath</b>");
+	displayMessage("updated config file: $dirSymbol"."URL = <b>$dirUrl</b>");
+}
 
+sub dirFail {
+	my $message = shift;
+
+	displayMessage($message
+		."<p>Redefine configuration parameters to ensure that "
+		.'<b>$serveDir</b> is valid.');
 	doStep('mainMenu');
 }
 
@@ -475,14 +547,17 @@ $configInfo = {
 	'secureInstall'=>[ 'hide' ],
 	'version'=>[ 'hide' ],
 	'maintenanceSecret'=>[ 'hide' ],
-	'cacheDir' =>	[ 'c-c1',
-		'Filesystem directory where FAQ-O-Matic should keep a cache '
-		.'of read-only pages (empty means don\'t cache)',
+	'serveDir' =>	[ 'c-c1',
+		'Filesystem directory where FAQ-O-Matic will keep item files, '
+		.'image and other bit-bag files,'
+		.'and a cache of generated HTML files. '
+		.'This directory must be accesible directly via the http server.',
 		[], 1 ],
-	'cacheURL' =>	[ 'c-c2',
-		'A URL prefix that gives users web access to that cache. '
-		.'It should be relative to the root of the server (begins with /); '
-		.'but omit the http://hostname:port/ part. It should end with a /.',
+	'serveURL' =>	[ 'c-c2',
+		'The URL prefix needed to access files in <b>$serveDir</b>. '
+		.'It should be relative to the root of the server '
+		.'(omit http://hostname:port, but include a leading /). '
+		.'It should also end with a /.',
 		[], 1 ],
 };
 
@@ -569,7 +644,7 @@ sub askConfigStep {
 			."<hr>Mandatory configurations... these must be correct<hr>"
 			."</td></tr>\n";
 	$widgets->{'c--separator'} = "<tr><td colspan=2>"
-			."<hr>Cache Configuration<hr>"
+			."<hr>Server Directory Configuration<hr>"
 			."</td></tr>\n";
 	$widgets->{'e--separator'} = "<tr><td colspan=2>"
 			."<hr>Optional configurations... defaults are pretty good.<hr>"
@@ -654,7 +729,8 @@ sub checkConfig {
 		}
 		return '';
 	}
-	if ($left eq '$cacheDir') {
+	if ($left eq '$serveDir') {
+		$aright = FAQ::OMatic::canonDir($aright);
 		if ($aright and (not -d $aright)) {
 			if (not mkdir($aright, 0755)) {
 				return "$left ($right) can't be created.";
@@ -939,7 +1015,7 @@ sub askColorStep {
 	$rt.="<a href=\""
 		.installUrl('setColor', 'url')
 		."&whichColor=$which&color=\"><img src=\""
-		.installUrl('', 'url', 'pickerImage')
+		.installUrl('', 'url', 'img', 'picker')
 		."\" border=1 ismap width=256 height=128></a>\n";
 
 	my $map = readConfig();
@@ -1005,10 +1081,14 @@ sub installUrl {
 	my $step = shift;
 	my $reftype = shift || 'url';	# 'url', 'GET' supported
 	my $cmd = shift || 'install';	# for images, need to specify cmd
+	my $name = shift || '';			# for images, need to specify name
+
+	my $imarg = ($name) ? ("&name=$name") : '';
 
 	if ($FAQ::OMatic::Config::secureInstall) {
 		return FAQ::OMatic::makeAref($cmd,
 			{'step'=>$step,
+			'name'=>$name,
 			'auth'=>$params->{'auth'}	# preserve only the cookie
 			},
 			$reftype, 0, 'blastAll');
@@ -1021,7 +1101,7 @@ sub installUrl {
 			."<input type=hidden name=cmd value=install>\n"
 			."<input type=hidden name=step value=$step>\n";
 	} else {
-		return "$url?cmd=$cmd&step=$step";
+		return "$url?cmd=$cmd&step=$step$imarg";
 	}
 }
 

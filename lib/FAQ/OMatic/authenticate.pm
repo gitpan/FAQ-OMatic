@@ -84,7 +84,9 @@ sub main {
 				$rt.="Text parts can only be edited by $why.";
 			}
 		} elsif ($what eq 'editItem' or $what eq 'submitItem') {
-			if ($params->{'_xreason'} eq 'modOptions') {
+			my $xreason = $params->{'_xreason'} || '';
+
+			if ($xreason eq 'modOptions') {
 				$rt.="The moderator options can only be edited by $why.";
 			} else {
 				$rt.="The title and options for this item can only "

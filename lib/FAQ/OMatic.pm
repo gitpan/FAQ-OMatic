@@ -40,7 +40,7 @@ use FAQ::OMatic::Log;
 use FAQ::OMatic::Appearance;
 use FAQ::OMatic::Intl;
 
-$VERSION = '2.603';
+$VERSION = '2.604';
 
 # This is never used to automatically send mail to (that's authorEmail),
 # but when we need to report the author's address, we use this constant:
@@ -228,7 +228,9 @@ sub faqomaticReference {
 	my $filename = shift;
 
 	my $item = new FAQ::OMatic::Item($filename);
-	my $title = $item->getTitle();
+	my $title = FAQ::OMatic::ImageRef::getImageRefCA('-small',
+					'border=0', $item->whatAmI())
+				.$item->getTitle();
 
 	# we should cause the link to inherit the appropriate user parameters!
 	return makeAref('-command'=>'faq',
@@ -667,6 +669,23 @@ sub flush {
 	print "";
 	$| = 0;
 	select($old);
+}
+
+sub canonDir {
+	# canonicalize a directory path:
+	# make sure dir ends with one /, and has no // sequences in it
+	my $dir = shift;
+	$dir =~ s#$#/#;		# add an extra / on end
+	$dir =~ s#//#/#g;	# strip any //'s, including the one we possibly
+						# put on the end.
+	return $dir;
+}
+
+sub concatDir {
+	my $dir1 = shift;
+	my $dir2 = shift;
+
+	return canonDir(canonDir($dir1).canonDir($dir2));
 }
 
 'true';
