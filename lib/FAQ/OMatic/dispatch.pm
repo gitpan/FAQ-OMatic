@@ -66,8 +66,10 @@ sub main {
 			$haveMeta = 1;
 		} else {
 			print "Content-type: text/plain\n\n";
-			print "meta moved. jonh didn't really feel like dealing\n";
-			print "with this case. Mail him at jonh\@cs.dartmouth.edu .\n";
+			print "meta moved. I can't deal with this case automatically.\n";
+			print "You'll need to manually change your CGI stub to point\n";
+			print "at the new location of meta, plus fix \$metaDir in\n";
+			print "meta/config to match.\n";
 
 			# This is a pretty uncommon case -- I think we can cope
 			# with killing off a mod_perl child process if this happens.

@@ -33,6 +33,7 @@ use CGI;
 use FAQ::OMatic::Item;
 use FAQ::OMatic;
 use FAQ::OMatic::Auth;
+use FAQ::OMatic::I18N;
 
 sub main {
 	my $cgi = FAQ::OMatic::dispatch::cgi();

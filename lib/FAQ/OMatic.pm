@@ -51,7 +51,7 @@ use vars	# these are mod_perl-safe
 	# variables that get reset on every invocation
 	qw($theParams $theLocals);
 
-$VERSION = '2.710';
+$VERSION = '2.711';
 
 # can't figure out how to get file-scoped variables in mod_perl, so
 # we ensure that they're all file scoped by reseting them in dispatch.
@@ -355,7 +355,7 @@ sub baglinkReference {
 	my $filename = shift;
 
 	if (not -f $FAQ::OMatic::Config::bagsDir.$filename) {
-		return "[no bag '$filename' on server]";
+		return ('',"[no bag '$filename' on server]");
 	}
 
 	my $bagDesc = new FAQ::OMatic::Item($filename.".desc",
@@ -567,8 +567,8 @@ sub urlReference {
 	
 	# unless we can do better, both the label and the target of the URL
 	# will be whatever we got passed (whatever matched in the text body)
-	my $target = $arg;
-	my $label = $arg;
+	my $target = $arg||'';
+	my $label = $arg||'';
 
 	my ($prefix,$rest) = ($arg =~ m/^([^:]+):(.*)$/);
 	if (not defined $prefix) {

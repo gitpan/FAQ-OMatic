@@ -26,10 +26,8 @@ WriteMakefile(
 	VERSION_FROM	=> 'lib/FAQ/OMatic.pm',
 	'dist'			=> { 'COMPRESS'=>'gzip',
 						 'SUFFIX'=>'gz',
-						 'PREOP'=>'dev-bin/checkin.pl $(VERSION)',
+						 'PREOP'=>'VERSION=${VERSION} dev-bin/distribute-prep',
 						 'POSTOP'=>
-				'mv FAQ-OMatic-$(VERSION).tar.gz $(HOME)/dist; '
-				.'scp $(HOME)/dist/FAQ-OMatic-$(VERSION).tar.gz zealand.cs:ftp; '
-				.'ssh zealand.cs chmod 644 ftp/FAQ-OMatic-$(VERSION).tar.gz'
+				'VERSION=${VERSION} dev-bin/distribute-final'
 						},
 );

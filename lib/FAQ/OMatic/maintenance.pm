@@ -471,7 +471,13 @@ sub rebuildCache {
 	foreach $itemName (FAQ::OMatic::getAllItemNames()) {
 		hprint( "<br>Updating $itemName\n");
 		my $item = new FAQ::OMatic::Item($itemName);
-		$item->saveToFile('', '', 'noChange', 'updateAllDependencies');
+		if (not eval {
+			$item->saveToFile('', '', 'noChange', 'updateAllDependencies');
+			1;
+		}) {
+			FAQ::OMatic::gripe('note', "save failed for ".$itemName);
+		}
+
 
 		# flush stdout
 		hflush();

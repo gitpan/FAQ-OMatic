@@ -4,7 +4,6 @@ Makefile.PL
 README
 doc/code-layout.eps
 doc/code-layout.fig
-doc/code-layout.fig.bak
 fom.PL
 lib/FAQ/OMatic.pm
 lib/FAQ/OMatic/API.pm
