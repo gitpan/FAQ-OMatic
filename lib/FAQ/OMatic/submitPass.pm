@@ -49,7 +49,9 @@ sub main {
 			FAQ::OMatic::gripe('error', gettext("An email address must look like")." "
 				."'name\@some.domain'. ".gettext("If yours")." ($id) ".gettext("does and I keep rejecting it, please mail")." $FAQ::OMatic::authorAddress ".gettext("and tell him what's happening."));
 		}
-		my $pass = $params->{'_pass'};
+		my $pass = $params->{'_pass'} || '';
+			# THANKS to Mark Shaw <mshaw@dal.asp.ti.com> for catching this
+			# potential uninitialized value error.
 		if (not ($pass =~ m/^\S*$/)) {
 			FAQ::OMatic::gripe('error', gettext("Your password may not contain spaces or carriage returns."));
 		}

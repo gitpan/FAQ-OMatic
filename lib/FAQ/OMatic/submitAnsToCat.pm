@@ -63,7 +63,7 @@ sub main {
 	}
 
 	$item->makeDirectory()->
-		setText("Subcategories:\n\n\nAnswers in this category:\n");
+		setText(gettext("Subcategories:\n\n\nAnswers in this category:\n"));
 
 	# parent and any see-also linkers have changed, since their icons will
 	# be wrong. This is just like changing the title, although it doesn't

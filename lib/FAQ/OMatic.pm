@@ -37,6 +37,8 @@ use strict;
 
 package FAQ::OMatic;
 
+use Fcntl;	# for lockFile. Not portable, but then neither is lockFile().
+
 use FAQ::OMatic::Item;
 use FAQ::OMatic::Log;
 use FAQ::OMatic::Appearance;
@@ -49,7 +51,7 @@ use vars	# these are mod_perl-safe
 	# variables that get reset on every invocation
 	qw($theParams $theLocals);
 
-$VERSION = '2.709';
+$VERSION = '2.710';
 
 # can't figure out how to get file-scoped variables in mod_perl, so
 # we ensure that they're all file scoped by reseting them in dispatch.
@@ -250,19 +252,36 @@ sub lockFile {
 	$lockname =~ s#/#-#gs;
 	$lockname =~ m#^(.*)$#;
 	$lockname = "$FAQ::OMatic::Config::metaDir/$1.lck";
-	if (-e $lockname) {
-		sleep 10;
-		if (-e $lockname) {
-			gripe 'problem', "Lockfile $lockname for $filename has "
-				."been there 10 seconds. Failing.";
-			return 0;
+#	if (-e $lockname) {
+#		sleep 10;
+#		if (-e $lockname) {
+#			gripe 'problem', "Lockfile $lockname for $filename has "
+#				."been there 10 seconds. Failing.";
+#			return 0;
+#		}
+#	}
+#	open (LOCK, ">$lockname") or
+#		gripe('abort', "Can't create lockfile $lockname ($!)");
+#	print LOCK $$;
+#	close LOCK;
+#	return $lockname;
+
+	# THANKS to A.Flavell@physics.gla.ac.uk for working on finding
+	# how broken my old locking code was.
+	my $retries = 0;
+	while (1) {
+		if (++$retries >= 10) {
+			gripe('abort', "waited too long to get lock... ($!, $lockname)");
 		}
+		if (sysopen(LOCK, $lockname, O_CREAT|O_WRONLY, 0444)) {
+			# success!
+			print LOCK $$;
+			close LOCK;
+			return $lockname;
+		}
+		# can't get the lockfile -- wait a little and retry
+		sleep (2);
 	}
-	open (LOCK, ">$lockname") or
-		gripe('abort', "Can't create lockfile $lockname ($!)");
-	print LOCK $$;
-	close LOCK;
-	return $lockname;
 }
 
 sub unlockFile {
@@ -458,6 +477,10 @@ sub mailtoReference {
 	if ($how eq 'cheesy') {
 		$addr =~ s#\@#AT#g;
 		$addr =~ s#\.#DOT#g;
+	} elsif ($how eq 'nameonly') {
+		# THANKS: to "Alan J. Flavell" <flavell@a5.ph.gla.ac.uk> for
+		# sending a patch to implement 'nameonly' address munging
+		$addr =~ s#\@.*##;
 	} elsif ($how eq 'hide') {
 		$addr = 'address-suppressed';
 	}
@@ -468,10 +491,22 @@ sub mailtoReference {
 	if ($isText) {
 		return $addr;
 	}
-	my $target = "mailto:${addr}?${subject}";
-	return $wantarray
-		? ($target, $addr)
-		: "<a href=\"$target\">$addr</a>";
+	my $target = '';
+	if ($how eq 'off') {
+		$target = "mailto:${addr}?${subject}";
+	}
+	if ($wantarray) {
+		# when urlReference calls this func, it wants the link label split
+		# from the link target. If $target is empty, it does the right thing
+		# by not creating an <A> tag.
+		return ($target, $addr);
+	} else {
+		if ($target ne '') {
+			return "<a href=\"$target\">$addr</a>";
+		} else {
+			return $addr;
+		}
+	}
 }
 
 # turns link-looking things into actual HTML links, but also turns
@@ -615,9 +650,9 @@ sub fuzzyMatch {
   }
 
 	# These get parsed even in HTML text. They're "value added." :v)
-	$arg =~ s#(faqomatic:\S*[^\s.,)\?!])#urlReference($params,$isdir,$1)#sge;
-	$arg =~ s#(baginline:\S*[^\s.,)\?!])#urlReference($params,$isdir,$1)#sge;
-	$arg =~ s#(baglink:\S*[^\s.,)\?!])#urlReference($params,$isdir,$1)#sge;
+	$arg =~ s#<?(faqomatic:\S*[^\s.,)\?!>])>?#urlReference($params,$isdir,$1)#sge;
+	$arg =~ s#<?(baginline:\S*[^\s.,)\?!>])>?#urlReference($params,$isdir,$1)#sge;
+	$arg =~   s#<?(baglink:\S*[^\s.,)\?!>])>?#urlReference($params,$isdir,$1)#sge;
 
 	return $arg;
 }
@@ -1109,7 +1144,7 @@ sub validEmail {
 	# returns true (and the untainted address)
 	# if the argument looks like an email address
 	my $arg = shift;
-	my $cnt = ($arg =~ /^([\w-.+]+\@[\w-.+]+)$/);
+	my $cnt = ($arg =~ /^([\w\-.+]+\@[\w\-.+]+)$/);
 	return ($cnt == 1) ? $1 : undef;
 }
 

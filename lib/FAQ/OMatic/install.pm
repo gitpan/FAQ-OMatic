@@ -694,7 +694,7 @@ sub configInfo {
 		gettext("The command FAQ-O-Matic can use to install a cron job."),
 		'-default'=>"'".which('crontab')."'"),
 	ci('RCSci',		'-sort'=>'a-r1', '-free', '-cmd', '-desc'=>
-		gettext("RCS ci command.")),
+		gettext("Path to the <b>ci</b> command from the RCS package.")),
 
 	ci('sep_c', '-sort'=>'c--sep', '-separator', '-desc'=>
 		gettext("<b>Mandatory:</b> Server directory configuration")),
@@ -707,7 +707,7 @@ sub configInfo {
 	ci('serveDir', '-sort'=>'c-c1', '-free', '-desc'=>
 		gettext("Filesystem directory where FAQ-O-Matic will keep item files, image and other bit-bag files, and a cache of generated HTML files. This directory must be accesible directly via the http server. It might be something like /home/faqomatic/public_html/fom-serve/"),'-default'=>"''"),
 	ci('serveURL', '-sort'=>'c-c2', '-free', '-desc'=>
-		gettext("The path prexif of the URL needed to access files in").' <b>$serveDir</b>. '.gettext("It should be relative to the root of the server (omit http://hostname:port, but include a leading '/'). It should also end with a '/'.") , '-default'=>"''" ),
+		gettext("The path prefix of the URL needed to access files in").' <b>$serveDir</b>. '.gettext("It should be relative to the root of the server (omit http://hostname:port, but include a leading '/'). It should also end with a '/'.") , '-default'=>"''" ),
 
 	ci('sep_e', '-sort'=>'e--sep', '-separator', '-desc'=>
 		gettext("<i>Optional:</i> Miscellaneous configurations")),
@@ -753,10 +753,10 @@ sub configInfo {
 		'-choices'=>[ "'true'", "''" ], '-default'=>"''", '-desc'=>
 		gettext("Links from cache to CGI are relative to the server root, rather than absolute URLs including hostname:")),
 	ci('antiSpam', '-sort'=>'r-s7', '-mirror',
-		'-choices'=>[ "'off'", "'cheesy'", "'hide'" ],
+		'-choices'=>[ "'off'", "'cheesy'", "'nameonly'", "'hide'" ],
 		'-default'=>"'off'", '-desc'=>
 		gettext("mailto: links can be rewritten such as")." "
-		.'jonhATdartmouthDOTedu (cheesy), '
+		.'jonhATdartmouthDOTedu (cheesy), jonh (nameonly), '
 		.gettext("or e-mail addresses suppressed entirely (hide).")),
 	ci('cookieLife', '-sort'=>'r-s8', '-free',
 		'-choices'=>[ "'3600'" ],

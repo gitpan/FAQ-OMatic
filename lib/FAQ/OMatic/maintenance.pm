@@ -497,7 +497,10 @@ sub expireBags {
 			# don't declare system-supplied bags invalid
 			# THANKS: to John Goerzen for pointing this out
 			my ($prefix) = ($bagName =~ m/^(.*)\.[^\.]+$/);
-			next if (FAQ::OMatic::ImageRef::validImage($prefix));
+			# THANKS: Edwin Chiu <edwinc@s-scape.ca> for fixing an
+			# uninitialized value warning coming from here.
+			next if (defined($prefix)
+				&& FAQ::OMatic::ImageRef::validImage($prefix));
 
 			if (not $anyMessages) {
 				hprint("The following suggestion(s) are based on "

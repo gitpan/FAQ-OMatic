@@ -313,7 +313,7 @@ sub displayHTML {
 				gettext("Replace")." $baglist[0]<br>".gettext("with new upload")),
 					'size'=>'edit'};
 		} elsif (scalar(@baglist)>1) {
-			push @rightEdits, {'edit'=>FAQ::OMatic::button(
+			push @rightEdits, {'text'=>FAQ::OMatic::button(
 				FAQ::OMatic::makeAref('-command'=>'selectBag',
 					'-params'=>$params,
 					'-changedParams'=>{'file'=>$filename}),

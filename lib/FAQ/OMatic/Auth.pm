@@ -481,7 +481,10 @@ sub authError {
 
 	if ($reason eq '7') {
 		my $modname = '';
-		if ($file ne '') {
+		if (defined($file)
+			&& ($file ne '')) {
+			# THANKS "Alan J. Flavell" <flavell@a5.ph.gla.ac.uk>
+			# for fixing a "Use of uninitialized value" here.
 			my $item = new FAQ::OMatic::Item($file);
 			$modname = " (".getInheritedProperty($item, 'Moderator').")";
 		}

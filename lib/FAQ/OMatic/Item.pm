@@ -93,7 +93,7 @@ sub loadFromFile {
 
 	# untaint user input (so they can't express
 	# a file of ../../../../../../etc/passwd)
-	if (not $filename =~ m/^([\w-.]*)$/) {
+	if (not $filename =~ m/^([\w\-.]*)$/) {
 		# if taint check fails, just return a bad item, rather
 		# than implying that there really is an item with the funny name
 		# supplied.
@@ -310,7 +310,7 @@ sub saveToFile {
 
 	$dir = $FAQ::OMatic::Config::itemDir if (not $dir);
 
-	$filename =~ m/([\w-.]*)/;	# Untaint filename
+	$filename =~ m/([\w\-.]*)/;	# Untaint filename
 	$filename = $1;
 
 	if (not $filename) {
@@ -1787,10 +1787,14 @@ sub notifyModerator {
 	$msg .= "\nAs always, thanks for your help maintaining the FAQ.\n";
 
 	# make sure $moderator isn't a trick string
-	$moderator =~ /([\w-.]+\@[\w-.]+)/;
-
-	# send the mail to the moderator
-	FAQ::OMatic::sendEmail($moderator, "Faq-O-Matic Moderator Mail", $msg);
+	$moderator = FAQ::OMatic::validEmail($moderator);
+	if (defined($moderator)) {
+		# send the mail to the moderator
+		FAQ::OMatic::sendEmail($moderator, "Faq-O-Matic Moderator Mail", $msg);
+	} else {
+		FAQ::OMatic::gripe('problem',
+			"Moderator address is suspect ($moderator)");
+	}
 }
 
 # returns (prev,next) -- handles to FAQ::OMatic::Items, one before and one after this

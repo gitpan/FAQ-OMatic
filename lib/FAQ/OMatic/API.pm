@@ -178,7 +178,7 @@ sub getItem {
 			print "Request: ".$uri->as_string()."\n";
 			$self->dumpresp($rep);
 		}
-		return (0, "\$rep reports failure");
+		return (0, "\$rep reports failure: ".$rep->status_line."\nrequest was: ".$uri);
 	}
 
 	my $item = new FAQ::OMatic::Item();
@@ -535,7 +535,8 @@ sub transaction {
 	my $url = $self->{'url'};
 	my $req = POST($url,
 		'Content_Type'=>'form-data',
-		'Content'=> [ 'isapi'=>'1', $self->getAuth(), @{$newparams} ]);
+		'Content'=> [ 'isapi'=>'1', $self->getAuth(), @{$newparams}
+		]);
 	my $rep = $self->userAgent()->request($req);
 
 	my $auth_content = $rep->content();
@@ -553,7 +554,13 @@ sub transaction {
 			return (undef, 'CGI did not understand isapi mode: '.$content);
 		}
 	
-		my %values = split(/[=\n]/, $content);
+		# my %values = split(/[=\n]/, $content);
+		my %values = ();
+		my $pair;
+		foreach $pair (split(/\n+/, $content)) {
+			my ($key,$value) = split(/=/, $pair);
+			$values{$key} = $value;
+		}
 		if ($self->{'debug'} || '') {
 			print "successful reply to ".$req->content().":\n";
 			print map { "v: $_ => ".$values{$_}."\n" } sort keys %values;
