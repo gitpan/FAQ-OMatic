@@ -500,7 +500,13 @@ sub mainMenuStep {
 		.checkBoxFor('nothing')
 		."<a href=\"".installUrl('', 'url', 'maintenance')
 		."&secret=$maintenanceSecret&tasks=fsck\">"
-		.gettext("fsck (check and repair tree structure)")
+		.gettext("fsck (check and repair tree structure) now")
+		."</a>\n";
+	$rt.="$par<li>"
+		.checkBoxFor('nothing')
+		."<a href=\"".installUrl('', 'url', 'maintenance')
+		."&secret=$maintenanceSecret&tasks=buildSearchDB&force=true\">"
+		.gettext("rebuild search database now")
 		."</a>\n";
 	# rebuildCache shows up again at the end, because it doesn't show
 	# up in the numbered list if this is a mirror site.
@@ -508,7 +514,7 @@ sub mainMenuStep {
 		.checkBoxFor('nothing')
 		."<a href=\"".installUrl('', 'url', 'maintenance')
 		."&secret=$maintenanceSecret&tasks=rebuildCache\">"
-		.gettext("Rebuild the cache and dependency files")
+		.gettext("Rebuild the cache and dependency files now")
 		."</a>\n";
 	
 	$rt.="</ul>\n";
@@ -729,10 +735,10 @@ sub configInfo {
 		gettext("<i>Optional:</i> Miscellaneous configurations")),
 	ci('language',		'-sort'=>'k-m00',
 		'-choices'=>[ "'en'", "'de_iso8859_1'", "'fr'", "'ru'",
-					  "'uk'", "'fi'", "'ja_JP.EUC'"],
+					  "'uk'", "'fi'", "'ja_JP.EUC'" , "'hu'"],
 		'-desc'=>
 		gettext("Select the display language."),
-		'-default'=>"'en'"),
+		'-default'=>gettext("'en'")),
 	ci('dateFormat',	'-sort'=>'k-m01',
 		'-choices'=>[ "''", "'24'"],
 		'-desc'=>
@@ -849,15 +855,20 @@ sub configInfo {
 	ci('useDBMSearch', '-choices'=>[ "'true'", "''" ],
 			'-default'=>"''", '-desc'=>
 			gettext("Use DBM-based search databases. Faster on machines with non-broken DBM.")),
+	ci('disableSearchHighlight', '-choices'=>[ "'true'", "''" ],
+			'-default'=>"''", '-desc'=>
+			gettext("Links from search results page point into cache (do not highlight search terms)")),
+			# THANKS anti-feature suggested by
+			# THANKS "Dameon D. Welch-Abernathy" <dwelch@phoneboy.com>
 
 	ci('RCSciArgs',	'-sort'=>'a-r1-args', '-free', '-desc'=>
-	'Arguments to make ci quietly log changes and not mash RCS tags (use default with GNU RCS)',
+		gettext("Arguments to make ci quietly log changes and not mash RCS tags (use default with GNU RCS)"),
 		'-default'=>"'-mnull -t-null'"),
 	ci('RCScoArgs',	'-sort'=>'a-r2-args', '-free', '-desc'=>
-		'Arguments to make co not mash RCS tags (use default with GNU RCS)',
+		gettext("Arguments to make co not mash RCS tags (use default with GNU RCS)"),
 		'-default'=>"'-ko -l'"),
 	ci('RCSargs',	'-hide', '-free', '-desc'=>
-		'deprecated; subsumed by RCSciArgs and RCScoArgs.'),
+		gettext('deprecated; subsumed by RCSciArgs and RCScoArgs.')),
 	ci('authorEmail', '-hide', '-default'=>"''"),
 	ci('backgroundColor', '-hide', '-mirror', '-default'=>"'#ffffff'"),
 	ci('bagsDir', '-hide'),
@@ -1694,12 +1705,10 @@ sub stripSlash {
 
 sub tempPassPage {
 	my $rt;
-	$rt = "You must enter the correct temporary password to install "
-		."this FAQ-O-Matic. If you don't know it, remake the CGI stub "
-		."to have a new one assigned.";
+	$rt = gettext("You must enter the correct temporary password to install this FAQ-O-Matic. If you don't know it, remake the CGI stub to have a new one assigned.");
 	$rt .= installUrl('', 'GET', 'install', '', '');
 		# last '' prevents an old, incorrect temppass from sticking around
-	$rt .= "Temporary password: <input type=password size=36 name=temppass>\n";
+	$rt .= gettext("Temporary password: ")."<input type=password size=36 name=temppass>\n";
 	# Null submit button is a workaround for a bug in Lynx that
 	# prevents you from submitting a page with only a password field.
 	# THANKS Boyd Lynn Gerber <gerberb@zenez.com> for complaining about this

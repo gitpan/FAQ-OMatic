@@ -63,6 +63,8 @@ sub main {
 
 	my ($filei, $itemi);
 	foreach $filei (FAQ::OMatic::getAllItemNames()) {
+		next if ($item->isEmptyStub());
+
 		# I can't be my own parent
 		next if ($filei eq $item->{'filename'});
 

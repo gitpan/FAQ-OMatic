@@ -105,7 +105,7 @@ sub main {
 				FAQ::OMatic::gripe('error',
 					"Your file was greater than 64K long.");
 			}
-			$line =~ s/[^ -~\t\r\n]//gs;		# limit to printable characters
+			$line =~ s/[^ -~\t\r\n\x80-\xff]//gs;	# limit to printable characters
 			$params->{'_newText'} .= $line;
 		}
 	}
@@ -264,8 +264,10 @@ sub main {
 			."answer item from a category item.");
 	} elsif ($insertpart) {
 		$item->notifyModerator($cgi, 'inserted a part', $partnum+1);
+		$item->notifyNotifier($cgi, 'inserted a part', $partnum+1);
 	} else {
 		$item->notifyModerator($cgi, 'edited a part', $partnum);
+		$item->notifyNotifier($cgi, 'edited a part', $partnum);
 	}
 
 	if (FAQ::OMatic::getParam($params, 'isapi')) {

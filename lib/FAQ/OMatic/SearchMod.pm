@@ -200,11 +200,16 @@ sub getMatchesForSet {
 sub convertSearchParams {
 	my $params = shift;
 	my $pattern;
+        my $encode_lang = FAQ::OMatic::I18N::language();
 
 	# given a user-input search string, we break it into "legal" words
 	# and store it in another parameter.
 	
 	$pattern = $params->{'_search'};
+	if($encode_lang eq "ja_JP.EUC") {
+	    require NKF; import NKF;
+	    $pattern = nkf('-e', $pattern);
+        }
 	my @patternwords = FAQ::OMatic::Words::getWords( $pattern );
 
 	$params->{'_searchArray'} = \@patternwords;
@@ -285,15 +290,15 @@ sub getRecentSet {
 
 # reasonable text for 'n' days
 my %dayMap = (
-	0 => 'zero days',
-	1 => 'day',
-	2 => 'two days',
-	7 => 'week',
-	14 => 'fortnight',
-	31 => 'month', # (31? a month, give or take. :v)
-	92 => 'three months',
-	184 => 'six months',
-	366 => 'year'
+	0 => gettext("zero days"),
+	1 => gettext("day"),
+	2 => gettext("two days"),
+	7 => gettext("week"),
+	14 => gettext("fortnight"),
+	31 => gettext("month"), # (31? a month, give or take. :v)
+	92 => gettext("three months"),
+	184 => gettext("six months"),
+	366 => gettext("year")
 );
 
 sub getRecentMap {

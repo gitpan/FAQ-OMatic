@@ -175,6 +175,8 @@ sub getInheritedProperty {
 my %defaultProperties = (
 	'Moderator' => 			[ 'nobody', 0 ],
 	'MailModerator' => 		[ 0, 0 ],
+       	'Notifier' =>			[ 'nobody', 0 ],
+	'MailNotifier' =>		[ 0, 0 ],
 	'PermEditPart' =>		[ 5, 0 ],		# users with proven authentication
 	'PermAddPart' =>		[ 5, 0 ],
 	'PermAddItem' =>		[ 5, 0 ],

@@ -95,26 +95,12 @@ sub main {
 									'_secret'=>$secret	},
 								'url', 0, 'blastAll');
 			my $subj = gettext("Your Faq-O-Matic authentication secret");
-			my $mesg = <<__EOF__;
-To validate your Faq-O-Matic password, you may either enter
-this secret into the Validation form:
+                        my $mesg = gettext("To validate your Faq-O-Matic password, you may either enter this secret into the Validation form:")."\n\n";   
+			$mesg .= gettext("Secret:")." ".$secret."\n\n";
+                        $mesg .= gettext("Or access the following URL. Be careful when you copy and paste the URL that the line-break doesn't cut the URL short.");
+                        $mesg .= "\n\n$secreturl\n\n".gettext("Thank you for using Faq-O-Matic.")."\n\n";
+			$mesg .= gettexta("(Note: if you did not sign up to use the Faq-O-Matic, someone else has attempted to log in using your name. Do not access the URL above; it will validate the password that user has supplied. Instead, send mail to %0 and I will look into the matter.)", $FAQ::OMatic::Config::adminEmail );
 
-     Secret: $secret
-
-Or access the following URL. Be careful when you copy and
-paste the URL that the line-break doesn't cut the URL short.
-
-$secreturl
-
-Thank you for using Faq-O-Matic.
-
-(Note: if you did not sign up to use the Faq-O-Matic,
-someone else has attempted to log in using your name.
-Do not access the URL above; it will validate the password
-that user has supplied. Instead, send mail to
-	$FAQ::OMatic::Config::adminEmail
-and I will look into the matter.)
-__EOF__
 			if (FAQ::OMatic::sendEmail($id, $subj, $mesg)) {
 				FAQ::OMatic::gripe('error',
 					gettexta("I couldn't mail the authentication secret to \"%0\" and I'm not sure why.", $id));

@@ -36,7 +36,8 @@ print THECGI <<'EOF';
 ## setlocale()) if you want to use some locale, different from default.
 
 # use POSIX qw(locale_h);
-# POSIX::setlocale(LC_ALL, 'uk_UA.KOI8-U');
+# $ENV{LANG} = 'ja_JP.EUC';
+# POSIX::setlocale(LC_ALL, $ENV{LANG});
 
 use locale;
 EOF

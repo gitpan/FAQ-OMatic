@@ -65,7 +65,7 @@ sub main {
 	# set each defined permission from $params
 	my $pi = FAQ::OMatic::Item::permissionsInfo();
 	my @permSet = map { $pi->{$_}->{'name'} } sort keys %{$pi};
-	push @permSet, 'Moderator', 'MailModerator', 'RelaxChildPerms';
+	push @permSet, 'Moderator', 'MailModerator', 'Notifier', 'MailNotifier', 'RelaxChildPerms';
 	my $perm;
 	foreach $perm (@permSet) {
 		if (defined $params->{"_$perm"}) {

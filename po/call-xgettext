@@ -9,8 +9,7 @@
 LC_MESSAGES=C       # allow grep over xgettext messages
 export LC_MESSAGES;
 
-function nomalize_dir()
-{
+nomalize_dir() {
     cd "$1"
     d=`pwd`
     cd -

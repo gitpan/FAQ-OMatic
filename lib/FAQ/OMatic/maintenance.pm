@@ -53,6 +53,7 @@ use FAQ::OMatic::buildSearchDB;
 use FAQ::OMatic::Versions;
 use FAQ::OMatic::ImageRef;
 use FAQ::OMatic::Slow;
+use FAQ::OMatic::I18N;
 
 my $badKeyMessage = 'Bad maintenance key.';
 
@@ -130,7 +131,7 @@ sub main {
 	FAQ::OMatic::getParams($cgi);
 	hprint(FAQ::OMatic::button(
 			FAQ::OMatic::makeAref('install', {}, ''),
-			"Go To Install/Configuration Page"));
+			gettext("Go To Install/Configuration Page")));
 
 	hflush();
 }
@@ -272,7 +273,12 @@ sub trimSlowOutput {
 }
 
 sub buildSearchDB {
-	if ((not -f "$FAQ::OMatic::Config::metaDir/freshSearchDBHint")
+	my $cgi = FAQ::OMatic::dispatch::cgi();
+	my $force = $cgi->param('force') || '';
+		# FORCE feature requested by
+		# "Dameon D. Welch-Abernathy" <dwelch@phoneboy.com>
+	if ($force
+		or (not -f "$FAQ::OMatic::Config::metaDir/freshSearchDBHint")
 		or (-M "$FAQ::OMatic::Config::metaDir/freshSearchDBHint" > 1/24)) {
 		FAQ::OMatic::buildSearchDB::build();
 	} else {

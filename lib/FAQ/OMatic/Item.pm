@@ -45,6 +45,15 @@ use FAQ::OMatic::Versions;
 use FAQ::OMatic::Set;
 use FAQ::OMatic::I18N;
 
+BEGIN {
+#   This code use Japanese environment only.
+#   see http://chasen.aist-nara.ac.jp/index.html.en
+#
+    if (FAQ::OMatic::I18N::language() eq 'ja_JP.EUC') {
+	require NKF; import NKF;
+    }
+}
+
 my @monthMap;			# a constant array, no cache problem for mod_perl
 
 sub new {
@@ -438,12 +447,20 @@ sub saveToFile {
 		} elsif ($key =~ m/-Set$/) {
 			my $a;
 			foreach $a ($self->getSet($key)->getList()) {
+			        if (FAQ::OMatic::I18N::language() eq 'ja_JP.EUC') {
+				# Japanese only
+			                $a = nkf('-e', $a);
+				}
 				print FILE "$key: $a\n";
 			}
 		} else {
 			my $value = $self->{$key};
 			$value =~ s/[\n\r]/ /g;	# don't allow CRs in a single-line field,
 									# that would corrupt the file format.
+                        if (FAQ::OMatic::I18N::language() eq 'ja_JP.EUC') {
+			# Japanese only
+			        $value = nkf('-e', $value);
+			}
 			print FILE "$key: $value\n";
 		}
 	}
@@ -730,7 +747,7 @@ sub getTitle {
     	$title =~ s/"/&quot;/sg;
 	} else {
 		undef $title;
-		$title = '(missing or broken file)' if (not $undefokay);
+		$title = gettext("(missing or broken file)") if (not $undefokay);
 	}
 
 	return $title;
@@ -804,7 +821,7 @@ sub hasParent {
 	$nextitem = $self;
 	$nextfile = $self->{'filename'};
 	do {
-		return 1 if ($nextfile eq $parentFile);
+		return 1 if (defined($nextfile) && ($nextfile eq $parentFile));
 
 		$thisfile = $nextfile;
 		$nextfile = $nextitem->{'Parent'};
@@ -1090,7 +1107,7 @@ sub displayCoreHTML {
 				# suggestion of adding cat title to reduce confusion is from
 				# THANKS: pauljohn@ukans.edu
 				if (length($title) > 15) {
-					$title = substr($title, 0, 12)."...";
+					$title = substrFOM($title, 12)."...";
 				}
 				push @$editrow, {'text'=>FAQ::OMatic::button(
 					FAQ::OMatic::makeAref('-command'=>'addItem',
@@ -1567,6 +1584,43 @@ sub displayModOptionsEditor {
 	$rt .= "<td>$inherited</td>\n";
 	$rt .= "</tr>\n";
 
+
+	# Notifier
+	# THANKS to John Nolan for suggesting a better permissions layout.
+#	$rt .= "<table border=1>\n";
+#	$rt .=	"<tr>\n"
+#			."  <th>".gettext("Name & Description")."</th>\n"
+#			."  <th>".gettext("Setting")."</th>\n"
+#			."  <th>".gettext("Setting if Inherited")."</th>\n"
+#			."</tr>\n";
+
+	# Notifer
+#	$rt .= "<tr><td colspan=3 align=center><b>".gettext("Moderator")."</b>"
+#			."</td></tr>\n";
+	$inherited = $self->getInheritance($params, 'Notifier', '<br>',
+		sub {shift;});
+	$rt .= "<tr><td colspan=2 align=left><b>".gettext("Notifier")."</b>\n"
+			."<br>".gettext("Send mail to the Notifier when item is created or modified")."\n"
+			."<br>".gettext("(will inherit if empty)")."\n";
+	$rt .= "<br>"
+			."<input type=text name=\"_Notifier\" value=\""
+			.($self->{'Notifier'}||'')."\" size=60></td>\n";
+	$rt .= "<td>$inherited"
+			."</td></tr>\n";
+
+	# NotifierMail
+	$rt .= "<tr>"
+			."<td><b>MailNotifier</b>"
+			."<br>".gettext("Send mail to the Notifier when someone other than the moderator edits this item:")."</td>\n";
+	$rt .= "<td>\n";
+	$rt .= popup('MailNotifier', [1, 0, ''], [gettext('Yes'), gettext('No'), gettext('Inherit')],
+			$self->{'MailNotifier'});
+	$inherited =
+		$self->getInheritance($params, 'MailNotifier', '<br>',
+			sub {(gettext("No"), gettext("Yes"))[shift()] || gettext("undefined")});
+	$rt .= "<td>$inherited</td>\n";
+	$rt .= "</tr>\n";
+
 	# Permission info
 	$rt .= "<tr><th colspan=3>".gettext("Permissions")."</th></tr>\n";
 
@@ -1590,11 +1644,11 @@ sub displayModOptionsEditor {
 	# RelaxChildPerms
 	$rt .= "<tr>"
 			."<td><b>"."RelaxChildPerms"."</b>"
-			."<br>".gettext("Relax: New answers and subcategories will be moderated "
-				."by the creator of the item, allowing that person full "
-				."freedom to edit that new item.")
-			."<br>".gettext("Don't Relax: new items will be moderated by "
-			."the moderator of this item.")
+			."<br>".gettext("Relax: New answers and subcategories will be moderated ")
+				.gettext("by the creator of the item, allowing that person full ")
+				.gettext("freedom to edit that new item.")
+			."<br>".gettext("Don't Relax: new items will be moderated by ")
+			.gettext("the moderator of this item.")
 			."</td>\n";
 	$rt .= "<td>\n";
 	$rt .= popup('RelaxChildPerms',
@@ -1811,12 +1865,44 @@ sub extractWords {
 }
 
 sub rightEnd {
+    my $string = shift;
+    my $amount = shift;
+    my $encode_lang = FAQ::OMatic::I18N::language();
+#EUC-JP case
+    return rightEndMB($string,$amount) if($encode_lang eq "ja_JP.EUC");
+#normal case
+    return rightEndSB($string,$amount);
+}
+
+sub rightEndSB {
+    my $string = shift;
+    my $amount = shift;
+    if ($amount >= length($string)) {
+	return $string;
+    } else {
+	return substr($string,length($string)-$amount,$amount);
+    }
+}
+
+sub rightEndMB {
 	my $string = shift;
 	my $amount = shift;
+	my ($n, $c, $r, $mb, $width, $result);
+	$width = length($string) - $amount;
 	if ($amount >= length($string)) {
 		return $string;
 	} else {
-		return substr($string,length($string)-$amount,$amount);
+            while (length($string)) {
+               last unless ($mb = $string =~ s/^([\200-\377].)+//) ||
+		 $string =~s/[\0-\177]+//;
+	       $n = $width;
+	       $n -= $width % 2 if $mb;
+	       ($c,$r) = unpack("a$n a*", $&);
+	       $width -= length($c);
+	       $result .= $c;
+	       last if length($r)
+	   }
+	    return ($r.$string);
 	}
 }
 
@@ -1833,13 +1919,20 @@ sub displaySearchContext {
 	my $i;
 	my $count;
 
+	my @highlightWordsFlag = ();
+	if (not ($FAQ::OMatic::Config::disableSearchHighlight || '')) {
+		@highlightWordsFlag = (
+			'_highlightWords'	=>	join(' ', @{$params->{'_searchArray'}})
+		);
+	}
 	# start with a title that's a link
 	push @$rows, { 'type'=>'wide', 'text'=>
 		FAQ::OMatic::makeAref('-command'=>'faq',
 			'-params'=>$params,
 			'-changedParams'=>
 			{	'file'				=>	$self->{'filename'},
-				'_highlightWords'	=>	join(' ', @{$params->{'_searchArray'}})
+				@highlightWordsFlag
+				#'_highlightWords'	=>	join(' ', @{$params->{'_searchArray'}})
 			})
 			.FAQ::OMatic::highlightWords($self->getTitle(),$params)."</a>",
 		'id'=>'displaySearchContext-title' };
@@ -1890,7 +1983,7 @@ sub displaySearchContext {
 				.rightEnd($ls,40)
 				.' '
 				.$parts[$i]
-				.substr($rs,0,40)
+				.substrFOM($rs,40)
 				.($rtrunc ? '...' : ''));
 	}
 	my $context = join("\n<br>", @contexts);
@@ -1963,7 +2056,66 @@ sub notifyModerator {
 	}
 }
 
-# returns (prev,next) -- handles to FAQ::OMatic::Items, one before and one after this
+sub notifyNotifier {
+	my $self = shift;
+	my $cgi = shift;
+	my $didWhat = shift;
+	my $changedPart = shift;
+
+	my $mail = FAQ::OMatic::Auth::getInheritedProperty($self, 'MailNotifier')
+				|| '';
+	return if ($mail ne '1');	# didn't want mail anyway
+
+	my $moderator = FAQ::OMatic::Auth::getInheritedProperty($self, 'Notifier');
+	return if (not $moderator =~ m/\@/);	# some non-address
+
+	my $msg = '';
+	my ($id,$aq) = FAQ::OMatic::Auth::getID();
+
+	if ($id eq $moderator
+		and $didWhat =~ m/moderator options/) {
+		return;
+		# moderator doesn't need to get mail about his own edits
+		# THANKS to Bernhard Scholz <scholz@peanuts.org> for the suggestion
+	}
+
+	$msg .= "[This is a notification about the Faq-O-Matic items you have subscribed to.]\n\n";
+	$msg .= "Who:      $id\n";
+	$msg .= "Item:     ".$self->getTitle()."\n";
+	$msg .= "File:     ".$self->{'filename'}."\n";
+	my $url = FAQ::OMatic::makeAref('-command'=>'faq',
+			# sleazy hack that will bite me later -- go ahead and use
+			# global params, because that's always "okay" here.
+			#'-params'=>$params,
+			'-changedParams'=>{'file'=>$self->{'filename'}},
+			'-reftype'=>'url',
+			'-blastAll'=>1);
+	$msg .= "URL:      ".$url."\n";
+	$msg .= "What:     ".$didWhat."\n";
+
+	if (defined $changedPart) {
+		$msg .= "New text:\n";
+		$msg .= FAQ::OMatic::quoteText($self->getPart($changedPart)->{'Text'},
+			'> ');
+	}
+
+	$msg .= "\nAs always, thanks for your help maintaining the FAQ.\n";
+
+	# make sure $moderator isn't a trick string
+	$moderator = FAQ::OMatic::validEmail($moderator);
+	if (defined($moderator)) {
+		# send the mail to the moderator
+		# pageHeader is added to tell which FAQ has sent the mail.  
+		# THANKS suggested by Akiko Takano <takano@iij.ad.jp>
+		FAQ::OMatic::sendEmail($moderator, 
+			"[" . FAQ::OMatic::fomTitle() . "] " . $self->getTitle().":".$didWhat,
+			$msg);
+	} else {
+		FAQ::OMatic::gripe('problem',
+			"Moderator address is suspect ($moderator)");
+	}
+}
+
 # item in the parent's list
 sub getSiblings {
 	my $self = shift;
@@ -2089,4 +2241,33 @@ sub incrementSequence {
 	$self->setProperty('SequenceNumber', $self->{'SequenceNumber'}+1);
 }
 
+sub substrFOM {
+    my $string = shift;
+    my $width = shift;
+    my $result = shift;
+    my $encode_lang = FAQ::OMatic::I18N::language();
+#EUC-JP case
+    return substrMB($string,$width,$result) if($encode_lang eq "ja_JP.EUC");
+#normal case
+    return substr($string,$width,$result);
+
+}
+
+sub substrMB {
+        my $string = shift;
+        my $width = shift;
+        my $result = shift;
+        my ($n, $c, $r, $mb);
+        while (length($string)){
+           last unless ($mb = $string =~ s/^([\200-\377].)+//)
+            || $string =~ s/[\0-\177]+//;
+                $n = $width;
+                $n -= $width % 2 if $mb;
+                ($c,$r) = unpack("a$n a*", $&);
+                $width -= length($c);
+                $result .= $c;
+                last if length($r);
+       }
+        return $result;
+} # end of sub substrJ..
 1;

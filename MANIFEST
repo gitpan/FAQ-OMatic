@@ -1,3 +1,4 @@
+Changes
 LICENSE
 MANIFEST
 Makefile.PL
@@ -22,6 +23,7 @@ lib/FAQ/OMatic/Item.pm
 lib/FAQ/OMatic/Language_de_iso8859_1.pm
 lib/FAQ/OMatic/Language_fi.pm
 lib/FAQ/OMatic/Language_fr.pm
+lib/FAQ/OMatic/Language_hu.pm
 lib/FAQ/OMatic/Language_ja_JP.EUC.pm
 lib/FAQ/OMatic/Language_ru.pm
 lib/FAQ/OMatic/Language_uk.pm
@@ -71,6 +73,7 @@ lib/FAQ/OMatic/submitPass.pm
 po/HOWTO
 po/POTFILES
 po/call-xgettext
+po/hu.po
 po/ja.po
 po/po2pm
 po/ru.po
@@ -78,4 +81,5 @@ po/uk.po
 t-informal/split.pl
 t-informal/testapi.pl
 t-informal/testr.pl
+t/i18n.t
 t/use.t

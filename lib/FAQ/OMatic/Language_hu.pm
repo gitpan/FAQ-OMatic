@@ -1,6 +1,6 @@
 #--------------------------------------------------------------------
-#   Language_ja_JP.EUC.pm
-#   Generated automatically from ja.po by po2pm
+#   Language_hu.pm
+#   Generated automatically from hu.po by po2pm
 #--------------------------------------------------------------------
 
 sub translations {
@@ -9,655 +9,617 @@ sub translations {
     my %data = (
 
 # SOME DESCRIPTIVE TITLE.
-# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
-# This file is distributed under the same license as the PACKAGE package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+# Copyright (C) YEAR Free Software Foundation, Inc.
+# Endre ZELENA <ezelena@users.sourceforge.net>, 2003.
 #
 #, fuzzy
  ""
-# fuzzy # => "Project-Id-Version: PACKAGE VERSION\nPOT-Creation-Date: 2003-03-23 08:01+0900\nPO-Revision-Date: 2002-12-05 23:20+0900\nLast-Translator: Oota Toshiya <oota@itp.nec.co.jp>\nLanguage-Team: Japanese\nMIME-Version: 1.0\nContent-Type: text/plain; charset=EUC-JP\nContent-Transfer-Encoding: 8bit\n",
+# fuzzy # => "Project-Id-Version: PACKAGE VERSION\nPOT-Creation-Date: 2003-03-18 15:02+0100\nPO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\nLast-Translator: Endre ZELENA <ezelena@users.sourceforge.net>\nLanguage-Team: LANGUAGE <LL@li.org>\nMIME-Version: 1.0\nContent-Type: text/plain; charset=iso8859-2\nContent-Transfer-Encoding: 8bit\n",
  => "",
 
 #: lib/FAQ/OMatic.pm:96 lib/FAQ/OMatic/install.pm:1079
  "Warnings:"
- => "·Ù¹ð:",
+ => "Figyelmeztetés:",
 
 #: lib/FAQ/OMatic.pm:111
-#, fuzzy
  "Your Faq-O-Matic would have a title if it had an item 1, which it will when you've run the installer."
-# fuzzy # => "¥¢¥¤¥Æ¥à1¤¬Â¸ºß¤¹¤ë¤Ê¤é¤Ð¡¢¤¢¤Ê¤¿¤ÎFaq-O-Matic¤Ï",
  => "",
 
 #: lib/FAQ/OMatic.pm:114 lib/FAQ/OMatic/install.pm:1164
  "Untitled Faq-O-Matic"
- => "Ì¤¥¿¥¤¥È¥ë¤Î Faq-O-Matic",
+ => "Untitled Faq-O-Matic",
 
 #: lib/FAQ/OMatic.pm:136 lib/FAQ/OMatic/authenticate.pm:151
  "Log In"
- => "¥í¥°¥¤¥ó",
+ => "Bejelentkezés",
 
 #: lib/FAQ/OMatic.pm:137
  "Change Password"
- => "¥Ñ¥¹¥ï¡¼¥ÉÊÑ¹¹",
+ => "Jelszó módosítás",
 
 #: lib/FAQ/OMatic.pm:138
+#, c-format
  "Edit Title of %0 %1"
- => "%0¤Î¥¿¥¤¥È¥ë %1 ¤òÊÔ½¸",
+ => "Cím szerkesztése: %0 %1",
 
 #: lib/FAQ/OMatic.pm:139
 #, c-format
  "New %0"
- => "¿·µ¬ %0\t",
+ => "Új %0",
 
 #: lib/FAQ/OMatic.pm:140
+#, c-format
  "Edit Part in %0 %1"
- => "%0 Ãæ¤Î¥Ñ¡¼¥È %1 ¤òÊÔ½¸",
+ => "Elem szerkesztése: %0 %1",
 
 #: lib/FAQ/OMatic.pm:141
+#, c-format
  "Insert Part in %0 %1"
- => "%0 Ãæ¤Ë %1 ¤òÁÞÆþ",
+ => "Elem beilelsztése: %0 %1",
 
 #: lib/FAQ/OMatic.pm:142
+#, c-format
  "Move %0 %1"
- => "%0 ¤ò %1 ¤Ë°ÜÆ°",
+ => "Mozgat: %0 %1",
 
 #: lib/FAQ/OMatic.pm:143 lib/FAQ/OMatic/Appearance.pm:168
  "Search"
- => "¸¡º÷",
+ => "Keresés",
 
 #: lib/FAQ/OMatic.pm:144
  "Access Statistics"
- => "¥¢¥¯¥»¥¹Åý·×",
+ => "Statisztikák",
 
 #: lib/FAQ/OMatic.pm:145 lib/FAQ/OMatic/submitPass.pm:138
  "Validate"
- => "Ç§¾Ú",
+ => "Megerõsít",
 
 #: lib/FAQ/OMatic.pm:146
  "%0 Permissions for %1"
- => "%1¤Î¥Ñ¡¼¥ß¥Ã¥·¥ç¥ó¤ò %0",
+ => "%0 Permissions for %1",
 
 #: lib/FAQ/OMatic.pm:147
+#, c-format
  "Upload bag for %0 %1"
- => "%0 ¸þ¤±¤Îbag¤Î¥¢¥Ã¥×¥í¡¼¥É %1",
+ => "Csomag feltöltése: %0 %1",
 
 #: lib/FAQ/OMatic.pm:1663
  "http-charset"
- => "EUC-JP",
+ => "",
 
 #: lib/FAQ/OMatic/Appearance.pm:177
  "Appearance"
- => "¸«¤¿ÌÜ",
+ => "Megjelenés",
 
 #: lib/FAQ/OMatic/Appearance.pm:191
  "Show Top Category Only"
- => "¥È¥Ã¥×¥«¥Æ¥´¥ê¤Î¤ßÉ½¼¨",
+ => "Csak a top kategória mutatása",
 
 #: lib/FAQ/OMatic/Appearance.pm:198
  "Show This <em>Entire</em> Category"
- => "¤³¤Î<em>Á´Éô¤Î</em> ¥«¥Æ¥´¥ê¤òÉ½¼¨",
+ => "A <em>teljes</em> kategória megjelenítése",
 
 #: lib/FAQ/OMatic/Appearance.pm:209
  "Show This Category As Text"
- => "¤³¤Î¥«¥Æ¥´¥ê¤ò¥Æ¥­¥¹¥È¤È¤·¤ÆÉ½¼¨",
+ => "A kategória mutatása szövegként",
 
 #: lib/FAQ/OMatic/Appearance.pm:213
  "Show This Answer As Text"
- => "¤³¤Î²óÅú¤ò¥Æ¥­¥¹¥È¤È¤·¤ÆÉ½¼¨",
+ => "A válasz mutatása szövegként",
 
 #: lib/FAQ/OMatic/Appearance.pm:218
  "Show This %0 As Text"
- => "%0 ¤ò¥Æ¥­¥¹¥È¤È¤·¤ÆÉ½¼¨",
+ => "A %0 mutatása szövegként",
 
 #: lib/FAQ/OMatic/Appearance.pm:232
  "Show This <em>Entire</em> Category As Text"
- => "¤³¤Î<em>Á´Éô¤Î</em> ¥«¥Æ¥´¥ê¤ò¥Æ¥­¥¹¥È¤È¤·¤ÆÉ½¼¨",
+ => "A <em>teljes</em> kategóriát mutatása szövegként",
 
 #: lib/FAQ/OMatic/Appearance.pm:244
  "Hide Expert Edit Commands"
- => "¾åµéÊÔ½¸¥³¥Þ¥ó¥É¤ò±£¤¹",
+ => "Szerkesztõ parancsok elrejtése",
 
 #: lib/FAQ/OMatic/Appearance.pm:253
  "Show Expert Edit Commands"
- => "¾åµéÊÔ½¸¥³¥Þ¥ó¥É¤òÉ½¼¨",
+ => "Szerkesztõ parancsok mutatása",
 
 #: lib/FAQ/OMatic/Appearance.pm:269 lib/FAQ/OMatic/Item.pm:2224
 #: lib/FAQ/OMatic/stats.pm:133
  "Return to the FAQ"
- => "FAQ¤ËÌá¤ë",
+ => "Vissza a kezdõoldalra",
 
 #: lib/FAQ/OMatic/Appearance.pm:276
  "This is a"
- => "¤³¤ì¤Ï",
+ => " ",
 
 #: lib/FAQ/OMatic/Auth.pm:495
  "the administrator of this Faq-O-Matic"
- => "FAQ-O-Matic¤Î´ÉÍý¼Ô",
+ => "Ennek a Faq-O-Matic-nak az adminisztrátora",
 
 #: lib/FAQ/OMatic/Auth.pm:496
  "someone who has proven their identification"
- => "¤À¤ì¤«¤¬¤«¤ì¤é¤Î¼±ÊÌ¤ò¸¡ºº¤·¤¿",
+ => "azonosított felhasználó",
 
 #: lib/FAQ/OMatic/Auth.pm:497
  "someone who has offered identification"
- => "¤À¤ì¤«¤¬¼±ÊÌ»Ò¤òÄó¶¡¤·¤¿",
+ => "someone who has offered identification",
 
 #: lib/FAQ/OMatic/Auth.pm:498
  "anybody"
- => "Á´°÷",
+ => "bárki",
 
 #: lib/FAQ/OMatic/Auth.pm:511
  "the moderator of the item"
- => "¤³¤Î¥¢¥¤¥Æ¥à¤Î¥â¥Ç¥ì¡¼¥¿",
+ => "a terület moderátora",
 
 #: lib/FAQ/OMatic/Auth.pm:515
 #, c-format
  "%0 group members"
- => "¥°¥ë¡¼¥×¥á¥ó¥Ð¡¼ %0",
+ => "a(z) %0 csoport tagjai",
 
 #: lib/FAQ/OMatic/Groups.pm:142
  "Select a group to edit:"
- => "ÊÔ½¸ÂÐ¾Ý¤Î¥°¥ë¡¼¥×¤òÁªÂò:",
+ => "Módosítani kívánt csoport:",
 
 #: lib/FAQ/OMatic/Groups.pm:150
  "(Members of this group are allowed to access these group definition pages.)"
- => "(¥°¥ë¡¼¥×¤Î¥á¥ó¥Ð¤Ï¤½¤Î¥°¥ë¡¼¥×ÄêµÁ¥Ú¡¼¥¸¤Ë¥¢¥¯¥»¥¹¤Ç¤­¤ë¡£)",
+ => "(Ennek a csoportnak a tagjai elérhetik ezeket az oldalakat.)",
 
 #: lib/FAQ/OMatic/Groups.pm:168
  "Add Group"
- => "¥°¥ë¡¼¥×ÄÉ²Ã",
+ => "Csoport létrehozása",
 
 #: lib/FAQ/OMatic/Groups.pm:175
  "Up To List Of Groups"
- => "¥°¥ë¡¼¥×¤Î¥ê¥¹¥È¤Î¾å¤Ø",
+ => "Vissza a csoportok listájához",
 
 #: lib/FAQ/OMatic/Groups.pm:187
  "Remove Member"
- => "¥á¥ó¥Ðºï½ü",
+ => "Eltávolítás a csoportból",
 
 #: lib/FAQ/OMatic/Groups.pm:196
  "Add Member"
- => "¥á¥ó¥ÐÄÉ²Ã",
+ => "Tag felvétele a csoportba",
 
 #: lib/FAQ/OMatic/Groups.pm:206 lib/FAQ/OMatic/install.pm:467
 #: lib/FAQ/OMatic/install.pm:471
  "Go to the Faq-O-Matic"
- => "Faq-O-Matic¤Ë°ÜÆ°",
+ => "Tovább a fõoldalra",
 
 #: lib/FAQ/OMatic/Groups.pm:209 lib/FAQ/OMatic/maintenance.pm:134
  "Go To Install/Configuration Page"
- => "¥¤¥ó¥¹¥È¡¼¥ë/¹½À®¥Ú¡¼¥¸¤Ë°ÜÆ°",
+ => "Tovább a beállítások oldalra",
 
 #: lib/FAQ/OMatic/Item.pm:83
  "New Item"
- => "¿·¤·¤¤¥¢¥¤¥Æ¥à",
+ => "Új elem",
 
 #: lib/FAQ/OMatic/Item.pm:727
  "Parts"
- => "¥Ñ¡¼¥È",
+ => "Elemek",
 
 #: lib/FAQ/OMatic/Item.pm:750
  "(missing or broken file)"
- => "(ÉÔÌÀ¤Þ¤¿¤Ï²õ¤ì¤¿¥Õ¥¡¥¤¥ë)",
+ => "",
 
 #: lib/FAQ/OMatic/Item.pm:851
  "Previous"
- => "Á°",
+ => "Elõzõ",
 
 #: lib/FAQ/OMatic/Item.pm:869
  "Next"
- => "¼¡",
+ => "Következõ",
 
 #: lib/FAQ/OMatic/Item.pm:968 lib/FAQ/OMatic/Item.pm:1382
 #: lib/FAQ/OMatic/Item.pm:1566
  "Moderator"
- => "¥â¥Ç¥ì¡¼¥¿",
+ => "Moderátor",
 
 #: lib/FAQ/OMatic/Item.pm:970
  "(inherited from parent)"
- => "(¿Æ¤«¤é·Ñ¾µ)",
+ => "(szülõ elemtõl származó)",
 
 #: lib/FAQ/OMatic/Item.pm:988
  "Category Title and Options"
- => "¥«¥Æ¥´¥ê¤Î¥¿¥¤¥È¥ë¤È¥ª¥×¥·¥ç¥ó",
+ => "Kategória címe és tulajdonságai",
 
 #: lib/FAQ/OMatic/Item.pm:989
  "Edit Category Permissions"
- => "¥«¥Æ¥´¥ê¤Î¥Ñ¡¼¥ß¥Ã¥·¥ç¥ó¤òÊÔ½¸",
+ => "Engedélyek beállítása (kat.)",
 
 #: lib/FAQ/OMatic/Item.pm:990
  "Move Category"
- => "¥«¥Æ¥´¥ê¤ò°ÜÆ°",
+ => "Kategória mozgatása",
 
 #: lib/FAQ/OMatic/Item.pm:991
  "Trash Category"
- => "¥«¥Æ¥´¥ê¤òÇÑ´þ",
+ => "Kategória törlése",
 
 #: lib/FAQ/OMatic/Item.pm:995
  "Answer Title and Options"
- => "²óÅú¤Î¥¿¥¤¥È¥ë¤È¥ª¥×¥·¥ç¥ó",
+ => "Válasz címe és tulajdonságai",
 
 #: lib/FAQ/OMatic/Item.pm:996
  "Edit Answer Permissions"
- => "²óÅú¤Î¥Ñ¡¼¥ß¥Ã¥·¥ç¥ó¤òÊÔ½¸",
+ => "Engedélyek beállítása (válasz)",
 
 #: lib/FAQ/OMatic/Item.pm:997
  "Move Answer"
- => "²óÅú¤ò°ÜÆ°",
+ => "Válasz mozgatása",
 
 #: lib/FAQ/OMatic/Item.pm:998
  "Trash Answer"
- => "²óÅú¤òÇÑ´þ",
+ => "Válasz törlése",
 
 #: lib/FAQ/OMatic/Item.pm:1004
  "%0 Title and Options"
- => "%0 ¥¿¥¤¥È¥ë¤È¥ª¥×¥·¥ç¥ó",
+ => "%0 címe és tulajdonságai",
 
 #: lib/FAQ/OMatic/Item.pm:1005 lib/FAQ/OMatic/Item.pm:1006
  "Edit %0 Permissions"
- => "%0 ¤Î¥Ñ¡¼¥ß¥Ã¥·¥ç¥ó¤òÊÔ½¸",
+ => "Engedélyek beállítása (%0)",
 
 #: lib/FAQ/OMatic/Item.pm:1007
 #, c-format
  "Move %0"
- => "%0 ¤ò°ÜÆ°",
+ => "%0 mozgatása",
 
 #: lib/FAQ/OMatic/Item.pm:1008
 #, c-format
  "Trash %0"
- => "%0 ¤òÇÑ´þ",
+ => "%0 törlése",
 
 #: lib/FAQ/OMatic/Item.pm:1046
  "Duplicate Answer"
- => "²óÅú¤ÎÊ£À½",
+ => "Válasz duplázása",
 
 #: lib/FAQ/OMatic/Item.pm:1047
  "Duplicate Category as Answer"
- => "²óÅú¤È¤·¤Æ¥«¥Æ¥´¥ê¤òÊ£À½",
+ => "Kategória duplázása válaszként",
 
 #: lib/FAQ/OMatic/Item.pm:1090
  "Convert to Answer"
- => "²óÅú¤ËÊÑ´¹",
+ => "Válasszá alakít",
 
 #: lib/FAQ/OMatic/Item.pm:1100
  "Convert to Category"
- => "¥«¥Æ¥´¥ê¤ËÊÑ´¹",
+ => "Kategóriává alakít",
 
 #: lib/FAQ/OMatic/Item.pm:1116 lib/FAQ/OMatic/Item.pm:1196
  "New Answer in \"%0\""
- => "\"%0\"Ãæ¤Î¿·¤·¤¤²óÅú",
+ => "Új válasz \"%0\"-ben",
 
 #: lib/FAQ/OMatic/Item.pm:1123
  "New Subcategory of \"%0\""
- => "\"%0\"¤ÎÃæ¤Î¿·¤·¤¤¥µ¥Ö¥«¥Æ¥´¥ê",
+ => "Új kategória \"%0\"-ben",
 
 #: lib/FAQ/OMatic/Item.pm:1149 lib/FAQ/OMatic/Part.pm:346
  "Insert Text Here"
- => "¤³¤³¤Ë¥Æ¥­¥¹¥È¤òÁÞÆþ",
+ => "Szöveg beszúrása ide",
 
 #: lib/FAQ/OMatic/Item.pm:1162 lib/FAQ/OMatic/Part.pm:357
  "Insert Uploaded Text Here"
- => "¥¢¥Ã¥×¥í¡¼¥É¤¹¤ë¥Æ¥­¥¹¥È¤ò¤³¤³¤ËÁÞÆþ",
+ => "Szöveg feltöltése ide",
 
 #: lib/FAQ/OMatic/Item.pm:1212
  "Append to This Answer"
- => "¤³¤ÎÅú¤ËÄÉ²Ã",
+ => "Hozzáfûzés a válaszhoz",
 
 #: lib/FAQ/OMatic/Item.pm:1330
  "This document is:"
- => "¤³¤Î¥É¥­¥å¥á¥ó¥È¤Ï:",
+ => "Ennek az oldalnak a címe:",
 
 #: lib/FAQ/OMatic/Item.pm:1332
  "This document is at:"
- => "¤³¤Î¥É¥­¥å¥á¥ó¥È¤ÎURL¤Ï:",
+ => "Ez a dokumentum megtalálható:",
 
 #: lib/FAQ/OMatic/Item.pm:1376
 #, c-format
  "Group %0"
- => "¥°¥ë¡¼¥× %0",
+ => "Csoport: %0",
 
 #: lib/FAQ/OMatic/Item.pm:1380
  "Users giving their names"
- => "¥æ¡¼¥¶¤Ï¥æ¡¼¥¶Ì¾¤òÍ¿¤¨¤¿",
+ => "Nevüket megadó felhasználók",
 
 #: lib/FAQ/OMatic/Item.pm:1381
  "Authenticated users"
- => "Ç§¾Ú¤µ¤ì¤¿¥æ¡¼¥¶",
+ => "Azonosított felhasználók",
 
 #: lib/FAQ/OMatic/Item.pm:1396
  "New Category"
- => "¿·µ¬¥«¥Æ¥´¥ê",
+ => "Új kategória",
 
 #: lib/FAQ/OMatic/Item.pm:1398
  "New Answer"
- => "¿·¤·¤¤²óÅú",
+ => "Új válasz",
 
 #: lib/FAQ/OMatic/Item.pm:1402
  "Editing Category <b>%0</b>"
- => "¥«¥Æ¥´¥ê¤òÊÔ½¸ <b>%0</b>",
+ => "A(z) <b>%0</b> kategória szerkesztése",
 
 #: lib/FAQ/OMatic/Item.pm:1406
  "Editing Answer <b>%0</b>"
- => "²óÅú¤òÊÔ½¸ <b>%0</b>",
+ => "A(z) <b>%0</b> válasz szerkesztése",
 
 #: lib/FAQ/OMatic/Item.pm:1411
  "Editing %0 <b>%1</b>"
- => "¥«¥Æ¥´¥êÊÔ½¸ <b>%0</b>",
+ => "Editing %0 <b>%1</b>",
 
 #: lib/FAQ/OMatic/Item.pm:1441
  "Title:"
- => "¥¿¥¤¥È¥ë:",
+ => "Cím:",
 
 #: lib/FAQ/OMatic/Item.pm:1446
  "<p>New Order for Text Parts:"
- => "<p>¥Æ¥­¥¹¥È¥Ñ¡¼¥È¤Î¿·¤·¤¤½çÈÖ:",
+ => "<p>A szövegelemek új sorrendje:",
 
 #: lib/FAQ/OMatic/Item.pm:1458
  "Show attributions from all parts together at bottom"
- => "¤¹¤Ù¤Æ¤Î¥Ñ¡¼¥È¤«¤é¤ÎÂ°À­¤òºÇ²¼Éô¤Ë°ì½ï¤ËÉ½¼¨",
+ => "Valamennyi rész tulajdonságának mutatása az oldal alján",
 
 #: lib/FAQ/OMatic/Item.pm:1471 lib/FAQ/OMatic/Item.pm:1667
 #: lib/FAQ/OMatic/Part.pm:560 lib/FAQ/OMatic/editBag.pm:122
  "Submit Changes"
- => "ÊÑ¹¹¤ÎÁ÷¿®",
+ => "Változtatások mentése",
 
 #: lib/FAQ/OMatic/Item.pm:1472 lib/FAQ/OMatic/Item.pm:1668
 #: lib/FAQ/OMatic/Part.pm:561 lib/FAQ/OMatic/editBag.pm:123
  "Revert"
- => "Éüµ¢",
+ => "Visszavonás",
 
 #: lib/FAQ/OMatic/Item.pm:1492
  "Who can add a new text part to this item:"
- => "¤³¤Î¥¢¥¤¥Æ¥à¤Ë¿·¤·¤¤¥Ñ¡¼¥È¤òÄÉ²Ã¤Ç¤­¤ë¿Í:",
+ => "Új szövegrész hozzáadására jogosultak:",
 
 #: lib/FAQ/OMatic/Item.pm:1494
  "Who can add a new answer or category to this category:"
- => "¤³¤Î¥«¥Æ¥´¥ê¤Ë¿·¤·¤¤Åú¤«¥«¥Æ¥´¥ê¤òÄÉ²Ã¤Ç¤­¤ë¿Í:",
+ => "Kategórián belül új válasz vagy kategória hozzáadására jogosultak:",
 
 #: lib/FAQ/OMatic/Item.pm:1496
  "Who can edit or remove existing text parts from this item:"
- => "¤³¤Î¥¢¥¤¥Æ¥à¤«¤éÂ¸ºß¤¹¤ë¥Æ¥­¥¹¥È¥Ñ¡¼¥È¤òÊÔ½¸Ëô¤Ïºï½ü¤Ç¤­¤ë¿Í:",
+ => "Meglévõ szövegrész eltávolítására jogosultak:",
 
 #: lib/FAQ/OMatic/Item.pm:1498
  "Who can move answers or subcategories from this category; or turn this category into an answer or vice versa:"
- => "¤³¤Î¥«¥Æ¥´¥ê¤«¤é²óÅúËô¤Ï¥µ¥Ö¥«¥Æ¥´¥ê¤ò°ÜÆ°¤Ç¤­¤ë¿Í;Ëô¤Ï¤³¤Î¥«¥Æ¥´¥ê¤ò²óÅúËô¤Ï²¿¤«¤ËÊÑ¹¹¤¹¤ë:",
+ => "Válasz vagy kategória áthelyezésére, valamint kategória - válasz konvertálásra jogosultak:",
 
 #: lib/FAQ/OMatic/Item.pm:1500
  "Who can edit the title and options of this answer or category:"
- => "¤³¤Î²óÅú¤«¥«¥Æ¥´¥ê¤Î¥¿¥¤¥È¥ë¤È¥ª¥×¥·¥ç¥ó¤òÊÔ½¸¤Ç¤­¤ë¿Í:",
+ => "A válasz vagy kategória címét és beállítását módosíthatja:",
 
 #: lib/FAQ/OMatic/Item.pm:1502
  "Who can use untranslated HTML when editing the text of this answer or category:"
- => "¤³¤Î²óÅú¤«¥«¥Æ¥´¥ê¤Î¥Æ¥­¥¹¥È¤òÊÔ½¸¤¹¤ë»þ¤ËÊÑ´¹Ìµ¤·¤ÎHTML¤ò»È¤¨¤ë¿Í:",
+ => "HTML-formátum hozzáadására/szerkesztésére jogosult:",
 
 #: lib/FAQ/OMatic/Item.pm:1504
  "Who can change these moderator options and permissions:"
- => "¥â¥Ç¥ì¡¼¥¿¥ª¥×¥·¥ç¥ó¤È¥Ñ¡¼¥ß¥Ã¥·¥ç¥ó¤òÊÑ¹¹¤Ç¤­¤ë¿Í:",
+ => "A moderátor beállításokat és a jogosultságokat módosíthatja:",
 
 #: lib/FAQ/OMatic/Item.pm:1506
  "Who can create new bags:"
- => "¿·¤·¤¤bag¤òºî¤ì¤ë¿Í:",
+ => "Új csomag feltöltésére jogosult:",
 
 #: lib/FAQ/OMatic/Item.pm:1508
  "Who can replace existing bags:"
- => "Â¸ºß¤¹¤ëÂÞ¤òÃÖ´¹¤Ç¤­¤ë¿Í:",
+ => "Meglévõ csomag csréjére jogosult:",
 
 #: lib/FAQ/OMatic/Item.pm:1510
  "Who can access the installation/configuration page (use caution!):"
- => "¥¤¥ó¥¹¥È¡¼¥ë/¹½À®¥Ú¡¼¥¸¤Ë¥¢¥¯¥»¥¹¤Ç¤­¤ë¿Í(»ÈÍÑÃí°Õ!):",
+ => "A telepítés/beállítások oldal elérésére jogosult (Óvatosan!):",
 
 #: lib/FAQ/OMatic/Item.pm:1512
  "Who can use the group membership pages:"
- => "¥°¥ë¡¼¥×¥á¥ó¥Ð¥·¥Ã¥×¥Ú¡¼¥¸¤ò»È¤¨¤ë¿Í:",
+ => "Csoporttagság oldalakat elérheti:",
 
 #: lib/FAQ/OMatic/Item.pm:1529
  "Moderator options for category"
- => "¥«¥Æ¥´¥ê¤Î¤¿¤á¤Î¥â¥Ç¥ì¡¼¥¿¥ª¥×¥·¥ç¥ó",
+ => "Kaegória moderátor-beállításai",
 
 #: lib/FAQ/OMatic/Item.pm:1533
  "Moderator options for answer"
- => "²óÅú¤Î¤¿¤á¤Î¥â¥Ç¥ì¡¼¥¿¥ª¥×¥·¥ç¥ó",
+ => "Válasz moderátor-beállításai",
 
 #: lib/FAQ/OMatic/Item.pm:1538
  "Moderator options for"
- => "±¦µ­¤Î¹àÌÜ¤Î¤¿¤á¤Î¥â¥Ç¥ì¡¼¥¿¥ª¥×¥·¥ç¥ó ",
+ => "Moderátor beállítások:",
 
 #: lib/FAQ/OMatic/Item.pm:1556
  "Name & Description"
- => "Ì¾Á°¤ÈÀâÌÀ",
+ => "Név és leírás",
 
 #: lib/FAQ/OMatic/Item.pm:1557
  "Setting"
- => "ÀßÄê",
+ => "Beállítások",
 
 #: lib/FAQ/OMatic/Item.pm:1558
  "Setting if Inherited"
- => "·Ñ¾µ¤·¤Æ¤¤¤¿¾ì¹ç¤ÎÀßÄê",
+ => "Örökölt beállítások",
 
 #: lib/FAQ/OMatic/Item.pm:1567 lib/FAQ/OMatic/Item.pm:1604
  "(will inherit if empty)"
- => "(¤â¤·¤â¶õÇò¤Ê¤é¤Ð·Ñ¾µ¤µ¤ì¤ë)",
+ => "(öröklõdik, ha üres)",
 
 #: lib/FAQ/OMatic/Item.pm:1577
  "Send mail to the moderator when someone other than the moderator edits this item:"
- => "¥â¥Ç¥ì¡¼¥¿°Ê³°¤Î¤À¤ì¤«¤¬¤³¤Î¥¢¥¤¥Æ¥à¤òÊÔ½¸¤·¤¿»þ¤Ë¥á¡¼¥ë¤ò¥â¥Ç¥ì¡¼¥¿¤ËÁ÷¤ë:",
+ => "Levélküldés a moderátornak, ha valaki más szerkeszti ezt az elemet:",
 
 #: lib/FAQ/OMatic/Item.pm:1583 lib/FAQ/OMatic/Item.pm:1620
  "No"
- => "¤¤¤¤¤¨",
+ => "Nem",
 
 #: lib/FAQ/OMatic/Item.pm:1583 lib/FAQ/OMatic/Item.pm:1620
  "Yes"
- => "¤Ï¤¤",
+ => "Igen",
 
 #: lib/FAQ/OMatic/Item.pm:1583 lib/FAQ/OMatic/Item.pm:1620
 #: lib/FAQ/OMatic/Item.pm:1661
  "undefined"
- => "Ì¤ÄêµÁ",
+ => "nincs meghatározva",
 
 #: lib/FAQ/OMatic/Item.pm:1602
  "Notifier"
- => "ÄÌÃÎÀè",
+ => "Értesítendõ",
 
 #: lib/FAQ/OMatic/Item.pm:1603
  "Send mail to the Notifier when item is created or modified"
- => "¥¢¥¤¥Æ¥à¤¬ºîÀ®Ëô¤ÏÊÑ¹¹¤µ¤ì¤¿»þ¤Ë¥á¡¼¥ë¤òÄÌÃÎÀè¤ËÁ÷¤ë",
+ => "Értesítés küldése változás vagy új elem létrehozása esetén",
 
 #: lib/FAQ/OMatic/Item.pm:1614
  "Send mail to the Notifier when someone other than the moderator edits this item:"
- => "¥â¥Ç¥ì¡¼¥¿°Ê³°¤Î¤À¤ì¤«¤¬¤³¤Î¥¢¥¤¥Æ¥à¤òÊÔ½¸¤·¤¿»þ¤Ë¥á¡¼¥ë¤ò¥â¥Ç¥ì¡¼¥¿¤ËÁ÷¤ë:",
+ => "Levelet küld a megadott címre, ha a moderátoron kívül valaki módosítja ezt az elemet:",
 
 #: lib/FAQ/OMatic/Item.pm:1625
  "Permissions"
- => "¥Ñ¡¼¥ß¥Ã¥·¥ç¥ó",
+ => "Engedélyek",
 
 #: lib/FAQ/OMatic/Item.pm:1647
  "Relax: New answers and subcategories will be moderated "
- => "´ËÏÂ: ¿·¤·¤¤²óÅú¤È¥µ¥Ö¥«¥Æ¥´¥ê¤Ï¡¢¤½¤Î¿·¤·¤¤¥¢¥¤¥Æ¥à¤òÊÔ½¸",
+ => "Relax: New answers and subcategories will be moderated ",
 
 #: lib/FAQ/OMatic/Item.pm:1648
  "by the creator of the item, allowing that person full "
- => "¤¹¤ë¤¿¤á¤Î´°Á´¤Ê¼«Í³¤ò¿Í¡¹¤Ëµö²Ä¤¹¤ë¤³¤È¤ò¥¢¥¤¥Æ¥à¤Îºî¼Ô¤Ë¤è¤Ã¤Æ",
+ => "by the creator of the item, allowing that person full ",
 
 #: lib/FAQ/OMatic/Item.pm:1649
  "freedom to edit that new item."
- => "¥â¥Ç¥ì¡¼¥È¤µ¤ì¤ë¡£",
+ => "freedom to edit that new item.",
 
 #: lib/FAQ/OMatic/Item.pm:1650
  "Don't Relax: new items will be moderated by "
- => "´ËÏÂ¤·¤Ê¤¤: ¿·¤·¤¤¥¢¥¤¥Æ¥à¤Ï¡¢¤³¤Î¥¢¥¤¥Æ¥à¤Î",
+ => "Don't Relax: new items will be moderated by ",
 
 #: lib/FAQ/OMatic/Item.pm:1651
  "the moderator of this item."
- => "¥â¥Ç¥ì¡¼¥¿¤Ë¤è¤Ã¤Æ¥â¥Ç¥ì¡¼¥È¤µ¤ì¤ë¡£",
+ => "the moderator of this item.",
 
 #: lib/FAQ/OMatic/Item.pm:1656 lib/FAQ/OMatic/Item.pm:1660
  "Relax"
- => "´ËÏÂ",
+ => "Relax",
 
 #: lib/FAQ/OMatic/Item.pm:1656 lib/FAQ/OMatic/Item.pm:1660
  "Don't Relax"
- => "´ËÏÂ¤·¤Ê¤¤",
+ => "Don't Relax",
 
 #: lib/FAQ/OMatic/Item.pm:1656
  "Inherit"
- => "|·Ñ¾µ|",
+ => "Inherit",
 
 #: lib/FAQ/OMatic/Item.pm:1690 lib/FAQ/OMatic/Item.pm:1704
  "(system default)"
- => "(¥·¥¹¥Æ¥à´ûÄêÃÍ)",
+ => "(alapértelmezett)",
 
 #: lib/FAQ/OMatic/Item.pm:1696
  "defined in"
- => "±¦µ­¤ÇÄêµÁ",
+ => "defined in",
 
 #: lib/FAQ/OMatic/Item.pm:1775
 #, c-format
  "File %0 seems broken."
- => "¥Õ¥¡¥¤¥ë %0 ¤¬²õ¤ì¤Æ¤¤¤ë¤è¤¦¤Ë¸«¤¨¤ë¡£",
+ => "File %0 seems broken.",
 
 #: lib/FAQ/OMatic/Item.pm:2155
  "Category"
- => "¥«¥Æ¥´¥ê",
+ => "Kategória",
 
 #: lib/FAQ/OMatic/Item.pm:2156
  "Answer"
- => "²óÅú",
+ => "Válasz",
 
 #: lib/FAQ/OMatic/Item.pm:2226
  "Either someone has changed the answer or category you were editing since you received the editing form, or you submitted the same form twice."
- => "¤À¤ì¤«¤¬ÊÔ½¸¥Õ¥©¡¼¥à¤ò¼õ¤±¼è¤Ã¤Æ¤«¤é²óÅúËô¤Ï¥«¥Æ¥´¥ê¤òÊÑ¹¹¤·¤¿¤«¡¢¥Õ¥©¡¼¥à¤òÆó²óÁ÷¿®¤·¤¿",
+ => "A szerkesztett válasz vagy kategória a szerkesztés kezdete óta megváltozott, vagy a változtatásokat többször küldte el.",
 
 #: lib/FAQ/OMatic/Item.pm:2228
  "Please %0 and start again to make sure no changes are lost. Sorry for the inconvenience."
- => "%0 ¤ÈÊÑ¹¹¤·¤Ê¤¤Ê¬¤¬¼º¤ï¤ì¤Ê¤¤¤è¤¦¤Ë¡¢ºÆÅÙ¥¹¥¿¡¼¥È¡£ÉÔÊØ¤òÏÍ¤Ó¤ë¡£",
+ => "Please %0 and start again to make sure no changes are lost. Sorry for the inconvenience.",
 
 #: lib/FAQ/OMatic/Item.pm:2231
  "(Sequence number in form: %0; in item: %1)"
- => "(¥¢¥¤¥Æ¥à %1 Ãæ¤Î¥Õ¥©¡¼¥à: %0 ¤Î¥·¡¼¥±¥ó¥¹ÈÖ¹æ)",
+ => "(Sequence number in form: %0; in item: %1)",
 
 #: lib/FAQ/OMatic/Part.pm:270
  "Edit This Text"
- => "¤³¤Î¥Æ¥­¥¹¥È¤òÊÔ½¸",
+ => "A fenti szöveg szerkesztése",
 
 #: lib/FAQ/OMatic/Part.pm:281
  "Duplicate This Text"
- => "¤³¤Î¥Æ¥­¥¹¥È¤òÊ£À½",
+ => "A fenti szöveg megismétlése",
 
 #: lib/FAQ/OMatic/Part.pm:292 lib/FAQ/OMatic/Part.pm:305
  "Remove This Text"
- => "¤³¤Î¥Æ¥­¥¹¥È¤òºï½ü",
+ => "A szöveg törlése",
 
 #: lib/FAQ/OMatic/Part.pm:317
  "Replace %0 with new upload"
- => "%0 ¤ò¿·¤·¤¤¥¢¥Ã¥×¥í¡¼¥É¤·¤¿¤â¤Î¤ÇÃÖ´¹",
+ => "%0 cseréje (feltöltéssel)",
 
 #: lib/FAQ/OMatic/Part.pm:324
  "Select bag to replace with new upload"
- => "¥¢¥Ã¥×¥í¡¼¥É¤ÇÃÖ´¹¤¹¤ëbag¤òÁªÂò",
+ => "Válassza ki a cserélni kívánt csomagot",
 
 #: lib/FAQ/OMatic/Part.pm:333
  "Upload New Bag Here"
- => "¿·¤·¤¤bag¤ò¤³¤³¤Ë¥¢¥Ã¥×¥í¡¼¥É",
+ => "Új csomag feltöltése ide",
 
 #: lib/FAQ/OMatic/Part.pm:498
  "Upload file:"
- => "¥Õ¥¡¥¤¥ë¤ò¥¢¥Ã¥×¥í¡¼¥É:",
+ => "Feltöltendõ fájl:",
 
 #: lib/FAQ/OMatic/Part.pm:503
  "Warning: file contents will <b>replace</b> previous text"
- => "·Ù¹ð: ¥Õ¥¡¥¤¥ë¤ÎÆâÍÆ¤Ï°ÊÁ°¤Î¥Æ¥­¥¹¥È¤Ç <b>ÃÖ´¹</b> ",
+ => "Figyelem! A fájl tartalma <b>felülírja</b> a korábbi szöveget!",
 
 #: lib/FAQ/OMatic/Part.pm:510
  "Hide Attributions"
- => "Â°À­¤ò±£¤¹",
+ => "Tulajdonságok elrejtése",
 
 #: lib/FAQ/OMatic/Part.pm:513
  "Format text as:"
- => "½ñ¼°¥Æ¥­¥¹¥È¤Ï:",
+ => "Szövegformázás mint:",
 
 #: lib/FAQ/OMatic/Part.pm:523
  "Directory"
- => "¥Ç¥£¥ì¥¯¥È¥ê",
+ => "Könyvtár",
 
 #: lib/FAQ/OMatic/Part.pm:530
  "Natural text"
- => "¼«Á³¤Ê¥Æ¥­¥¹¥È",
+ => "Normál szöveg",
 
 #: lib/FAQ/OMatic/Part.pm:534
  "Monospaced text (code, tables)"
- => "1¤Ä¤Î¥¹¥Ú¡¼¥¹¤Î¥Æ¥­¥¹¥ÈText (¥³¡¼¥É,¥Æ¡¼¥Ö¥ë)",
+ => "Formázott szöveg (forráskód, táblázat)",
 
 #: lib/FAQ/OMatic/Part.pm:549
  "Untranslated HTML"
- => "ÊÑ´¹¤µ¤ì¤Ê¤¤HTML",
+ => "Módosítás nélküli HTML",
 
 #: lib/FAQ/OMatic/Part.pm:699 lib/FAQ/OMatic/addItem.pm:102
 #: lib/FAQ/OMatic/install.pm:1177 lib/FAQ/OMatic/submitAnsToCat.pm:67
  "Answers in this category:"
- => "¤³¤Î¥«¥Æ¥´¥ê¤Î²óÅú",
-
-#: lib/FAQ/OMatic/SearchMod.pm:293
- "zero days"
- => "0Æü",
-
-#: lib/FAQ/OMatic/SearchMod.pm:294
- "day"
- => "Æü",
-
-#: lib/FAQ/OMatic/SearchMod.pm:295
- "two days"
- => "2Æü",
-
-#: lib/FAQ/OMatic/SearchMod.pm:296
- "week"
- => "½µ",
-
-#: lib/FAQ/OMatic/SearchMod.pm:297
- "fortnight"
- => "Æó½µ´Ö",
-
-#: lib/FAQ/OMatic/SearchMod.pm:298
- "month"
- => "·î",
-
-#: lib/FAQ/OMatic/SearchMod.pm:299
- "three months"
- => "3¥ö·î",
-
-#: lib/FAQ/OMatic/SearchMod.pm:300
- "six months"
- => "6¥ö·î",
-
-#: lib/FAQ/OMatic/SearchMod.pm:301
- "year"
- => "Ç¯",
-
-#: lib/FAQ/OMatic/SearchMod.pm:314
- "days"
- => "Æü",
+ => "Válaszok ebben a kategóriában:",
 
 #: lib/FAQ/OMatic/Slow.pm:138
 #, c-format
  "This page will reload every %0 seconds,"
- => "¤³¤Î¥Ú¡¼¥¸¤ÏËè %0 ÉÃ¤´¤È¤Ë¥ê¥í¡¼¥É¤µ¤ì¡¢",
+ => "Az oldal %0 másodpercenként újratöltõdik,",
 
 #: lib/FAQ/OMatic/Slow.pm:141
  "showing the entire process output."
- => "¥×¥í¥»¥¹¤Î½ÐÎÏ¤ÎÁ´Éô¤òÉ½¼¨¤¹¤ë¡£",
+ => "a folyamat teljes kimenetét mutatva.",
 
 #: lib/FAQ/OMatic/Slow.pm:142
  "Show the tail of the process log"
- => "¥×¥í¥»¥¹¥í¥°¤ÎËöÈø¤òÉ½¼¨",
+ => "A folyamatnapló végének mutatása",
 
 #: lib/FAQ/OMatic/Slow.pm:144
 #, c-format
  "showing the last %0 lines of the process output."
- => "¥×¥í¥»¥¹½ÐÎÏ¤ÎºÇ¸å¤Î %0 ¹Ô¤òÉ½¼¨¤¹¤ë¡£",
+ => "a folyamat naplójának utolsó %0 sorát mutatva.",
 
 #: lib/FAQ/OMatic/Slow.pm:145
  "Show the entire process log"
- => "Á´¤Æ¤Î¥×¥í¥»¥¹¥í¥°¤òÉ½¼¨",
+ => "A folyamat teljes naplójának mutatása",
 
 #: lib/FAQ/OMatic/addItem.pm:48 lib/FAQ/OMatic/delPart.pm:47
 #: lib/FAQ/OMatic/editItem.pm:50 lib/FAQ/OMatic/editModOptions.pm:50
@@ -666,1116 +628,1135 @@ sub translations {
 #: lib/FAQ/OMatic/submitCatToAns.pm:48 lib/FAQ/OMatic/submitItem.pm:48
 #: lib/FAQ/OMatic/submitModOptions.pm:47 lib/FAQ/OMatic/submitPart.pm:48
  "The file (%0) doesn't exist."
- => "¥Õ¥¡¥¤¥ë (%0) ¤¬Â¸ºß¤·¤Ê¤¤¡£",
+ => "A fájl (%0) nem létezik.",
 
 #: lib/FAQ/OMatic/addItem.pm:67
  "Copy of"
- => "¢ª¤Î¥³¥Ô¡¼",
+ => "Copy of",
 
 #: lib/FAQ/OMatic/addItem.pm:102 lib/FAQ/OMatic/install.pm:1177
 #: lib/FAQ/OMatic/submitAnsToCat.pm:67
  "Subcategories:"
- => "¥µ¥Ö¥«¥Æ¥´¥ê:",
+ => "Alkategóriák:",
 
 #: lib/FAQ/OMatic/appearanceForm.pm:46
  "Appearance Options"
- => "¸«¤¿ÌÜ¥ª¥×¥·¥ç¥ó",
+ => "Megjelenés beállítása",
 
 #: lib/FAQ/OMatic/appearanceForm.pm:60 lib/FAQ/OMatic/appearanceForm.pm:64
 #: lib/FAQ/OMatic/appearanceForm.pm:68 lib/FAQ/OMatic/appearanceForm.pm:84
 #: lib/FAQ/OMatic/appearanceForm.pm:92
  "Show"
- => "É½¼¨",
+ => "Mutatja",
 
 #: lib/FAQ/OMatic/appearanceForm.pm:60
  "Compact"
- => "½Ì¾®",
+ => "Tömören",
 
 #: lib/FAQ/OMatic/appearanceForm.pm:60 lib/FAQ/OMatic/appearanceForm.pm:64
 #: lib/FAQ/OMatic/appearanceForm.pm:68 lib/FAQ/OMatic/appearanceForm.pm:84
 #: lib/FAQ/OMatic/appearanceForm.pm:92
  "Hide"
- => "ÈóÉ½¼¨",
+ => "Elrejti",
 
 #: lib/FAQ/OMatic/appearanceForm.pm:62 lib/FAQ/OMatic/install.pm:803
  "expert editing commands"
- => "¾åµé¸þ¤±ÊÔ½¸¥³¥Þ¥ó¥É",
+ => "a haladó szerkesztési parancsokat",
 
 #: lib/FAQ/OMatic/appearanceForm.pm:66 lib/FAQ/OMatic/install.pm:808
  "name of moderator who organizes current category"
- => "¸½ºß¤Î¥«¥Æ¥´¥ê¤ò´ÉÍý¤¹¤ë¥â¥Ç¥ì¡¼¥¿Ì¾",
+ => "az aktuális kategória moderátorának nevét",
 
 #: lib/FAQ/OMatic/appearanceForm.pm:70 lib/FAQ/OMatic/install.pm:813
  "last modified date"
- => "ºÇ¸å¤ËÊÑ¹¹¤·¤¿Æü»þ",
+ => "az utolsó módosítás dátumát",
 
 #: lib/FAQ/OMatic/appearanceForm.pm:84
  "Default"
- => "´ûÄêÃÍ",
+ => "Alapértelmezés",
 
 #: lib/FAQ/OMatic/appearanceForm.pm:86 lib/FAQ/OMatic/install.pm:818
  "attributions"
- => "Â°À­",
+ => "tulajdonságok",
 
 #: lib/FAQ/OMatic/appearanceForm.pm:88
  "Simple"
- => "Ã±½ã",
+ => "Egyszerû",
 
 #: lib/FAQ/OMatic/appearanceForm.pm:88
  "Fancy"
- => "¤­¤ì¤¤",
+ => "Fancy",
 
 #: lib/FAQ/OMatic/appearanceForm.pm:94 lib/FAQ/OMatic/install.pm:823
  "commands for generating text output"
- => "¥Æ¥­¥¹¥È½ÐÎÏºîÀ®¤Î¤¿¤á¤Î¥³¥Þ¥ó¥É",
+ => "a szöveges kimenetet készítõ parancsokat",
 
 #: lib/FAQ/OMatic/appearanceForm.pm:126
  "Accept"
- => "µö²Ä",
+ => "Beállít",
 
 #: lib/FAQ/OMatic/authenticate.pm:55
  "Set a New Password"
- => "¿·¤·¤¤¥Ñ¥¹¥ï¡¼¥É¤òÀßÄê",
+ => "Új jelszó beállítása",
 
 #: lib/FAQ/OMatic/authenticate.pm:60
  "Create a New Login"
- => "¿·¤·¤¤¥í¥°¥¤¥ó¤òºîÀ®",
+ => "Új azonosító létrehozása",
 
 #: lib/FAQ/OMatic/authenticate.pm:63
  "That password is invalid. If you've forgotten your old password, you can"
- => "¤½¤Î¥Ñ¥¹¥ï¡¼¥É¤ÏÉÔÀµ¡£¤â¤·¤â¥Ñ¥¹¥ï¡¼¥É¤òËº¤ì¤¿¤é¡¢",
+ => "A megadott jelszó hibás. Amennyiben elfelejtette itt megteheti:",
 
 #: lib/FAQ/OMatic/authenticate.pm:81
 #, c-format
  "New items can only be added by %0."
- => "¿·¤·¤¤¥¢¥¤¥Æ¥à¤Ï %0 ¤Î¤ßÄÉ²Ã¤Ç¤­¤ë¡£",
+ => "Új eleme hozzáadására csak %0 jogosult.",
 
 #: lib/FAQ/OMatic/authenticate.pm:83
 #, c-format
  "New text parts can only be added by %0."
- => "¿·¤·¤¤¥Æ¥­¥¹¥È¥Ñ¡¼¥È¤Ï %0 ¤Î¤ßÄÉ²Ã¤Ç¤­¤ë¡£",
+ => "Új szövegrész hozzáadására csak %0 jogosult.",
 
 #: lib/FAQ/OMatic/authenticate.pm:85
 #, c-format
  "Text parts can only be removed by %0."
- => "¥Æ¥­¥¹¥È¥Ñ¡¼¥È¤Ï %0 ¤Î¤ßºï½ü¤Ç¤­¤ë¡£",
+ => "Szövegrész eltávolítására csak %0 jogosult.",
 
 #: lib/FAQ/OMatic/authenticate.pm:89
  "This part contains raw HTML. To avoid pages with invalid HTML, the moderator has specified that only %0 can edit HTML parts. If you are %0 you may authenticate yourself with this form."
- => "¤³¤Î¥Ñ¡¼¥È¤ÏÀ¸¤ÎHTML¤ò´Þ¤ó¤Ç¤¤¤ë¡£ÉÔÀµ¤ÊHTML¤ò´Þ¤à¥Ú¡¼¥¸¤òËÉ»ß¤¹¤ë¤¿¤á¡¢¥â¥Ç¥ì¡¼¥¿¤Ï %0 ¤Î¤ß¤¬ÊÔ½¸½ÐÍè¤ë¤è¤¦¤Ë»ØÄê¤·¤Æ¤¤¤ë¡£¤â¤·¤â %0 ¤Ê¤é¤Ð¡¢¤³¤Î¥Õ¥©¡¼¥à¤Ç¼«Ê¬¼«¿È¤òÇ§¾Ú¤¹¤ëÉ¬Í×¤¬¤¢¤ë¡£",
+ => "Ez a rész html-kódot tartalmaz. A hibás html-kód használatának megelõzésére a terület moderátora csak %0 számára engedélyezte html-részek szerkesztését. %0-két ezen az oldalon tudja magát azonosítani.",
 
 #: lib/FAQ/OMatic/authenticate.pm:91
 #, c-format
  "Text parts can only be added by %0."
- => "¥Æ¥­¥¹¥È¥Ñ¡¼¥È¤Ï %0 ¤Î¤ßÄÉ²Ã¤Ç¤­¤ë¡£",
+ => "Új szövegrész hozzáadására csak %0 jogosult.",
 
 #: lib/FAQ/OMatic/authenticate.pm:93
 #, c-format
  "Text parts can only be edited by %0."
- => "¥Æ¥­¥¹¥È¥Ñ¡¼¥È¤Ï %0 ¤Î¤ßÊÔ½¸¤Ç¤­¤ë¡£",
+ => "A szövegrészt csak %0 szerkesztheti.",
 
 #: lib/FAQ/OMatic/authenticate.pm:96
 #, c-format
  "The title and options for this item can only be edited by %0."
- => "¤³¤Î¥¢¥¤¥Æ¥à¤Î¥¿¥¤¥È¥ë¤È¥ª¥×¥·¥ç¥ó¤Ï %0 ¤Î¤ßÊÔ½¸¤Ç¤­¤ë¡£",
+ => "A címet és a beállításokat csak %0 szerkesztheti.",
 
 #: lib/FAQ/OMatic/authenticate.pm:98
 #, c-format
  "The moderator options can only be edited by %0."
- => "¥â¥Ç¥ì¡¼¥¿¥ª¥×¥·¥ç¥ó¤Ï %0 ¤Î¤ßÊÔ½¸¤Ç¤­¤ë¡£",
+ => "A moderátor beállításokat csak %0 szerkesztheti.",
 
 #: lib/FAQ/OMatic/authenticate.pm:101
  "This item can only be moved by someone who can edit both the source and destination parent items."
- => "¤³¤Î¥¢¥¤¥Æ¥à¤Ï¥½¡¼¥¹¤È¥Ç¥£¥¹¥È¥Í¡¼¥·¥ç¥ó¿Æ¥¢¥¤¥Æ¥àÎ¾Êý¤òÊÔ½¸¤Ç¤­¤ë¿Í¤Î¤ß¤¬°ÜÆ°¤Ç¤­¤ë¡£",
+ => "Ezt az elemet csak olyan személy helyezheti át, aki szerkesztheti a forrás- és célkönyvtárat.",
 
 #: lib/FAQ/OMatic/authenticate.pm:103
 #, c-format
  "This item can only be moved by %0."
- => "¤³¤Î¥¢¥¤¥Æ¥à¤Ï %0 ¤Î¤ß°ÜÆ°¤Ç¤­¤ë¡£",
+ => "Ezt az elemet csak %0 helyezheti át.",
 
 #: lib/FAQ/OMatic/authenticate.pm:110
 #, c-format
  "Existing bags can only be replaced by %0."
- => "Â¸ºß¤¹¤ëbag¤Ï %0 ¤Î¤ß¹¹¿·¤Ç¤­¤ë¡£",
+ => "Meglévõ csomagot csak %0 cserélhet.",
 
 #: lib/FAQ/OMatic/authenticate.pm:112
 #, c-format
  "Bags can only be posted by %0."
- => "bag¤Ï %0 ¤Î¤ßÅê¹Æ¤Ç¤­¤ë¡£",
+ => "Csomagot csak %0 tölthet föl.",
 
 #: lib/FAQ/OMatic/authenticate.pm:115
 #, c-format
  "The FAQ-O-Matic can only be configured by %0."
- => "FAQ-O-Matic ¤Ï %0 ¤Î¤ß¹½À®¤Ç¤­¤ë¡£",
+ => "A beállításokat csak %0 módosíthatja.",
 
 #: lib/FAQ/OMatic/authenticate.pm:117
  "The operation you attempted (%0) can only be done by %1."
- => "(%0) ¤ËÂÐ¤·¤Æ»î¤ß¤¿Áàºî¤Ï %1 ¤Ë¤è¤Ã¤Æ¤Î¤ß´°Î»¤Ç¤­¤ë¡£",
+ => "A kért mûveletet (%0) csak %1 hajthatja végre.",
 
 #: lib/FAQ/OMatic/authenticate.pm:120
  "If you have never established a password to use with FAQ-O-Matic, you can"
- => "¤â¤·¤â¡¢FAQ-O-Matic ÍÑ¤Î¥Ñ¥¹¥ï¡¼¥É¤ò³ÎÎ©¤·¤Æ¤¤¤Ê¤¤¤Ê¤é¤Ð¡¢±¦µ­¤Ç¥í¥°¥¤¥ó",
+ => "Amennyiben még nincs azonosítója, itt létrehozhat egyet:",
 
 #: lib/FAQ/OMatic/authenticate.pm:121
  "If you have forgotten your password, you can"
- => "¤â¤·¤â¡¢¥Ñ¥¹¥ï¡¼¥É¤òËº¤ì¤¿¤é±¦µ­¤Ç¿·µ¬¥Ñ¥¹¥ï¡¼¥É",
+ => "Ha elfelejtette a jelszavát itt lecserélheti:",
 
 #: lib/FAQ/OMatic/authenticate.pm:122
  "If you have already logged in earlier today, it may be that the token I use to identify you has expired. Please log in again."
- => "¤â¤·¤â´û¤ËËÜÆü¥í¥°¥¤¥ó¤·¤Æ¤¤¤¿¤Ê¤é¤Ð¡¢Ç§¾ÚÍÑ¥È¡¼¥¯¥ó¤ÎÍ­¸ú´ü¸ÂÀÚ¤ì¤Ç¤¢¤ë¡£ºÆÅÙ¥í¥°¥¤¥ó¤¬É¬Í×¡£",
+ => "A bejelentkezése lejárt. Kérem, jelentkezzen be ismét.",
 
 #: lib/FAQ/OMatic/authenticate.pm:136
  "Please offer one of the following forms of identification:"
- => "Ç§¼±¤Î¤¿¤á¤Ë¡¢°Ê²¼¤Î¥Õ¥©¡¼¥à¤Î¤É¤ì¤«¤òÄó½Ð:",
+ => "Válasszon az azonosítási lehetõségek közül:",
 
 #: lib/FAQ/OMatic/authenticate.pm:139
  "No authentication, but my email address is:"
- => "Ç§¾Ú¤¬¤Ê¤¤¤¬¡¢¥á¡¼¥ë¥¢¥É¥ì¥¹¤Ï:",
+ => "Azonosítás nélkül; az email-címem:",
 
 #: lib/FAQ/OMatic/authenticate.pm:140
  "Email:"
- => "¥á¡¼¥ë¥¢¥É¥ì¥¹:",
+ => "Email:",
 
 #: lib/FAQ/OMatic/authenticate.pm:147
  "Authenticated login:"
- => "Ç§¾Ú¥í¥°¥¤¥ó:",
+ => "Azonosított bejelentkezés:",
 
 #: lib/FAQ/OMatic/authenticate.pm:149 lib/FAQ/OMatic/changePass.pm:71
  "Password:"
- => "¥Ñ¥¹¥ï¡¼¥É:",
+ => "Jelszó:",
 
 #: lib/FAQ/OMatic/changePass.pm:48
  "Please enter your username, and select a password."
- => "¤¢¤Ê¤¿¤ÎÌ¾Á°¤òÆþÎÏ¤·¡¢¥Ñ¥¹¥ï¡¼¥É¤òÁªÂò",
+ => "Adja meg a felhasználói azonosítóját, és válasszon jelszót.",
 
 #: lib/FAQ/OMatic/changePass.pm:49
  "I will send a secret number to the email address you enter to verify that it is valid."
- => "Ç§¾Ú¤ò¸¡ºº¤¹¤ë¤¿¤á¤ËÆþÎÏ¤¹¤ë°Å¾ÚÈÖ¹æ¤ò¥á¡¼¥ë¥¢¥É¥ì¥¹¤ËÁ÷¤Ã¤¿¡£",
+ => "A megadott e-mail címre elküldésre kerül egy titkos kód a cím ellenõrzése végett.",
 
 #: lib/FAQ/OMatic/changePass.pm:50
  "If you prefer not to give your email address to this web form, please contact"
- => "¤â¤·¤â¡¢¤³¤ÎWeb¥Õ¥©¡¼¥à¤Ç¥á¡¼¥ë¥¢¥É¥ì¥¹¤òÄó¶¡¤·¤Ê¤«¤Ã¤¿¤é±¦µ­¤ËÏ¢Íí¤ò:",
+ => "Amennyiben nem szeretné megadni a címét vegye fel a kapcsolatot a rendszergazdával:",
 
 #: lib/FAQ/OMatic/changePass.pm:52
  "Please <b>do not</b> use a password you use anywhere else, as it will not be transferred or stored securely!"
- => "°ÂÁ´¤ËÊÝ´É¤âÅ¾Á÷¤â¤µ¤ì¤Æ¤¤¤Ê¤¤¤Î¤Ç¡¢Â¾¤Î¾ì½ê¤Ç¤Ï¥Ñ¥¹¥ï¡¼¥É¤ò<b>»È¤Ã¤Æ¤Ï¤¤¤±¤Ê¤¤</b>¡£",
+ => "Figyelem! <b>Ne adjon meg</b> olyan jelszót, amit máshol is használ, mivel a továbbítása és a tárolása nem védett formában történik!",
 
 #: lib/FAQ/OMatic/changePass.pm:73
  "Set Password"
- => "¥Ñ¥¹¥ï¡¼¥ÉÀßÄê",
+ => "Jelszó beállítása",
 
 #: lib/FAQ/OMatic/editBag.pm:75
  "Replace bag"
- => "bag¤ÎÃÖ´¹",
+ => "Csomag cseréje",
 
 #: lib/FAQ/OMatic/editBag.pm:81
  "Upload new bag to show in the %0 part in <b>%1</b>."
- => "<b>%1</>Ãæ¤Î¥Ñ¡¼¥È %0 Ãæ¤ËÉ½¼¨¤¹¤ë¤¿¤á¤Ë¿·¤·¤¤bag¤ò¥¢¥Ã¥×¥í¡¼¥É",
+ => "Csomag feltöltése <b>%1</b> %0 részéhez.",
 
 #: lib/FAQ/OMatic/editBag.pm:96
  "Bag name:"
- => "BagÌ¾:",
+ => "Csomag neve:",
 
 #: lib/FAQ/OMatic/editBag.pm:98
  "The bag name is used as a filename, so it is restricted to only contain letters, numbers, underscores (_), hyphens (-), and periods (.). It should also carry a meaningful extension (such as .gif) so that web browsers will know what to do with the data."
- => "¥Ð¥Ã¥°Ì¾¤Ï¥Õ¥¡¥¤¥ëÌ¾¤È¤·¤Æ»ÈÍÑ¤µ¤ì¤ë¤¿¤á¡¢Ì¾Á°¤Ï±Ñ¿ô»ú¤È²¼Àþ(_)¡¢¥Ï¥¤¥Û¥ó(-)¤È¥Ô¥ê¥ª¥É(.)¤ËÀ©¸Â¤µ¤ì¤ë¡£¤Þ¤¿¡¢°ÕÌ£¤Î¤¢¤ë³ÈÄ¥»Ò(Îã¤¨¤Ð .gif)¤ÏÅÁÃ£¤µ¤ì¤ë¤¿¤á¡¢Web¥Ö¥é¥¦¥¶¤Ï¥Ç¡¼¥¿¤ËÂÐ¤·¤Æ²¿¤ò¤·¤¿¤é¤¤¤¤¤«¤¬Ê¬¤«¤ë¡£",
+ => "A csomag nevében csak betük, számok, aláhúzás (_), kötõjel valamint pont szerepelhet. Javasolt a tartalomra jellemzõ kiterjesztést használni (például .gif), hogy a böngészõ helyesen jelenítse meg a csomagot.",
 
 #: lib/FAQ/OMatic/editBag.pm:99
  "Hint: Leave blank and Bag Data filename will be used."
- => "¥Ò¥ó¥È: ¶õÇò¤ÈBag¥Ç¡¼¥¿¥Õ¥¡¥¤¥ëÌ¾¤ò»Ä¤¹¤³¤È¤Ï»È¤¦¤³¤È¤¬½ÐÍè¤ë",
+ => "Megjegyzés: Üresen hagyva a csomag neve a fájl nevével fog megegyezni.",
 
 #: lib/FAQ/OMatic/editBag.pm:102
  "Bag data:"
- => "Bag¥Ç¡¼¥¿:",
+ => "Csomag tartalma:",
 
 #: lib/FAQ/OMatic/editBag.pm:106
  "Inline (Images only):"
- => "¥¤¥ó¥é¥¤¥ó(¥¤¥á¡¼¥¸¤Î¤ß)",
+ => "Az oldalban mutatva (csak kép):",
 
 #: lib/FAQ/OMatic/editBag.pm:110
  "(Leave blank to keep original bag data and change only the associated information below.)"
- => "(¥ª¥ê¥¸¥Ê¥ë¤Îbag¥Ç¡¼¥¿¤òÊÝ»ý¤¹¤ë¤¿¤á¤Ë¶õÇò¤ò¼è¤ê½ü¤­´ØÏ¢¤¹¤ë°Ê²¼¤Î¾ðÊó¤À¤±ÊÑ¹¹¡£)",
+ => "(A csomag korábbi tartalmának meghagyásához hagyja üresen. Ekkor csak a lentebb módosított adatok változnak.)",
 
 #: lib/FAQ/OMatic/editBag.pm:114
  "If this bag is an image, fill in its dimensions."
- => "¤â¤·¤âbag¤¬¥¤¥á¡¼¥¸¤Ê¤é¤Ð¤½¤Î¼¡¸µ¤òËä¤á¤ë",
+ => "Amennyiben a csomag képfájl, adja meg a méretét.",
 
 #: lib/FAQ/OMatic/editBag.pm:115
  "Width:"
- => "Éý:",
+ => "Szélesség:",
 
 #: lib/FAQ/OMatic/editBag.pm:117
  "Height:"
- => "¹â¤µ:",
+ => "Magasság:",
 
 #: lib/FAQ/OMatic/editPart.pm:147
  "Enter the answer to <b>%0</b>"
- => "<b>%0</b> ¤Î²óÅú¤òÆþÎÏ",
+ => "Adja meg a választ a következõre: <b>%0</b>",
 
 #: lib/FAQ/OMatic/editPart.pm:149
  "Enter a description for <b>%0</b>"
- => "<b>%0</b> ¤ÎÀâÌÀ¤òÆþÎÏ",
+ => "Adja meg <b>%0</b> leírását",
 
 #: lib/FAQ/OMatic/editPart.pm:151
  "Edit duplicated text for <b>%0</b>"
- => "<b>%0</b> ¤ÎÊ£À½¥Æ¥­¥¹¥È¤òÊÔ½¸",
+ => "Szöveg megismétlése a következõhöz: <b>%0</b>",
 
 #: lib/FAQ/OMatic/editPart.pm:153
  "Enter new text for <b>%0</b>"
- => "<b>%0</b> ¤Î¿·¤·¤¤¥Æ¥­¥¹¥È¤òÆþÎÏ",
+ => "Szöveg megadása a következõhöz: <b>%0</b>",
 
 #: lib/FAQ/OMatic/editPart.pm:158
  "Editing the %0 text part in <b>%1</b>."
- => "<b>%1</b> Ãæ¤Î %0 ¥Æ¥­¥¹¥È¥Ñ¡¼¥È¤òÊÔ½¸¡£",
+ => "A(z) <b>%1</b> %0 szövegrészének szerkesztése.",
 
 #: lib/FAQ/OMatic/editPart.pm:172
  "If you later need to edit or delete this text, use the [Appearance] page to turn on the expert editing commands."
- => "¤â¤·¤â¡¢¤³¤Î¥Æ¥­¥¹¥È¤ò¸å¤ÇÊÔ½¸Ëô¤Ïºï½ü¤¹¤ëÉ¬Í×¤¬¤¢¤ë¾ì¹ç¡¢[¸«¤¿ÌÜ] ¥Ú¡¼¥¸¤Ç¾åµéÊÔ½¸¥³¥Þ¥ó¥É¤òÍ­¸ú¤Ë¤¹¤ëÉ¬Í×¤¬¤¢¤ë¡£",
+ => "Ha késõbb szerkeszteni vagy törölni szeretné ezt a szöveget, használja a [Megjelenés] oldalt a szerkesztõ parancsok bekapcsolásához.",
 
 #: lib/FAQ/OMatic/install.pm:94
  "Faq-O-Matic Installer"
- => "Faq-O-Matic ¥¤¥ó¥¹¥È¡¼¥é",
+ => "Faq-O-Matic telepítõ",
 
 #: lib/FAQ/OMatic/install.pm:122
 #, c-format
  "%0 failed: "
- => "%0 ¤¬¼ºÇÔ¤·¤¿: ",
+ => "%0 sikertelen: ",
 
 #: lib/FAQ/OMatic/install.pm:128
  "Unknown step: \"%0\"."
- => "ÉÔÌÀ¤Î¥¹¥Æ¥Ã¥×: \"%0\".",
+ => "Ismeretlen lépés: \"%0\".",
 
 #: lib/FAQ/OMatic/install.pm:139
  "Updating config to reflect new meta location <b>%0</b>."
- => "¿·¤·¤¤¥á¥¿¥Ç¡¼¥¿¤Î°ÌÃÖ <b>%0</b> ¤òÈ¿±Ç¤µ¤»¤ë¤¿¤á¤Ë¹½À®¤ò¹¹¿·",
+ => "Beállítások frissítése a \"meta\" új helyéhez: <b>%0</b>.",
 
 #: lib/FAQ/OMatic/install.pm:157
  "(Can't find <b>config</b> in '%0' -- assuming this is a new installation.)"
- => "('%0' Ãæ¤Ë <b>config</b> ¤¬¸«ÉÕ¤«¤é¤Ê¤¤ -- ¿·¤·¤¤¥¤¥ó¥¹¥È¡¼¥ë¤È²¾Äê¡£)",
+ => "(Nem találtam a %0/<b>config</b>-ot -- új telepítés feltételezve)",
 
 #: lib/FAQ/OMatic/install.pm:181
 #, c-format
  "Click here</a> to create %0."
- => "%0 ¤òºîÀ®¤¹¤ë¤¿¤á¤Ë¤³¤³¤ò¥¯¥ê¥Ã¥¯</a>¡£",
+ => "Kattintson ide</a> a %0 elkészítéséhez.",
 
 #: lib/FAQ/OMatic/install.pm:183
  "If you want to change the CGI stub to point to another directory, edit the script and then"
- => "¤â¤·¤â¡¢CGI¥¹¥¿¥Ö¤òÊÌ¥Ç¥£¥ì¥¯¥È¥ê¤ò¼¨¤¹¤è¤¦¤ËÊÑ¹¹¤·¤¿¤¤¤Ê¤é¡¢¥¹¥¯¥ê¥×¥È¤òÊÔ½¸¤·¡¢",
+ => "If you want to change the CGI stub to point to another directory, edit the script and then",
 
 #: lib/FAQ/OMatic/install.pm:186
  "click here to use the new location"
- => "¿·¤·¤¤¥í¡¼¥±¡¼¥·¥ç¥ó¤ò»È¤¦¤¿¤á¤Ë¤³¤³¤ò¥¯¥ê¥Ã¥¯",
+ => "click here to use the new location",
 
 #: lib/FAQ/OMatic/install.pm:188
  "FAQ-O-Matic stores files in two main directories.<p>The <b>meta/</b> directory path is encoded in your CGI stub (%0). It contains:"
- => "FAQ-O-Matic ¤Ï¥Õ¥¡¥¤¥ë¤ò2¤Ä¤Î¥Ç¥£¥ì¥¯¥È¥ê¤Ë³ÊÇ¼¤¹¤ë¡£<p><b>meta/</b>¥Ç¥£¥ì¥¯¥È¥ê¥Ñ¥¹¤ÏCGI¥¹¥¿¥Ö($0)Ãæ¤Ë¥¨¥ó¥³¡¼¥É¤µ¤ì¡¢°Ê²¼¤ò´Þ¤à:",
+ => "FAQ-O-Matic stores files in two main directories.<p>The <b>meta/</b> directory path is encoded in your CGI stub (%0). It contains:",
 
 #: lib/FAQ/OMatic/install.pm:189
  "<ul><li>the <b>config</b> file that tells FAQ-O-Matic where everything else lives. That's why the CGI stub needs to know where meta/ is, so it can figure out the rest of its configuration. <li>the <b>idfile</b> file that lists user identities. Therefore, meta/ should not be accessible via the web server. <li>the <b>RCS/</b> subdirectory that tracks revisions to FAQ items. <li>various hint files that are used as FAQ-O-Matic runs. These can be regenerated automatically.</ul>"
- => "<ul><li><b>config</b>¥Õ¥¡¥¤¥ë¤Ï²ÔÆ¯¾õ¶·°Ê³°¤Î¡¢¤É¤³¤ËFAQ-O-Matic¤ÎÁ´¤Æ¤¬¤¢¤ë¤«¤òµ­½Ò¤¹¤ë¡£¤½¤ì¤Ï¤Ê¤¼CGI¥¹¥¿¥Ö¤¬¤É¤³¤Ë meta/ ¤¬¤¢¤ë¤«¤òÃÎ¤ëÉ¬Í×¤¬¤¢¤ë¤È¸À¤¦»ö¤Ç¤¢¤ê¡¢¤½¤Î¹½À®¤Î»Ä¤ê¤ò»Ø¤·¼¨¤¹¡£<li><b>idfile</b> ¤Ï¥æ¡¼¥¶¼±ÊÌ¾ðÊó¤òÊÝ»ý¤¹¤ë¡£¤½¤Î¤¿¤á¡¢meta/ ¤ÏWeb ¥µ¡¼¥Ð·ÐÍ³¤Ç¥¢¥¯¥»¥¹¤Ç¤­¤Æ¤Ï¤¤¤±¤Ê¤¤¡£<li><b>RCS/</b>¥µ¥Ö¥Ç¥£¥ì¥¯¥È¥ê¤ÏFAQ¤Î³Æ¥¢¥¤¥Æ¥à¤òÄÉÀ×¤¹¤ë¡£<li>¼ï¡¹¤Î¥Ò¥ó¥È¥Õ¥¡¥¤¥ë¤ÏFAQ-O-Matic¼Â¹Ô»þ¤Ë»È¤ï¤ì¤ë¡£¤½¤ì¤é¤Ï¼«Æ°Åª¤ËºÆÀ¸À®¤µ¤ì¤ë¡£</ul>",
+ => "<ul><li>the <b>config</b> file that tells FAQ-O-Matic where everything else lives. That's why the CGI stub needs to know where meta/ is, so it can figure out the rest of its configuration. <li>the <b>idfile</b> file that lists user identities. Therefore, meta/ should not be accessible via the web server. <li>the <b>RCS/</b> subdirectory that tracks revisions to FAQ items. <li>various hint files that are used as FAQ-O-Matic runs. These can be regenerated automatically.</ul>",
 
 #: lib/FAQ/OMatic/install.pm:190
  "<p>The <b>serve/</b> directory contains three subdirectories <b>item/</b>, <b>cache/</b>, and <b>bags/</b>. These directories are created and populated by the FAQ-O-Matic CGI, but should be directly accessible via the web server (without invoking the CGI)."
- => "<p><b>serve/</b>¥Ç¥£¥ì¥¯¥È¥ê¤Ï3¤Ä¤Î¥µ¥Ö¥Ç¥£¥ì¥¯¥È¥ê: <b>item/</b>, <b>cache/</b>¤È<b>bags/</b>¤ò´Þ¤à¡£¤½¤ì¤é¤Î¥Ç¥£¥ì¥¯¥È¥ê¤Ï¡¢FAQ-O-Matic-CGI ¤Ë¤è¤Ã¤ÆºîÀ®¤µ¤ì¡¢°ìÈÌ²½¤µ¤ì¤ë¤¬¡¢web¥µ¡¼¥Ð¤«¤é(CGIµ¯Æ°¤Ê¤·¤Æ)Ä¾ÀÜ¥¢¥¯¥»¥¹²ÄÇ½¤Ç¤Ê¤±¤ì¤Ð¤Ê¤é¤Ê¤¤¡£).",
+ => "<p>The <b>serve/</b> directory contains three subdirectories <b>item/</b>, <b>cache/</b>, and <b>bags/</b>. These directories are created and populated by the FAQ-O-Matic CGI, but should be directly accessible via the web server (without invoking the CGI).",
 
 #: lib/FAQ/OMatic/install.pm:191
  "<ul><li>serve/item/ contains only FAQ-O-Matic formatted source files, which encode both user-entered text and the hierarchical structure of the answers and categories in the FAQ. These files are only accessed through the web server (rather than the CGI) when another FAQ-O-Matic is mirroring this one. <li>serve/cache/ contains a cache of automatically-generated HTML versions of FAQ answers and categories. When possible, the CGI directs users to the cache to reduce load on the server. (CGI hits are far more expensive than regular file loads.) <li>serve/bags/ contains image files and other ``bags of bits.'' Bit-bags can be linked to or inlined into FAQ items (in the case of images). </ul>"
- => "<ul><li>serve/item/ ¤Ï FAQ-O-Matic·Á¼°¤Î¥½¡¼¥¹¥Õ¥¡¥¤¥ë¤Î¤ßÊÝ»ý¤·¡¢¤½¤ì¤Ï¡¢¥æ¡¼¥¶¤¬ÆþÎÏ¤·¤¿¥Æ¥­¥¹¥È¤ÈFAQÃæ¤Î³¬ÁØ¹½Â¤¤Î²óÅú¤È¥«¥Æ¥´¥ê¤ò¥¨¥ó¥³¡¼¥É¤¹¤ë¡£¤½¤ì¤é¤Î¥Õ¥¡¥¤¥ë¤Ï¡¢Â¾¤ÎFAQ-O-Matic¤¬¤½¤ì¤ò¥ß¥é¡¼¤¹¤ë»þ¤Ï¡¢web¥µ¡¼¥Ð¤ò·ÐÍ³¤·¤Æ¤Î¤ß(¤È¤¤¤¦¤è¤ê¤ÏCGI·ÐÍ³)¥¢¥¯¥»¥¹¤Ç¤­¤ë¡£<li>serve/cache/ ¥Ç¥£¥ì¥¯¥È¥ê¤Ï¼«Æ°Åª¤ËÀ¸À®¤µ¤ì¤¿¡¢HTML¥Ð¡¼¥¸¥ç¥ó¤ÎFAQ¤Î²óÅú¤È¥«¥Æ¥´¥ê¤Î¥­¥ã¥Ã¥·¥å¤òÊÝ»ý¤¹¤ë¡£¤â¤·¤â²ÄÇ½¤Ê¤é¤Ð¡¢CGI¤Ï¥µ¡¼¥ÐÉé²Ù¤Î·Ú¸º¤Î¤¿¤á¤Ë¡¢¥­¥ã¥Ã¥·¥å¤ò»Ø¤·¼¨¤¹¡£(CGI¤Î¥Ò¥Ã¥È¤ÏÄÌ¾ï¤Î¥Õ¥¡¥¤¥ë¤Î¥í¡¼¥É¤è¤ê¤Ï¤Ï¤ë¤«¤Ë¥³¥¹¥È¤¬¤«¤«¤ë¡£)<li>serve/bags/ ¤Ï¥¤¥á¡¼¥¸¥Õ¥¡¥¤¥ë¤È¤½¤ÎÂ¾¤Î¾ðÊó¤ò´Þ¤à¡£¤½¤ÎÂ¾¤Î¾ðÊó¤Îbag¤ÏFAQ¥¢¥¤¥Æ¥àÃæ¤Ë¥ê¥ó¥¯¤Ç¤­¤ë(¥¤¥á¡¼¥¸¤Î¾ì¹ç)¡£</ul>",
+ => "<ul><li>serve/item/ contains only FAQ-O-Matic formatted source files, which encode both user-entered text and the hierarchical structure of the answers and categories in the FAQ. These files are only accessed through the web server (rather than the CGI) when another FAQ-O-Matic is mirroring this one. <li>serve/cache/ contains a cache of automatically-generated HTML versions of FAQ answers and categories. When possible, the CGI directs users to the cache to reduce load on the server. (CGI hits are far more expensive than regular file loads.) <li>serve/bags/ contains image files and other ``bags of bits.'' Bit-bags can be linked to or inlined into FAQ items (in the case of images). </ul>",
 
 #: lib/FAQ/OMatic/install.pm:203 lib/FAQ/OMatic/install.pm:218
 #: lib/FAQ/OMatic/install.pm:277 lib/FAQ/OMatic/install.pm:631
  "I couldn't create <b>%0</b>: %1"
- => "<b>%0</b>¤òºîÀ®¤Ç¤­¤Ê¤¤: %1",
+ => "Nem tudom létrehozni: %1 <b>%0</b>.",
 
 #: lib/FAQ/OMatic/install.pm:207 lib/FAQ/OMatic/install.pm:222
 #: lib/FAQ/OMatic/install.pm:634
  "Created <b>%0</b>."
- => "<b>%0</b> ¤òºîÀ®¤·¤¿¡£",
+ => "<b>%0</b> létrehozva.",
 
 #: lib/FAQ/OMatic/install.pm:210 lib/FAQ/OMatic/install.pm:225
 #: lib/FAQ/OMatic/install.pm:637
  "I don't have write permission to <b>%0</b>."
- => "<b>%0</b>¤ËÂÐ¤¹¤ë½ñ¤­¹þ¤ßµö²Ä¤ò»ý¤Ã¤Æ¤¤¤Ê¤¤¡£",
+ => "Nincs jogom írni: <b>%0</b>.",
 
 #: lib/FAQ/OMatic/install.pm:269
  "Created new config file."
- => "¿·¤·¤¤¹½À®¥Õ¥¡¥¤¥ë¤òºîÀ®¤·¤¿¡£",
+ => "Új konfigurációs állomány létrehozva.",
 
 #: lib/FAQ/OMatic/install.pm:283
  "The idfile exists."
- => "idfile ¤¬Â¸ºß¤·¤Æ¤¤¤ë¡£",
+ => "Az <em>idfile</em> már létezik.",
 
 #: lib/FAQ/OMatic/install.pm:332
  "Configuration Main Menu (install module)"
- => "¹½À®¥á¥¤¥ó¥á¥Ë¥å¡¼(¥â¥¸¥å¡¼¥ë¥¤¥ó¥¹¥È¡¼¥ë)",
+ => "Beállítások fõmenü (telepítési mód)",
 
 #: lib/FAQ/OMatic/install.pm:333
  "Perform these tasks in order to prepare your FAQ-O-Matic version %0:"
- => "¤¢¤Ê¤¿¤Î FAQ-O-Matic ¥Ð¡¼¥¸¥ç¥ó %0¤ò½àÈ÷¤¹¤ë¤¿¤á¤Ë¤³¤ì¤é¤Î½èÍý¤ò¼Â¹Ô:",
+ => "A FAQ-O-Matic %0 használatba vételéhez szükséges tevékenységek:",
 
 #: lib/FAQ/OMatic/install.pm:338
  "Define configuration parameters"
- => "¹½À®¥Ñ¥é¥á¡¼¥¿¤ÎÄêµÁ",
+ => "Rendszerparaméterek beállítása",
 
 #: lib/FAQ/OMatic/install.pm:343 lib/FAQ/OMatic/install.pm:348
  "Set your password and turn on installer security"
- => "¥Ñ¥¹¥ï¡¼¥ÉÀßÄê¤·¡¢¥¤¥ó¥¹¥È¡¼¥é¤Î¥»¥­¥å¥ê¥Æ¥£¤òÍ­¸ú¤Ë¤¹¤ë",
+ => "Állítsa be a jelszavát és kapcsolja be a telepítõ védelmét",
 
 #: lib/FAQ/OMatic/install.pm:349
+#, fuzzy
  "(Need to configure \$mailCommand and \$adminAuth)"
- => "(\$mailCommand ¤È \$adminAuth ¤Î¹½À®¤¬É¬Í×)",
+# fuzzy # => "(Need to configure $mailCommand and $adminAuth)",
+ => "",
 
 #: lib/FAQ/OMatic/install.pm:355
  "(Installer security is on)"
- => "(¥¤¥ó¥¹¥È¡¼¥é¤Î¥»¥­¥å¥ê¥Æ¥£¤¬Í­¸ú)",
+ => "(Telepítõ védelme: <em>aktív</em>)",
 
 #: lib/FAQ/OMatic/install.pm:360
  "Create item, cache, and bags directories in serve dir"
- => "¥µ¡¼¥ÐÃæ¤Î¥¢¥¤¥Æ¥à¡¢¥­¥ã¥Ã¥·¥å¤Èbag¥Ç¥£¥ì¥¯¥È¥ê¤ÎºîÀ®",
+ => "Az elemeket tároló könyvtárak (item, cache, bags) létrehozása",
 
 #: lib/FAQ/OMatic/install.pm:368
  "Copy old items</a> from <tt>%0</tt> to <tt>%1</tt>."
- => "¸Å¤¤¥¢¥¤¥Æ¥à</a> ¤ò <tt>%0</tt> ¤«¤é <tt>%1</tt> ¤ËÊ£¼Ì",
+ => "Régi elemek másolása</a>. Forrás:<tt>%0</tt>, cél: <tt>%1</tt>.",
 
 #: lib/FAQ/OMatic/install.pm:375
  "Install any new items that come with the system"
- => "¥·¥¹¥Æ¥àÍ³Íè¤Î¿·¤·¤¤¥¢¥¤¥Æ¥à¤Î¥¤¥ó¥¹¥È¡¼¥ë",
+ => "Install any new items that come with the system",
 
 #: lib/FAQ/OMatic/install.pm:380
  "Create system default items"
- => "¥·¥¹¥Æ¥à´ûÄêÃÍ¤Î¥¢¥¤¥Æ¥à¤ÎºîÀ®",
+ => "A rendszer alapvetõ elemeinek létrehozása (súgó, szemetes, stb.)",
 
 #: lib/FAQ/OMatic/install.pm:388
  "Rebuild the cache and dependency files"
- => "¥­¥ã¥Ã¥·¥å¤È°ÍÂ¸¤¹¤ë¥Õ¥¡¥¤¥ë¤ÎºÆºîÀ®",
+ => "A függõségek és a cache-állományok frissítése",
 
 #: lib/FAQ/OMatic/install.pm:395
  "Install system images and icons"
- => "¥·¥¹¥Æ¥àÍÑ¤Î¥¤¥á¡¼¥¸¤È¥¢¥¤¥³¥ó¤Î¥¤¥ó¥¹¥È¡¼¥ë",
+ => "A rendszer képeinek és ikonjainak telepítése",
 
 #: lib/FAQ/OMatic/install.pm:403
  "Update mirror from master now. (this can be slow!)"
- => "¥ß¥é¡¼¤Î¥Þ¥¹¥¿¤«¤é¤Î¹¹¿·(ÃÙ¤¤¾ì¹ç¤¢¤ê!)",
+ => "Tükör frissítése az eredetibõl. (Ez lassú lehet!)",
 
 #: lib/FAQ/OMatic/install.pm:409
  "Set up the maintenance cron job"
- => "¥á¥ó¥Æ¥Ê¥ó¥¹ÍÑcron¥¸¥ç¥Ö¤ÎÀßÄê",
+ => "A karbantartást végzõ cron job beállítása",
 
 #: lib/FAQ/OMatic/install.pm:415 lib/FAQ/OMatic/install.pm:420
  "Run maintenance script manually now"
- => "¥á¥ó¥Æ¥Ê¥ó¥¹¥¹¥¯¥ê¥×¥È¤Î¼êÆ°¼Â¹Ô",
+ => "Karbantartás kézi futtatása",
 
 #: lib/FAQ/OMatic/install.pm:422
  "(Need to set up the maintenance cron job first)"
- => "(ºÇ½é¤Ë¥á¥ó¥Æ¥Ê¥ó¥¹cron¥¸¥ç¥Ö¤ÎÀßÄê¤¬É¬Í×)",
+ => "(Elõbb be kell állítani a karbantartást végzõ cron job-ot)",
 
 #: lib/FAQ/OMatic/install.pm:430
  "Maintenance last run at:"
- => "ºÇ¸å¤Ë¼Â¹Ô¤µ¤ì¤¿¤â¤Î¤Î¥á¥ó¥Æ¥Ê¥ó¥¹:",
+ => "Utolsó karbantartás idõpontja:",
 
 #: lib/FAQ/OMatic/install.pm:435
 #, c-format
  "Mark the config file as upgraded to Version %0"
- => "¹½À®¥Õ¥¡¥¤¥ë¤ò¥Ð¡¼¥¸¥ç¥ó %0 ¤Ë¥¢¥Ã¥×¥°¥ì¡¼¥É¤¹¤ë¤è¤¦¤Ë¥Þ¡¼¥¯",
+ => "A verziószám (%0) bejegyzése a konfigurációs állományba",
 
 #: lib/FAQ/OMatic/install.pm:441
  "Select custom colors for your Faq-O-Matic</a> (optional)"
- => "Faq-O-MaticÍÑ¤Î¥«¥¹¥¿¥à¥«¥é¡¼¤ÎÁªÂò</a> (Ç¤°Õ)",
+ => "Egyedi szinek beállítása</a> (opcionális)",
 
 #: lib/FAQ/OMatic/install.pm:445
  "Define groups</a> (optional)"
- => "¥°¥ë¡¼¥×¤ÎÄêµÁ</a> (Ç¤°Õ)",
+ => "csoportok létrehozása</a> (opcionális)",
 
 #: lib/FAQ/OMatic/install.pm:451
  "Upgrade to CGI.pm version 2.49 or newer."
- => "CGI.pm ¤ò¥Ð¡¼¥¸¥ç¥ó 2.49 °Ê¹ß¤Ë¹¹¿·¤»¤è¡£",
+ => "Frissítés a CGI.pm 2.49-es vagy frissebb verzióra.",
 
 #: lib/FAQ/OMatic/install.pm:454
  "(optional; older versions have bugs that affect bags)"
- => "(Ç¤°Õ; ¸Å¤¤¥Ð¡¼¥¸¥ç¥ó¤Ïbag¤Ë±Æ¶Á¤¹¤ë¥Ð¥°¤ò»ý¤Ä)",
+ => "(opcionális, a korábbi verzók hibája a csomagok kezelését érinti)",
 
 #: lib/FAQ/OMatic/install.pm:457
 #, c-format
  "You are using version %0 now."
- => "¸½ºß¥Ð¡¼¥¸¥ç¥ó %0 ¤ò»ÈÍÑ¤·¤Æ¤¤¤ë¡£",
+ => "A CGI.pm verziója: %0",
 
 #: lib/FAQ/OMatic/install.pm:462
  "Bookmark this link to be able to return to this menu."
- => "¤³¤Î¥á¥Ë¥å¡¼¤ËÌá¤ì¤ë¤è¤¦¤Ë¡¢¥ê¥ó¥¯¤ò¥Ö¥Ã¥¯¥Þ¡¼¥¯¤ËÊÝÂ¸¤·¤Ê¤µ¤¤¡£",
+ => "Könyvjelzõ beállítása erre az oldalra.",
 
 #: lib/FAQ/OMatic/install.pm:473
  "(need to turn on installer security)"
- => "(¥¤¥ó¥¹¥È¡¼¥é¤Î¥»¥­¥å¥ê¥Æ¥£¤òÍ­¸ú¤Ë¤¹¤ëÉ¬Í×¤¬¤¢¤ë)",
+ => "(A telepítõ biztonságának aktiválása szükséges)",
 
 #: lib/FAQ/OMatic/install.pm:476
  "Other available tasks:"
- => "Â¾¤ÎÍ­¸ú¤Ê¥¿¥¹¥¯:",
+ => "Egyéb tevékenységek:",
 
 #: lib/FAQ/OMatic/install.pm:480
  "See access statistics"
- => "¥¢¥¯¥»¥¹Åý·×¤ò¸«¤ë",
+ => "Statisztika megtekintése",
 
 #: lib/FAQ/OMatic/install.pm:485
  "Examine all bags"
- => "¤¹¤Ù¤Æ¤Îbag¤ò¸¡ºº",
+ => "Valamennyi csomag vizsgálata",
 
 #: lib/FAQ/OMatic/install.pm:491
  "Check for unreferenced bags (not linked by any FAQ item)"
- => "Ì¤»²¾È¤Îbag(FAQ¥¢¥¤¥Æ¥à¤Ë¥ê¥ó¥¯¤µ¤ì¤Æ¤¤¤Ê¤¤)¤ò¥Á¥§¥Ã¥¯",
+ => "Nem hivatkozott (nem mutat rá link sehonnan) csomagok vizsgálata.",
 
 #: lib/FAQ/OMatic/install.pm:497
  "Empty old trash now"
- => "¸Å¤¤¥´¥ßÈ¢¤òº£ºï½ü",
+ => "Kuka ürítése",
 
 #: lib/FAQ/OMatic/install.pm:503
  "fsck (check and repair tree structure) now"
- => "fsck(ÌÚ¹½Â¤¤Î¸¡ºº¤È½¤Éü)",
+ => "A struktúra ellenõrzése és javításe (fsck)",
 
 #: lib/FAQ/OMatic/install.pm:509
  "rebuild search database now"
- => "¸¡º÷¥Ç¡¼¥¿¥Ù¡¼¥¹¤òº£ºÆ¹½À®",
+ => "",
 
 #: lib/FAQ/OMatic/install.pm:517
  "Rebuild the cache and dependency files now"
- => "¥­¥ã¥Ã¥·¥å¤È°ÍÂ¸¤¹¤ë¥Õ¥¡¥¤¥ë¤ÎºÆºîÀ®",
+ => "A függõségek és a cache-állományok frissítése",
 
 #: lib/FAQ/OMatic/install.pm:522
 #, c-format
  "The Faq-O-Matic modules are version %0."
- => "Faq-O-Matic¤Î¥â¥¸¥å¡¼¥ë¤Î¥Ð¡¼¥¸¥ç¥ó¤Ï %0¡£",
+ => "A FAQ-O-Matic modulok verziószáma: %0.",
 
 #: lib/FAQ/OMatic/install.pm:641
  "I wasn't able to change the permissions on <b>%0</b> to 755 (readable/searchable by all)."
- => "<b>%0</b> ¤Î¥Ñ¡¼¥ß¥Ã¥·¥ç¥ó¤ò 755 ¤Ë¤Ç¤­¤Ê¤¤(Á´¤Æ¤Î¥æ¡¼¥¶¤Ë ÆÉ¤ß/¸¡º÷¤òµö²Ä)¡£",
+ => "Nem sikerült <b>%0</b> elérhetõségét 755-re (olvasható/kereshetõ mindenkinek) beállítani.",
 
 #: lib/FAQ/OMatic/install.pm:656 lib/FAQ/OMatic/install.pm:657
  "updated config file:"
- => "¹½À®¥Õ¥¡¥¤¥ë¤ò¹¹¿·:",
+ => "Beállítások frissítve:",
 
 #: lib/FAQ/OMatic/install.pm:664
  "Redefine configuration parameters to ensure that <b>%0</b> is valid."
- => "<b>%0</b> ¤ÎÍ­¸ú²½¤ò³Î¼Â¤Ë¤¹¤ë¤¿¤á¤Ë¹½À®¥Õ¥¡¥¤¥ë¥Ñ¥é¥á¡¼¥¿¤òºÆÄêµÁ¡£",
+ => "Redefine configuration parameters to ensure that <b>%0</b> is valid.",
 
 #: lib/FAQ/OMatic/install.pm:676
  "Jon made a mistake here; key=%0, property=%1."
- => "Jon¤Ï¤³¤³¤Ç¥ß¥¹¤ò¤·¤¿; key=%0, property=%1.",
+ => "Jon made a mistake here; key=%0, property=%1.",
 
 #: lib/FAQ/OMatic/install.pm:705
  "<b>Mandatory:</b> System information"
- => "<b>É¬¿Ü:</b> ¥·¥¹¥Æ¥à¾ðÊó",
+ => "<b>Kötelezõ:</b> Rendszerinformációk",
 
 #: lib/FAQ/OMatic/install.pm:708
  "Identity of local FAQ-O-Matic administrator (an email address)"
- => "¥í¡¼¥«¥ë¤Î FAQ-O-Matic´ÉÍý¼Ô¤Î¼±ÊÌ(¥á¡¼¥ë¥¢¥É¥ì¥¹)",
+ => "A FAQ-O-Matic adminisztrátor e-mail címe:",
 
 #: lib/FAQ/OMatic/install.pm:710
  "A command FAQ-O-Matic can use to send mail. It must either be sendmail, or it must understand the -s (Subject) switch."
- => "FAQ-O-Matic¤¬¥á¡¼¥ëÁ÷¿®¤Ë»È¤¦¥³¥Þ¥ó¥É¡£¤½¤ì¤Ïsendmail¤« -s(ÂêÌ¾)¥¹¥¤¥Ã¥Á¤òÇ§¼±¤·¤Ê¤±¤ì¤Ð¤Ê¤é¤Ê¤¤¡£",
+ => "E-mail küldésére használható parancs. A programnak ismernie kell a -s (Tárgy) kapcsolót.",
 
 #: lib/FAQ/OMatic/install.pm:712
  "The command FAQ-O-Matic can use to install a cron job."
- => "cron¥¸¥ç¥Ö¤ò¥¤¥ó¥¹¥È¡¼¥ë¤¹¤ë¤Î¤Ë»È¤¦¥³¥Þ¥ó¥É¡£",
+ => "A cron job létrehozására szolgáló parancs.",
 
 #: lib/FAQ/OMatic/install.pm:716
  "Path to the <b>ci</b> command from the RCS package."
- => "RCS¥Ñ¥Ã¥±¡¼¥¸¤Î <b>ci</b> ¥³¥Þ¥ó¥É¤Ø¤Î¥Ñ¥¹¡£",
+ => "Az RCS csomag <b>ci</b> parancsának elérési útvonala.",
 
 #: lib/FAQ/OMatic/install.pm:719
  "Path to the <b>co</b> command from the RCS package."
- => "RCS¥Ñ¥Ã¥±¡¼¥¸¤Î <b>co</b> ¥³¥Þ¥ó¥É¤Ø¤Î¥Ñ¥¹¡£",
+ => "Az RCS csomag <b>co</b> parancsának elérési útvonala.",
 
 #: lib/FAQ/OMatic/install.pm:722
  "<b>Mandatory:</b> Server directory configuration"
- => "<b>É¬¿Ü:</b> ¥µ¡¼¥Ð¥Ç¥£¥ì¥¯¥È¥ê¹½À®",
+ => "<b>Kötelezõ:</b> Szerver-könyvtárak beállítása",
 
 #: lib/FAQ/OMatic/install.pm:724
  "Protocol, host, and port parts of the URL to your site. This will be used to construct link URLs. Omit the trailing '/'; for example: <tt>http://www.dartmouth.edu</tt>"
- => "ºîÀ®¥µ¥¤¥È¤ÎURL¤Î¥×¥í¥È¥³¥ë¡¢¥Û¥¹¥È¤È¥Ý¡¼¥ÈÈÖ¹æÉôÊ¬¡£¤³¤ì¤ÏURL¤Î¥ê¥ó¥¯¤Î¹½ÃÛ¤Ë»È¤ï¤ì¤ë¡£ºÇ¸å¤Î '/'¤ò¾ÊÎ¬¤·¤Ê¤µ¤¤¡£Îã:<tt>http://www.dartmouth.edu</tt>",
+ => "A FAQ-O-Matic-ban használt URL-ek protokoll, szervernév, port része. (A záró / elhagyásával, például <tt>http://www.dartmouth.edu</tt>)",
 
 #: lib/FAQ/OMatic/install.pm:727
  "The path part of the URL used to access this CGI script, beginning with '/' and omitting any parameters after the '?'. For example: <tt>/cgi-bin/cgiwrap/jonh/faq.pl</tt>"
- => "¤³¤ÎCGI¥¹¥¯¥ê¥×¥È¤Ë¥¢¥¯¥»¥¹¤¹¤ë¤¿¤á¤ÎURL¤Î¥Ñ¥¹¤ÎÉôÊ¬¤Ç¡¢'/'¤Ç»Ï¤Þ¤ê¡¢'?'°Ê¹ß¤ÎÇ¤°Õ¤Î¥Ñ¥é¥á¡¼¥¿¤ò¾ÊÎ¬¡£Îã:<tt>/cgi-bin/cgiwrap/jonh/faq.pl</tt>",
+ => "Ennek a cgi-scriptnek az elérésére szolgáló url-bõl az útvonal, /-rel kezdve, és elhagyva a paramétereket, például: <tt>/cgi-bin/cgiwrap/jonh/faq.pl</tt>",
 
 #: lib/FAQ/OMatic/install.pm:730
  "Filesystem directory where FAQ-O-Matic will keep item files, image and other bit-bag files, and a cache of generated HTML files. This directory must be accessible directly via the http server. It might be something like /home/faqomatic/public_html/fom-serve/"
- => "FAQ-O-Matic¤¬¥¢¥¤¥Æ¥à¥Õ¥¡¥¤¥ë¡¢¥¤¥á¡¼¥¸¤È¤½¤ÎÂ¾¤Î¤â¤Î¤Îbag¥Õ¥¡¥¤¥ë¤òÊÝ»ý¤·¡¢ºîÀ®¤·¤¿HTML¥Õ¥¡¥¤¥ë¤ò¥­¥ã¥Ã¥·¥å¤¹¤ë¥Ç¥£¥ì¥¯¥È¥ê¡£¤³¤Î¥Ç¥£¥ì¥¯¥È¥ê¤Ïhttp¥µ¡¼¥Ð·ÐÍ³¤Ç¥¢¥¯¥»¥¹¤Ç¤­¤Í¤Ð¤Ê¤é¤Ê¤¤¡£¤¿¤È¤¨¤Ð¡¢/home/faqomatic/public_html/fom-serve/¤Ç¤¢¤ë¡£",
+ => "Könyvtár a fájlrendszerben, ahol a FAQ-O;Matic a \"csomagokat\", képeket és a gyorsítótár állományait (elõre elkészített html-fájlokat) tárolhatja. Ezt a könyvtárat a webkiszolgálónak közvetlenül el kell érnie!",
 
 #: lib/FAQ/OMatic/install.pm:732
+#, fuzzy
  "The path prefix of the URL needed to access files in <b>\$serveDir</b>. It should be relative to the root of the server (omit http://hostname:port, but include a leading '/'). It should also end with a '/'."
- => "<b>\$serveDir</b>Ãæ¤Î¥Õ¥¡¥¤¥ë¤Ë¥¢¥¯¥»¥¹¤¹¤ë¤Î¤ËÉ¬Í×¤ÊURL¤Î¥×¥ì¥Õ¥£¥Ã¥¯¥¹¤Î¥Ñ¥¹¡£¤³¤ì¤Ï¥µ¡¼¥Ð¤Îroot¤«¤é¤ÎÁêÂÐ¥Ñ¥¹¤Ç¤Ê¤±¤ì¤Ð¤Ê¤é¤Ê¤¤(http://hostname:port¤Ï¾ÊÎ¬¤Ç¤­¤ë¤¬¡¢Àè¹Ô¤¹¤ë'/' ¤Ï´Þ¤Þ¤Ê¤±¤ì¤Ð¤Ê¤é¤Ê¤¤¡£)¡£¤Þ¤¿¡¢'/'¤Ç½ª¤ëÉ¬Í×¤¬¤¢¤ë¡£",
+# fuzzy # => "Az URL-ben használandó útvonal a <b>$serveDir</b>-ben lévõ állományok eléréséhez. (Elhagyva a http://gépnév:port részt, például: '/fom/').",
+ => "",
 
 #: lib/FAQ/OMatic/install.pm:735
  "<i>Optional:</i> Miscellaneous configurations"
- => "<i>Ç¤°Õ:</i> ¤½¤ÎÂ¾¤Î¹½À®ÀßÄê",
+ => "<i>Opcionális:</i> Egyéb beállítások",
 
 #: lib/FAQ/OMatic/install.pm:740
  "Select the display language."
- => "É½¼¨¸À¸ì¤òÁªÂò",
+ => "A megjelenítés nyelve",
 
 #: lib/FAQ/OMatic/install.pm:741
  "'en'"
- => "'ja_JP.EUC'",
+ => "'hu'",
 
 #: lib/FAQ/OMatic/install.pm:745
  "Show dates in 24-hour time or am/pm format."
- => "»þ´Ö¤ò24»þ´ÖÀ©/¸áÁ°¸á¸å·Á¼°¤ÇÉ½¼¨¡£",
+ => "Az idõadatok mutatása 24 órás vagy de/du formában.",
 
 #: lib/FAQ/OMatic/install.pm:749
  "If this parameter is set, this FAQ will become a mirror of the one at the given URL. The URL should be the base name of the CGI script of the master FAQ-O-Matic."
- => "¤â¤·¤â¤³¤Î¥Ñ¥é¥á¡¼¥¿¤¬ÀßÄê¤µ¤ì¤ë¤È¡¢¤³¤ÎFAQ¤ÏÍ¿¤¨¤é¤ì¤¿URL¤Î¥ß¥é¡¼¤È¤Ê¤ë¡£URL¤Ï¥Þ¥¹¥¿¡¼FAQ-O-Matic¤ÎCGI¥¹¥¯¥ê¥×¥È¤Î¥Ù¡¼¥¹¥Í¡¼¥à¤Ç¤Ê¤±¤ì¤Ð¤Ê¤é¤Ê¤¤¡£",
+ => "If this parameter is set, this FAQ will become a mirror of the one at the given URL. The URL should be the base name of the CGI script of the master FAQ-O-Matic.",
 
 #: lib/FAQ/OMatic/install.pm:751
  "An HTML fragment inserted at the top of each page. You might use this to place a corporate logo."
- => "¤½¤ì¤¾¤ì¤Î¥Ú¡¼¥¸¤ÎÀèÆ¬¤ËÁÞÆþ¤µ¤ì¤ëHTML¥Õ¥é¥°¥á¥ó¥È¡£²ñ¼Ò¤Î¥í¥´¤òÇÛÃÖ¤¹¤ë¤Î¤Ë»È¤¨¤ë¡£",
+ => "Valamennyi oldal elejére beszúrandó html-kódrészlet. (Például cégembléma megjelenítése.)",
 
 #: lib/FAQ/OMatic/install.pm:753 lib/FAQ/OMatic/install.pm:766
  "If this field begins with <tt>file=</tt>, the text will come from the named file in the meta directory; otherwise, this field is included verbatim."
- => "¤â¤·¤â¥Õ¥£¡¼¥ë¥É¤¬ <tt>file=</tt> ¤Ç»Ï¤Þ¤ë¤Ê¤é¤Ð¡¢¥Æ¥­¥¹¥È¤Ï¥á¥¿¥Ç¥£¥ì¥¯¥È¥êÃæ¤ÎÌ¾Á°ÉÕ¤±¤é¤ì¤¿¥Õ¥¡¥¤¥ë¤«¤éÍè¤ë¡£¤½¤ìÎã³°¤Ï¡¢¤³¤Î¥Õ¥£¡¼¥ë¥É¤Ïverbatim¤ò´Þ¤à¡£",
+ => "Ha a mezõ tartalma <tt>file=</tt> -vel kezdõdik, a beillesztett kódot a \"meta\" könyvtár megadott állományából veszi, egyébként a mezõ tartalma kerül beillesztésre.",
 
 #: lib/FAQ/OMatic/install.pm:761
+#, fuzzy
  "The <tt>width=</tt> tag in a table. If your <b>\$pageHeader</b> has <tt>align=left</tt>, you will want to make this empty."
- => "¥Æ¡¼¥Ö¥ëÃæ¤Î<tt>width=</tt> ¥¿¥°¡£¤â¤·¤â <b>\$pageHeader</b> ¤¬ <tt>align=left</tt>¤Ê¤é¤Ð¡¢¤³¤ì¤ò¶õÇò¤Ë¤·¤Æ¤â¤è¤¤¡£",
+# fuzzy # => "The <tt>width=</tt> tag in a table. If your <b>$pageHeader</b> has <tt>align=left</tt>, you will want to make this empty.",
+ => "",
 
 #: lib/FAQ/OMatic/install.pm:764
  "An HTML fragment appended to the bottom of each page. You might use this to identify the webmaster for this site."
- => "³Æ¥Ú¡¼¥¸¤ÎËöÈø¤ËÄÉ²Ã¤µ¤ì¤ëHTML¥Õ¥é¥°¥á¥ó¥È¡£¤³¤Î¥µ¥¤¥È¤ÎWeb´ÉÍý¼Ô¤òÉ½¼¨¤¹¤ë¤Î¤Ë»È¤¨¤ë¡£",
+ => "Valamennyi oldal végére beszúrandó html-kódrészlet. (Például a webmaster/adminisztrátor neve.)",
 
 #: lib/FAQ/OMatic/install.pm:769
+#, fuzzy
  "Where FAQ-O-Matic should send email when it wants to alert the administrator (usually same as \$adminAuth)"
- => "FAQ-O-Matic¤¬¡¢´ÉÍý¼Ô¤Ë·Ù¹ð¤òÁ÷¤í¤¦¤È¤¹¤ë»þ¤Ë¡¢Á÷¤ëÀè¤Î¥á¡¼¥ë¥¢¥É¥ì¥¹(ÄÌ¾ï¤Ï\$adminAuth¤ÈÆ±°ì)",
+# fuzzy # => "Where FAQ-O-Matic should send email when it wants to alert the administrator (usually same as $adminAuth)",
+ => "",
 
 #: lib/FAQ/OMatic/install.pm:771
  "If true, FAQ-O-Matic will mail the log file to the administrator whenever it is truncated."
- => "¤â¤·¤â¿¿¤Ê¤é¤Ð¡¢FAQ-O-Matic¤Ï¥í¥°¥Õ¥¡¥¤¥ë¤¬½Ì¤á¤é¤ì¤¿»þ¤Ë¤ÏÉ¬¤º¥á¡¼¥ë¤¹¤ë¡£",
+ => "If true, FAQ-O-Matic will mail the log file to the administrator whenever it is truncated.",
 
 #: lib/FAQ/OMatic/install.pm:774
  "User to use for RCS ci command (default is process UID)"
- => "RCS ci ¥³¥Þ¥ó¥É¤ò»È¤¦¥æ¡¼¥¶(´ûÄêÃÍ¤Ç¤Ï¥×¥í¥»¥¹¤ÎUID)",
+ => "User to use for RCS ci command (default is process UID)",
 
 #: lib/FAQ/OMatic/install.pm:778
  "Links from cache to CGI are relative to the server root, rather than absolute URLs including hostname:"
- => "¥Û¥¹¥ÈÌ¾¤ò´Þ¤àÀäÂÐURL¤È¤¤¤¦¤è¤ê¤Ï¥µ¡¼¥Ð¥ë¡¼¥È¤«¤éCGI¥­¥ã¥Ã¥·¥å¤Ø¤ÎÁêÂÐ¥ê¥ó¥¯:",
+ => "Links from cache to CGI are relative to the server root, rather than absolute URLs including hostname:",
 
 #: lib/FAQ/OMatic/install.pm:782
  "mailto: links can be rewritten such as jonhATdartmouthDOTedu (cheesy), jonh (nameonly), or e-mail addresses suppressed entirely (hide)."
- => "mailto: ¥ê¥ó¥¯¤Ï jonhATdartmouthDOTedu (µ¼»÷Åª)¡¢jonh(Ì¾Á°¤Î¤ß)Ëô¤Ï¥á¡¼¥ë¥¢¥É¥ì¥¹¤¬´°Á´¤ËÍÞ°µ¤µ¤ì¤ë(±£ÊÃ)¤è¤¦¤Ë½ñ¤­´¹¤¨¤ë¤³¤È¤¬½ÐÍè¤ë¡£",
+ => "A mailto: linkek megjelenési formája: jonhATdartmouthDOTedu (cheesy), jonh (nameonly), vagy az e-mail cím teljes elhagyása (hide).",
 
 #: lib/FAQ/OMatic/install.pm:786
  "Number of seconds that authentication cookies remain valid. These cookies are stored in URLs, and so can be retrieved from a browser history file. Hence they should usually time-out fairly quickly."
- => "Ç§¾Ú¥¯¥Ã¥­¡¼¤¬Í­¸ú¤ÊÉÃ¿ô¡£¤³¤Î¥¯¥Ã¥­¡¼¤ÏURL¤ËÊÝÂ¸¤µ¤ì¡¢¥Ö¥é¥¦¥¶¥Ò¥¹¥È¥ê¥Õ¥¡¥¤¥ë¤«¤é¸¡º÷¤Ç¤­¤ë¡£¤½¤Î¤¿¤á¡¢¤¢¤Þ¤êÁá¤¯¥¿¥¤¥à¥¢¥¦¥È¤Ë¤Ê¤é¤Ê¤¤¤è¤¦¤ËÀßÄê¡£",
+ => "Number of seconds that authentication cookies remain valid. These cookies are stored in URLs, and so can be retrieved from a browser history file. Hence they should usually time-out fairly quickly.",
 
 #: lib/FAQ/OMatic/install.pm:790
  "Number of days that trash sits in the trash category before maintenance cleans it up. '0' lets it stay forever."
- => "ÊÝ¼é»þ¤Ëºï½ü¤·¤Æ¤·¤Þ¤¦Á°¤Ë¡¢¤´¤ß¤¬¥´¥ßÈ¢(trash)¥«¥Æ¥´¥êÃæ¤ËµïºÂ¤Ã¤Æ¤¤¤ëÆü¿ô¡£'0'¤ò»ØÄê¤¹¤ë¤È±Ê±ó¤ËÊÝ»ý¤µ¤ì¤ë¡£",
+ => "Napok száma ameddig a törölt elemek a \"trash\" kategóriában maradnak. Ha 0,nem kerülnek törlésre a \"trash\" kategóriából.",
 
 #: lib/FAQ/OMatic/install.pm:793
  "<i>Optional:</i> These options set the default [Appearance] modes."
- => "<i>Ç¤°Õ:</i> ¤³¤ì¤é¤Î¥ª¥×¥·¥ç¥ó¤¬[Appearance]¥â¡¼¥É¤Î´ûÄêÃÍ¤ËÀßÄê¡£",
+ => "<i>Optional:</i> These options set the default [Appearance] modes.",
 
 #: lib/FAQ/OMatic/install.pm:798
  "Page rendering scheme. Do not choose 'text' as the default."
- => "¥Ú¡¼¥¸¥ì¥ó¥À¥ê¥ó¥°¥¹¥­¡¼¥à¡£'text'¤ò´ûÄêÃÍ¤È¤·¤ÆÁª¤ó¤Ç¤Ï¤Ê¤é¤Ê¤¤¡£",
+ => "Page rendering scheme. Do not choose 'text' as the default.",
 
 #: lib/FAQ/OMatic/install.pm:826
  "<i>Optional:</i> These options fine-tune the appearance of editing features."
- => "<i>Ç¤°Õ:</i> ¤³¤ì¤é¤Î¥ª¥×¥·¥ç¥ó¤ÏÊÔ½¸µ¡Ç½¸þ¤±¤Î¤Î¸«±É¤¨¤ËÎÉ¤¯Ä´À°¤µ¤ì¤Æ¤¤¤ë¡£",
+ => "<i>Optional:</i> These options fine-tune the appearance of editing features.",
 
 #: lib/FAQ/OMatic/install.pm:829
  "The old [Show Edit Commands] button appears in the navigation bar."
- => "¸Å¤¤[ÊÔ½¸¥³¥Þ¥ó¥É¤òÉ½¼¨]¥Ü¥¿¥ó¤Ï¥Ê¥Ó¥²¡¼¥¿¥Ð¡¼¤Ë¤¢¤ë¡£",
+ => "The old [Show Edit Commands] button appears in the navigation bar.",
 
 #: lib/FAQ/OMatic/install.pm:833
  "Navigation links appear at top of page as well as at the bottom."
- => "¥Ê¥Ó¥²¡¼¥·¥ç¥ó¥ê¥ó¥¯¤ÏËöÈø¤ÈÆ±¤¸¤è¤¦¤Ë¥Ú¡¼¥¸¤ÎÀèÆ¬¤Ë¤¢¤ë¡£",
+ => "Navigation links appear at top of page as well as at the bottom.",
 
 #: lib/FAQ/OMatic/install.pm:837
  "Hide [Append to This Answer] and [Add New Answer in ...] buttons."
- => "[¤³¤Î²óÅú¤òÄÉ²Ã]¤È[¿·¤·¤¤²óÅú¤òÄÉ²Ã...]¥Ü¥¿¥ó¤ò±£¤¹¡£",
+ => "Hide [Append to This Answer] and [Add New Answer in ...] buttons.",
 
 #: lib/FAQ/OMatic/install.pm:842
  "Editing commands appear with neat-o icons rather than [In Brackets]."
- => "[¥Ö¥é¥±¥Ã¥ÈÃæ]¤È¤¤¤¦¤è¤ê¤ÏÊÔ½¸¥³¥Þ¥ó¥É¤Ï neat-o¥¢¥¤¥³¥ó¤È°ì½ï¤Ë¤¢¤ë¡£",
+ => "Editing commands appear with neat-o icons rather than [In Brackets].",
 
 #: lib/FAQ/OMatic/install.pm:845
  "<i>Optional:</i> Other configurations that you should probably ignore if present."
- => "<i>Ç¤°Õ:</i> ¤â¤·¤âÂ¸ºß¤¹¤ë¤Ê¤é¤Ð¡¢¤½¤ÎÂ¾¤Î¹½À®¤ÏÌµ»ë¤¹¤Ù¤­¤Ç¤¢¤ë¡£",
+ => "<i>Optional:</i> Other configurations that you should probably ignore if present.",
 
 #: lib/FAQ/OMatic/install.pm:849
  "Draw Item titles John Nolan's way."
- => "¥¢¥¤¥Æ¥à¥¿¥¤¥È¥ë¤òJohn NolanÎ®¤ÇÉÁ²è¡£",
+ => "Draw Item titles John Nolan's way.",
 
 #: lib/FAQ/OMatic/install.pm:853
  "Hide sibling (Previous, Next) links"
- => "(Á°¡¢¼¡)·»Äï¥ê¥ó¥¯¤ò±£¤¹",
+ => "Hide sibling (Previous, Next) links",
 
 #: lib/FAQ/OMatic/install.pm:857
  "Use DBM-based search databases. Faster on machines with non-broken DBM."
- => "DBM¥Ù¡¼¥¹¤Î¸¡º÷¥Ç¡¼¥¿¥Ù¡¼¥¹¤ò»È¤¦¡£²õ¤ì¤Æ¤¤¤Ê¤¤DBM¤Î¥Þ¥·¥ó¤Î¤â¤Î¤ò»È¤¦¤è¤êÁá¤¤¡£",
+ => "Use DBM-based search databases. Faster on machines with non-broken DBM.",
 
 #: lib/FAQ/OMatic/install.pm:860
  "Links from search results page point into cache (do not highlight search terms)"
- => "¸¡º÷¤Î·ë²Ì¤ò¥­¥ã¥Ã¥·¥åÃæ¤Î¥Ú¡¼¥¸¤ò»Ø¤¹¤è¤¦¤Ë¤¹¤ë(¸¡º÷¸ì¤ò¥Ï¥¤¥é¥¤¥È)¤·¤Ê¤¤",
-
-#: lib/FAQ/OMatic/install.pm:865
- "Arguments to make ci quietly log changes and not mash RCS tags (use default with GNU RCS)"
- => "É½¼¨Ìµ¤·¤Ë¥í¥°¤ÎÊÑ¹¹¤òci¥³¥Þ¥ó¥É¤Ë¤µ¤»¡¢RCS¥¿¥°¤ò¤Ä¤Ö¤µ¤»¤Ê¤¤°ú¿ô(GNU RCS¤Ç´ûÄêÃÍ¤È¤·¤Æ»È¤¦",
-
-#: lib/FAQ/OMatic/install.pm:868
- "Arguments to make co not mash RCS tags (use default with GNU RCS)"
- => "co¤ËRCS¥¿¥°¤ò¤Ä¤Ö¤µ¤»¤Ê¤¤°ú¿ô(GNU RCS¤Ç´ûÄêÃÍ¤È¤·¤Æ»È¤¦)",
+ => "",
 
 #: lib/FAQ/OMatic/install.pm:974
  "This is a command, so only letters, hyphens, and slashes are allowed."
- => "¤³¤ì¤Ï¥³¥Þ¥ó¥É¤Ê¤Î¤Ç¡¢±Ñ¿ô»ú¡¢¥Ï¥¤¥Û¥ó¤È¥¹¥é¥Ã¥·¥å¤Î¤ß¤¬Í­¸ú¡£",
+ => "Ez egy parancs, tehát csak betük, kötõjelek, és '/' megengedett.",
 
 #: lib/FAQ/OMatic/install.pm:1033
  "If this is your first time installing a FAQ-O-Matic, I recommend only filling in the sections marked <b>Mandatory</b>."
- => "¤â¤·¤âºÇ½é¤ÎFAQ-O-Matic¤Î¥¤¥ó¥¹¥È¡¼¥ë¤Ê¤é¤Ð¡¢<b>É¬¿Ü</b>¤È¥Þ¡¼¥¯¤µ¤ì¤¿¥»¥¯¥·¥ç¥ó¤Î¤ß¤òËä¤á¤ë»ö¤ò¿ä¾©¡£",
+ => "Amennyiben elõször telepíti a FAQ-O-Matic rendszert, javasolt, hogy csak a <b>Kötelezõ</b>-nek jelölt részeket állítsa be.",
 
 #: lib/FAQ/OMatic/install.pm:1037
  "Define"
- => "ÄêµÁ",
+ => "Define",
 
 #: lib/FAQ/OMatic/install.pm:1080
  "You should <a href=\"%0\">go back</a> and fix these configurations."
- => "<a href=\"%0\">Ìá¤ë</a> ¤ËÌá¤ê¡¢¤½¤ì¤é¤Î¹½À®¤ò½¤Àµ¤·¤Ê¤±¤ì¤Ð¤Ê¤é¤Ê¤¤¡£",
+ => "You should <a href=\"%0\">go back</a> and fix these configurations.",
 
 #: lib/FAQ/OMatic/install.pm:1083
  "Rewrote configuration file."
- => "¹½À®¥Õ¥¡¥¤¥ë¤òºÆ½ñ¤­¹þ¤ß¡£",
+ => "Rewrote configuration file.",
 
 #: lib/FAQ/OMatic/install.pm:1097
  "%0 (%1) has an internal apostrophe, which will certainly make Perl choke on the config file."
- => "%0 (%1) ¤ÏÆâÉô¤Ë¥¢¥Ý¥¹¥È¥í¥Õ¥£¤¬¤¢¤ê¡¢¤½¤ì¤Ï¹½À®¥Õ¥¡¥¤¥ë¾å¤Ç³Î¼Â¤ËPerl¤ò»ß¤á¤ë¡£",
+ => "%0 (%1) aposztrófot tartalmaz. Ez hibát okozhat a konfigurációs állomány feldolgozásában.",
 
 #: lib/FAQ/OMatic/install.pm:1101 lib/FAQ/OMatic/install.pm:1107
  "%0 (%1) doesn't look like a fully-qualified email address."
- => "%0 (%1) ¤Ï´°Á´¤Ëµ­½Ò¤µ¤ì¤Æ¤¤¤ëÅÅ»Ò¥á¡¼¥ë¥¢¥É¥ì¥¹¤Ç¤Ï¤Ê¤¤¡£",
+ => "%0 (%1) nem tûnik korrekt e-mail címnek.",
 
 #: lib/FAQ/OMatic/install.pm:1113 lib/FAQ/OMatic/install.pm:1118
  "%0 (%1) isn't executable."
- => "%0 (%1) ¤Ï¼Â¹Ô¤Ç¤­¤Ê¤¤¡£",
+ => "%0 (%1) nem futtatható.",
 
 #: lib/FAQ/OMatic/install.pm:1135
  "%0 has funny characters."
- => "%0 ¤Ë¤ÏÉÔÀµ¤ÊÊ¸»ú¤¬¤¢¤ë¡£",
+ => "%0 érdekes karaktereket tartalmaz.",
 
 #: lib/FAQ/OMatic/install.pm:1170
  "To name your FAQ-O-Matic, use the [Appearance] page to show the expert editing commands, then click [Edit Category Title and Options]."
- => "FAQ-O-Matic¤ËÌ¾Á°¤òÉÕ¤±¤ë¤¿¤á¤Ë¡¢[¸«¤¿ÌÜ]¥Ú¡¼¥¸¤Ç¾åµéÊÔ½¸¥³¥Þ¥ó¥É¤ò¸«¤¨¤ë¤è¤¦¤Ë»È¤¤¡¢[¥«¥Æ¥´¥ê¥¿¥¤¥È¥ë¤È¥ª¥×¥·¥ç¥ó¤ÎÊÔ½¸]¤ò¥¯¥ê¥Ã¥¯",
+ => "To name your FAQ-O-Matic, use the [Appearance] page to show the expert editing commands, then click [Edit Category Title and Options].",
 
 #: lib/FAQ/OMatic/install.pm:1180 lib/FAQ/OMatic/install.pm:1192
 #: lib/FAQ/OMatic/install.pm:1204
  "Created category \"%0\"."
- => "\"%0\"¥«¥Æ¥´¥ê¤òºîÀ®¤·¤¿¡£",
+ => "Created category \"%0\".",
 
 #: lib/FAQ/OMatic/install.pm:1182 lib/FAQ/OMatic/install.pm:1194
 #: lib/FAQ/OMatic/install.pm:1206
  "<b>%0</b> already contains a file '%1'."
- => "<b>%0</b> ¤Ï¤¹¤Ç¤Ë¥Õ¥¡¥¤¥ë '%1' ¤ò´Þ¤ó¤Ç¤¤¤ë¡£",
+ => "<b>%0</b> already contains a file '%1'.",
 
 #: lib/FAQ/OMatic/install.pm:1244
  "Copied %0 items from <tt>%1</tt> to <tt>%2</tt>."
- => "%0 ¥¢¥¤¥Æ¥à¤ò¡¢<tt>%1</tt>¤«¤é<tt>%2</tt>¤Ø¥³¥Ô¡¼¤·¤¿¡£",
+ => "Copied %0 items from <tt>%1</tt> to <tt>%2</tt>.",
 
 #: lib/FAQ/OMatic/install.pm:1301
  "Attempting to install cron job:"
- => "cron¥¸¥ç¥Ö¤Î¥¤¥ó¥¹¥È¡¼¥ë¤ò»î¤ß¤ë:",
+ => "Megkísérlem beállítani a karbantartó job-ot:",
 
 #: lib/FAQ/OMatic/install.pm:1349
  "I replaced this old crontab line, which appears to be an older one for this same FAQ:"
- => "¤³¤ÎÆ±¤¸FAQ¤Î¸Å¤¤Êª¤Ë¸«¤¨¤ë¤è¤¦¤Ê¡¢¸Å¤¤crontab¹Ô¤ò¥ê¥×¥ì¡¼¥¹¤·¤¿:",
+ => "I replaced this old crontab line, which appears to be an older one for this same FAQ:",
 
 #: lib/FAQ/OMatic/install.pm:1358
  "I thought I installed a new cron job, but it didn't appear to take."
- => "¿·¤·¤¤cron¥¸¥ç¥Ö¤ò¥¤¥ó¥¹¥È¡¼¥ë¤·¤¿¤¬¡¢¤½¤Î¤è¤¦¤Ë¸«¤¨¤Ê¤¤¤È»×¤¦¡£",
+ => "I thought I installed a new cron job, but it didn't appear to take.",
 
 #: lib/FAQ/OMatic/install.pm:1360
  "You better add %0 to some crontab yourself with <b><tt>crontab -e</tt></b>"
- => "%0 ¤ò¤¤¤¯¤Ä¤«¤Îcrontab¤Ë¡¢<b><tt>crontab -e</tt></b> ¤ò»È¤Ã¤Æ¸æ¼«¿È¤ÇÄÉ²Ã¤·¤¿Êý¤¬ÎÉ¤¤¡£",
+ => "You better add %0 to some crontab yourself with <b><tt>crontab -e</tt></b>",
 
 #: lib/FAQ/OMatic/install.pm:1366
  "Cron job installed. The maintenance script should run hourly."
- => "Cron¥¸¥ç¥Ö¤ò¥¤¥ó¥¹¥È¡¼¥ë¤·¤¿¡£´ÉÍý¥¹¥¯¥ê¥×¥È¤òËè»þÆ°¤«¤¹¤Ù¤­¤Ç¤¢¤ë¡£",
+ => "Cron job installed. The maintenance script should run hourly.",
 
 #: lib/FAQ/OMatic/install.pm:1422
  "Use the <u>%0</u> links to change the color of a feature."
- => "<u>%0</u> ¥ê¥ó¥¯¤ò¡¢µ¡Ç½¤Î¿§¤òÊÑ¹¹¤¹¤ë¤¿¤á¤Ë»È¤¦¡£",
+ => "Use the <u>%0</u> links to change the color of a feature.",
 
 #: lib/FAQ/OMatic/install.pm:1436
  "An Item Title"
- => "¥¢¥¤¥Æ¥à¤ÎÂêÌ¾",
+ => "Az elem címe",
 
 #: lib/FAQ/OMatic/install.pm:1444
  "A regular part is how most of your content will appear. The text colors should be most pleasantly readable on this background."
- => "ÄÌ¾ï¤Î¥Ñ¡¼¥È¤Ï¤É¤Î¤è¤¦¤Ë¤Û¤È¤ó¤É¤Î¥³¥ó¥Æ¥ó¥Ä¤ò¸«¤»¤ë¤«¤Ç¤¢¤ë¡£¥Æ¥­¥¹¥È¤Î¿§¤Ï¤³¤ÎÇØ·Ê¾å¤Ç¤Û¤È¤ó¤É²÷Å¬¤ËÆÉ¤á¤ë¡£",
+ => "A regular part is how most of your content will appear. The text colors should be most pleasantly readable on this background.",
 
 #: lib/FAQ/OMatic/install.pm:1446 lib/FAQ/OMatic/install.pm:1458
 #: lib/FAQ/OMatic/install.pm:1485
  "A new link"
- => "¿·¤·¤¤¥ê¥ó¥¯",
+ => "Új link",
 
 #: lib/FAQ/OMatic/install.pm:1447 lib/FAQ/OMatic/install.pm:1459
 #: lib/FAQ/OMatic/install.pm:1489
  "A visited link"
- => "Ë¬¤ì¤¿¥ê¥ó¥¯",
+ => "Megtekintett link",
 
 #: lib/FAQ/OMatic/install.pm:1449 lib/FAQ/OMatic/install.pm:1461
 #: lib/FAQ/OMatic/install.pm:1494
  "A search hit"
- => "¸¡º÷¤Ë¥Ò¥Ã¥È",
+ => "Találat (keresésnél)",
 
 #: lib/FAQ/OMatic/install.pm:1457
  "A directory part should stand out"
- => "¥Ç¥£¥ì¥¯¥È¥êÉôÊ¬¤Ïstand out¤¹¤Ù¤­",
+ => "A directory part should stand out",
 
 #: lib/FAQ/OMatic/install.pm:1481
  "Regular text"
- => "ÄÌ¾ï¤Î¥Æ¥­¥¹¥È",
+ => "Normál szöveg",
 
 #: lib/FAQ/OMatic/install.pm:1506
  "Select a color for %0:"
- => "%0 ¤Î¿§¤òÁªÂò:",
+ => "Szín választása (%0):",
 
 #: lib/FAQ/OMatic/install.pm:1517
  "Or enter an HTML color specification manually:"
- => "Ëô¤Ï¡¢HTML¿§»ØÄê¤ò¼êÆ°¤ÇÆþÎÏ:",
+ => "Or enter an HTML color specification manually:",
 
 #: lib/FAQ/OMatic/install.pm:1520
  "Select"
- => "ÁªÂò",
+ => "Select",
 
 #: lib/FAQ/OMatic/install.pm:1529
  "Unrecognized config parameter"
- => "ÉÔÌÀ¤Ê¹½À®¥Ñ¥é¥á¡¼¥¿",
+ => "Unrecognized config parameter",
 
 #: lib/FAQ/OMatic/install.pm:1577
 #, c-format
  "Proceed to step '%0'"
- => "¥¹¥Æ¥Ã¥× '%0' ¤Î¼Â¹Ô",
+ => "Proceed to step '%0'",
 
 #: lib/FAQ/OMatic/install.pm:1708
  "You must enter the correct temporary password to install this FAQ-O-Matic. If you don't know it, remake the CGI stub to have a new one assigned."
- => "FAO-O-Matic¤ò¥¤¥ó¥¹¥È¡¼¥ë¤¹¤ë¤¿¤á¤ËÀµ¤·¤¤°ì»þ¥Ñ¥¹¥ï¡¼¥É¤òÆþÎÏ¤¹¤ëÉ¬Í×¤¬¤¢¤ë¡£¤â¤·¤â¤½¤ÎÊýË¡¤òÃÎ¤é¤Ê¤¤¤Ê¤é¤Ð¡¢CGI¥¹¥¿¥Ö¤ò¡¢¿·¤·¤¤¥Ñ¥¹¥ï¡¼¥É¤ò³ä¤êÅö¤Æ¤ë¤¿¤á¤ËºÆºîÀ®¤»¤è¡£",
+ => "",
 
 #: lib/FAQ/OMatic/install.pm:1711
  "Temporary password: "
- => "°ì»þ¥Ñ¥¹¥ï¡¼¥É: ",
+ => "",
 
 #: lib/FAQ/OMatic/moveItem.pm:114
  "Make <b>%0</b> belong to which other item?"
- => "<b>%0</b> ¤ò¤É¤Á¤é¤Î¥¢¥¤¥Æ¥à¤ËÂ°¤µ¤»¤ë¤«?",
+ => "Make <b>%0</b> belong to which other item?",
 
 #: lib/FAQ/OMatic/moveItem.pm:118
  "No item that already has sub-items can become the parent of"
- => "±¦µ­¤Î¿Æ¤Ë¤Ê¤ì¤ë¡¢´û¤Ë¥µ¥Ö¥¢¥¤¥Æ¥à¤ò»ý¤Ä¥¢¥¤¥Æ¥à¤¬¤Ê¤¤",
+ => "No item that already has sub-items can become the parent of",
 
 #: lib/FAQ/OMatic/moveItem.pm:120
  "No item can become the parent of"
- => "±¦µ­¤Î¿Æ¤Î¥¢¥¤¥Æ¥à¤Ë¤Ê¤ì¤ëÊª¤¬Ìµ¤¤",
+ => "No item can become the parent of",
 
 #: lib/FAQ/OMatic/moveItem.pm:124
  "Some destinations are not available (not clickable) because you do not have permission to edit them as currently authorized."
- => "¤¤¤¯¤Ä¤«¤Î¥Ç¥£¥¹¥È¥Í¡¼¥·¥ç¥ó¤ÏÌµ¸ú¤Ç(¥¯¥ê¥Ã¥¯¤Ç¤­¤Ê¤¤)¤¢¤ê¡¢¤½¤ì¤Ï¡¢¸½ºß¤ÎÇ§¾Ú¾õÂÖ¤Ç¤Ï¤½¤ì¤é¤ÎÊÔ½¸¸¢¸Â¤¬Ìµ¤¤¤¿¤á¤Ç¤¢¤ë¡£",
+ => "Some destinations are not available (not clickable) because you do not have permission to edit them as currently authorized.",
 
 #: lib/FAQ/OMatic/moveItem.pm:127
  "Click here</a> to provide better authentication."
- => "¤è¤êÎÉ¤¤Ç§¾Ú¤òÄó¶¡¤¹¤ë¤¿¤á¤³¤³¤ò¥¯¥ê¥Ã¥¯</a>¡£",
+ => "Click here</a> to provide better authentication.",
 
 #: lib/FAQ/OMatic/moveItem.pm:133
  "Hide answers, show only categories"
- => "²óÅú¤ò±£¤·¡¢¥«¥Æ¥´¥ê¤Î¤ßÉ½¼¨",
+ => "Válaszok elrejtése, csak kategóriák mutatása",
 
 #: lib/FAQ/OMatic/moveItem.pm:136
  "Show both categories and answers"
- => "¥«¥Æ¥´¥ê¤È²óÅúÎ¾Êý¤òÉ½¼¨",
+ => "Kategóriák és válaszok mutatása",
 
 #: lib/FAQ/OMatic/recent.pm:62
 #, c-format
  "No items were modified in the last %0."
- => "ºÇ¸å¤Î %0 Ãæ¤Ç²¿¤Î¥¢¥¤¥Æ¥à¤âÊÑ¹¹¤µ¤ì¤Ê¤«¤Ã¤¿¡£",
+ => "Nincs az utóbbi %0-ban módosított elem.",
 
 #: lib/FAQ/OMatic/recent.pm:65
  "Items modified in the last %0:"
- => "ºÇ¸å¤Î %0 Ãæ¤Ç ¥¢¥¤¥Æ¥à¤¬ÊÑ¹¹¤µ¤ì¤¿¡£",
+ => "Az utóbbi %0-ben módosított elemek:",
 
 #: lib/FAQ/OMatic/search.pm:72
  "No items matched all of these words"
- => "¤½¤ì¤é¤ÎÃ±¸ì¤Î¤¹¤Ù¤Æ¤Ç¥¢¥¤¥Æ¥à¤Ë°ìÃ×¤·¤¿¤â¤Î¤Ï¤Ê¤«¤Ã¤¿",
+ => "Nincs találat az összes szóra",
 
 #: lib/FAQ/OMatic/search.pm:76
 #, c-format
  "No items matched at least %0 of these words"
- => "¾¯¤Ê¤¯¤È¤â¤½¤ì¤é¤Î %0 ¤Î¸ì¤Ç¥¢¥¤¥Æ¥à¤Ë°ìÃ×¤·¤¿¤â¤Î¤Ï¤Ê¤«¤Ã¤¿",
+ => "Nincs találat legalább %0 szóra ezek közül",
 
 #: lib/FAQ/OMatic/search.pm:85
  "Search results for all of these words"
- => "Á´¤Æ¤Î¸ì¤Î¤¿¤á¤Î¸¡º÷·ë²Ì",
+ => "Keresés eredménye az összes szóra",
 
 #: lib/FAQ/OMatic/search.pm:89
 #, c-format
  "Search results for at least %0 of these words"
- => "¾¯¤Ê¤¯¤È¤â¤½¤ì¤é¤Î¸ì¤Î %0 ¤Î¤¿¤á¤Î¸¡º÷·ë²Ì",
+ => "Keresés eredménye legalább %0 szóra ezek közül",
 
 #: lib/FAQ/OMatic/search.pm:106
  "Results may be incomplete, because the search index has not been refreshed since the most recent change to the database."
- => "¸¡º÷º÷°ú¤¬¥Ç¡¼¥¿¥Ù¡¼¥¹¤ÎºÇ¿·¤ÎÊÑ¹¹°ÊÍè¹¹¿·¤µ¤ì¤Æ¤¤¤Ê¤¤¤¿¤á¡¢·ë²Ì¤ÏÉÔ´°Á´¤Ê²ÄÇ½À­¤¬¤¢¤ë¡£",
+ => "Az eredmény lehet, hogy nem teljes. A keresési adatbázis nem tartalmazza a legutolsó módosítások adatait.",
 
 #: lib/FAQ/OMatic/searchForm.pm:53
  "search for keywords"
- => "¸¡º÷¤Î¤¿¤á¤Î¥­¡¼¥ï¡¼¥É",
+ => "<b>Keresés kulcsszóra:</b>",
 
 #: lib/FAQ/OMatic/searchForm.pm:58
  "Search for"
- => "¸¡º÷ÂÐ¾Ý:",
+ => "Keresés:",
 
 #: lib/FAQ/OMatic/searchForm.pm:59
  "matching"
- => "°ìÃ×",
+ => "matching",
 
 #: lib/FAQ/OMatic/searchForm.pm:61
  "all"
- => "¤¹¤Ù¤Æ",
+ => "valamennyi",
 
 #: lib/FAQ/OMatic/searchForm.pm:62
  "any"
- => "Ç¤°Õ",
+ => "bármely",
 
 #: lib/FAQ/OMatic/searchForm.pm:63
  "two"
- => "2¤Ä",
+ => "két",
 
 #: lib/FAQ/OMatic/searchForm.pm:64
  "three"
- => "3¤Ä",
+ => "három",
 
 #: lib/FAQ/OMatic/searchForm.pm:65
  "four"
- => "4¤Ä",
+ => "négy",
 
 #: lib/FAQ/OMatic/searchForm.pm:66
  "five"
- => "5¤Ä",
+ => "öt",
 
 #: lib/FAQ/OMatic/searchForm.pm:68
  "words"
- => "¸ì",
+ => "szóra",
 
 #: lib/FAQ/OMatic/searchForm.pm:76
  "search for recent changes"
- => "ºÇ¶á¤ÎÊÑ¹¹¤ò¸¡º÷",
+ => "<b>A legutóbbi módosítások:</b>",
 
 #: lib/FAQ/OMatic/searchForm.pm:82
  "Show documents"
- => "¥É¥­¥å¥á¥ó¥ÈÉ½¼¨",
+ => "Azok a dokumentumok,",
 
 #: lib/FAQ/OMatic/searchForm.pm:83
  "modified in the last"
- => "ºÇ¸å¤ÇÊÑ¹¹",
+ => "amelyek módosultak az utóbbi",
 
 #: lib/FAQ/OMatic/selectBag.pm:69
  "Replace which bag?"
- => "¤É¤Îbag¤òÃÖ´¹?",
+ => "Melyik csomagot cseréli?",
 
 #: lib/FAQ/OMatic/stats.pm:69
  "Hits Per Day"
- => "°ìÆü¤¢¤¿¤ê¤Î¥Ò¥Ã¥È¿ô",
+ => "Letöltés/nap",
 
 #: lib/FAQ/OMatic/stats.pm:70
  "Cumulative Hits"
- => "ÎßÀÑ¥Ò¥Ã¥È¿ô",
+ => "Összes letöltés",
 
 #: lib/FAQ/OMatic/stats.pm:74
  "New Hosts Per Day"
- => "°ìÆü¤¢¤¿¤ê¤Î¿·µ¬¥Û¥¹¥È¿ô",
+ => "Új kliens/nap",
 
 #: lib/FAQ/OMatic/stats.pm:75
  "Total Hosts"
- => "¥È¡¼¥¿¥ë¥Û¥¹¥È¿ô",
+ => "Összes kliens",
 
 #: lib/FAQ/OMatic/stats.pm:79
  "Hits Per Host"
- => "¥Û¥¹¥È¤¢¤¿¤ê¤Î¥Ò¥Ã¥È¿ô",
+ => "Letöltés/kliens",
 
 #: lib/FAQ/OMatic/stats.pm:80
  "Cumulative Searches"
- => "ÎßÀÑ¸¡º÷¿ô",
+ => "Összes keresés",
 
 #: lib/FAQ/OMatic/stats.pm:83
  "Submissions Per Day"
- => "°ìÆü¤¢¤¿¤ê¤ÎÅê¹Æ¿ô",
+ => "Feltöltés/nap",
 
 #: lib/FAQ/OMatic/stats.pm:84
  "Cumulative Submissions"
- => "ÎßÀÑÅê¹Æ¿ô",
+ => "Összes feltöltés",
 
 #: lib/FAQ/OMatic/stats.pm:87
  "Please be patient ... the image files are generated dynamically, and can take from 20 to 50 seconds to create.\n"
- => "¾¯¡¹¤ªÂÔ¤Á¤ò.... ¥¤¥á¡¼¥¸¥Õ¥¡¥¤¥ë¤ÏÆ°Åª¤ËºîÀ®¤µ¤ì¤ë¤¿¤á¡¢ºîÀ®¤Ë20¤«¤é50ÉÃ¤«¤«¤ë.\n",
+ => "Kérem várjon! A grafikonok elkészítése 20-50 másodpercig is tarthat. <br>&nbsp;",
 
 #: lib/FAQ/OMatic/stats.pm:137
  "Change View Duration"
- => "É½¼¨´ü´Ö",
+ => "Idõtartam módosítása",
 
 #: lib/FAQ/OMatic/stats.pm:140
  "One Month"
- => "°ì¥ö·î",
+ => "Egy hónap",
 
 #: lib/FAQ/OMatic/stats.pm:142
  "Two Months"
- => "Æó¥ö·î",
+ => "Két hónap",
 
 #: lib/FAQ/OMatic/stats.pm:144
  "Three Months"
- => "»°¥ö·î",
+ => "Három hónap",
 
 #: lib/FAQ/OMatic/stats.pm:146
  "History"
- => "ÍúÎò",
+ => "Elõzmények",
 
 #: lib/FAQ/OMatic/submitBag.pm:74
  "Bag names may only contain letters, numbers, underscores (_), hyphens (-), and periods (.), and may not end in '.desc'. Yours was"
- => "bagÌ¾¤Ï±Ñ¿ô»ú¡¢²¼Àþ(_)¡¢¥Ï¥¤¥Û¥ó(-)¤È¥Ô¥ê¥ª¥É(.)¤Î¤ß¤¬Í­¸ú¤Ç'.desc'¤Ç½ª¤Ã¤Æ¤Ï¤¤¤±¤Ê¤¤¡£¢ª",
+ => "Bag names may only contain letters, numbers, underscores (_), hyphens (-), and periods (.), and may not end in '.desc'. Yours was",
 
 #: lib/FAQ/OMatic/submitItem.pm:61
  "Your browser or WWW cache has truncated your POST."
- => "¥Ö¥é¥¦¥¶¤«WWW¥­¥ã¥Ã¥·¥å¤¬¤¢¤Ê¤¿¤ÎPOST¤òÀÚ¤êµÍ¤á¤¿¡£",
+ => "Your browser or WWW cache has truncated your POST.",
 
 #: lib/FAQ/OMatic/submitItem.pm:72
  "Changed the item title, was \"%0\""
- => "¹àÌÜ¥¿¥¤¥È¥ë¤¬ \"%0\" ¤ËÊÑ¹¹¤µ¤ì¤¿¡£",
+ => "Changed the item title, was \"%0\"",
 
 #: lib/FAQ/OMatic/submitItem.pm:88 lib/FAQ/OMatic/submitItem.pm:98
  "Your part order list (%0) "
- => "¤¢¤Ê¤¿¤ÎÉôÊ¬¥ª¡¼¥À¥ê¥¹¥È (%0) ",
+ => "Your part order list (%0) ",
 
 #: lib/FAQ/OMatic/submitItem.pm:89
  "doesn't have the same number of parts (%0) as the original item."
- => "¥ª¥ê¥¸¥Ê¥ë¥¢¥¤¥Æ¥à¤ÈÆ±¤¸¿ô¤Î¥Ñ¡¼¥È (%0) ¤ò»ý¤Ä»ö¤¬½ÐÍè¤Ê¤¤¡£",
+ => "doesn't have the same number of parts (%0) as the original item.",
 
 #: lib/FAQ/OMatic/submitItem.pm:99
 #, c-format
  "doesn't say what to do with part %0."
- => "¥Ñ¡¼¥È %0 ¤Ë¤Ä¤¤¤Æ²¿¤Ç¤¢¤ë¤«¤ò¸À¤¦»ö¤¬½ÐÍè¤Ê¤¤¡£",
+ => "doesn't say what to do with part %0.",
 
 #: lib/FAQ/OMatic/submitMove.pm:51
  "The moving file (%0) is broken or missing."
- => "°ÜÆ°¤·¤¿¥Õ¥¡¥¤¥ë(%0)¤Ï²õ¤ì¤Æ¤¤¤ë¤«Â¸ºß¤·¤Ê¤¤¡£",
+ => "The moving file (%0) is broken or missing.",
 
 #: lib/FAQ/OMatic/submitMove.pm:57
  "The newParent file (%0) is broken or missing."
- => "¿·¤·¤¤¿Æ¥Õ¥¡¥¤¥ë(%0)¤Ï²õ¤ì¤Æ¤¤¤ë¤«Â¸ºß¤·¤Ê¤¤¡£",
+ => "The newParent file (%0) is broken or missing.",
 
 #: lib/FAQ/OMatic/submitMove.pm:66
  "The oldParent file (%0) is broken or missing."
- => "¸Å¤¤¿Æ¥Õ¥¡¥¤¥ë(%0)¤Ï²õ¤ì¤Æ¤¤¤ë¤«Â¸ºß¤·¤Ê¤¤¡£",
+ => "The oldParent file (%0) is broken or missing.",
 
 #: lib/FAQ/OMatic/submitMove.pm:74
  "The new parent (%0) is the same as the old parent."
- => "¿·¤·¤¤¿Æ(%0)¤Ï¸Å¤¤¿Æ¤ÈÆ±¤¸¤Ç¤¢¤ë¡£",
+ => "The new parent (%0) is the same as the old parent.",
 
 #: lib/FAQ/OMatic/submitMove.pm:79
  "The new parent (%0) is the same as the item you want to move."
- => "¿·¤·¤¤¿Æ(%0)¤Ï°ÜÆ°ÂÐ¾Ý¤ÎÊª¤ÈÆ±¤¸¤Ç¤¢¤ë¡£",
+ => "The new parent (%0) is the same as the item you want to move.",
 
 #: lib/FAQ/OMatic/submitMove.pm:86
  "The new parent (%0) is a child of the item being moved (%1)."
- => "¿·¤·¤¤¿Æ(%0)¤Ï°ÜÆ°¤·¤ÆÍè¤¿»Ò(%1) ¤Ç¤¢¤ë¡£",
+ => "The new parent (%0) is a child of the item being moved (%1).",
 
 #: lib/FAQ/OMatic/submitMove.pm:92
  "You can't move the top item."
- => "ºÇ¾å°Ì¤Î¥¢¥¤¥Æ¥à¤Ï°ÜÆ°¤Ç¤­¤Ê¤¤¡£",
+ => "You can't move the top item.",
 
 #: lib/FAQ/OMatic/submitMove.pm:130
 #, c-format
  "moved a sub-item to %0"
- => "¥µ¥Ö¥¢¥¤¥Æ¥à¤ò %0 ¤Ë°ÜÆ°¤·¤¿",
+ => "moved a sub-item to %0",
 
 #: lib/FAQ/OMatic/submitMove.pm:133
 #, c-format
  "moved a sub-item from %0"
- => "¥µ¥Ö¥¢¥¤¥Æ¥à¤ò %0 ¤«¤é°ÜÆ°¤·¤¿",
+ => "moved a sub-item from %0",
 
 #: lib/FAQ/OMatic/submitPass.pm:49
  "An email address must look like 'name\@some.domain'."
- => "ÅÅ»Ò¥á¡¼¥ë¥¢¥É¥ì¥¹¤Ï 'name\@some.domain' ¤Î·Á¤Ç¤Ê¤±¤ì¤Ð¤Ê¤é¤Ê¤¤¡£",
+ => "Az E-mail cím formátuma: 'nev@domain' legyen",
 
 #: lib/FAQ/OMatic/submitPass.pm:51
  "If yours (%0) does and I keep rejecting it, please mail the administrator of this FAQ at %1 and tell him or her what's happening."
- => "¤â¤·¤â¤¢¤Ê¤¿¤ÎFOM¤Ë(%0)¤¬¤¢¤ê¡¢»ä¤¬¤½¤ì¤òÇÓ½ü¤·¤Ä¤Å¤±¤¿¤¤¤Ê¤é¡¢²¿¤¬µ¯¤­¤¿¤«¤ò¤³¤ÎFAQ¤Î´ÉÍý¼Ô %1 ¤Ë¥á¡¼¥ë¤·¤ÆÍß¤·¤¤¡£",
+ => "Ha az öné (%0) ilyen, és mégis ezt a figyelmeztetést kapta, vegye fel a kapcsolatot a rendszergazdával a(z) %1 címen.",
 
 #: lib/FAQ/OMatic/submitPass.pm:58
  "Your password may not contain spaces or carriage returns."
- => "¤¢¤Ê¤¿¤Î¥Ñ¥¹¥ï¡¼¥É¤Ë¤Ï¶õÇò¤ä²þ¹Ô¤ò´Þ¤ó¤Ç¤Ï¤Ê¤é¤Ê¤¤¡£",
+ => "A jelszava nem tartalmazhat szóköz, tabulátor vagy újsor karaktert.",
 
 #: lib/FAQ/OMatic/submitPass.pm:97
  "Your Faq-O-Matic authentication secret"
- => "¤¢¤Ê¤¿¤Î Faq-O-Matic Ç§¾Ú¤Î¤¿¤á¤Î¾ðÊó",
+ => "Az on Faq-O-Matic azonositokodja:",
 
 #: lib/FAQ/OMatic/submitPass.pm:98
  "To validate your Faq-O-Matic password, you may either enter this secret into the Validation form:"
- => "Faq-O-MaticÍÑ¤Î¥Ñ¥¹¥ï¡¼¥É¤ò¸¡¾Ú¤¹¤ë¤¿¤á¡¢¸¡¾ÚÍÑ¥Õ¥©¡¼¥à¤ËÈëÌ©¤Î¥­¡¼¤òÆþÎÏ¤·¤Æ¤â¤è¤¤¡£",
+ => "A Faq-O-Matic jelszavanak a megerositesehez vagy az alabbi kodot kell megadni a megerosites urlapon,",
 
 #: lib/FAQ/OMatic/submitPass.pm:99 lib/FAQ/OMatic/submitPass.pm:136
  "Secret:"
- => "Ç§¾Ú¾ðÊó:",
+ => "Titkos kód:",
 
 #: lib/FAQ/OMatic/submitPass.pm:100
  "Or access the following URL. Be careful when you copy and paste the URL that the line-break doesn't cut the URL short."
- => "¤Þ¤¿¤Ï¡¢°Ê²¼¤ÎURL¤Ë¥¢¥¯¥»¥¹¤¹¤ë¡£URL¤Î¥³¥Ô¡¼¤ÈÅ½¤êÉÕ¤±¤ò¹Ô¤Ê¤¦ºÝ¤Ë¡¢²þ¹Ô¤¬URL¤ò¥«¥Ã¥È¤·¤Ê¤¤¤è¤¦¤Ëµ¤¤ò¤Ä¤±¤Ê¤±¤ì¤Ð¤Ê¤é¤Ê¤¤¡£",
+ => "vagy az alabbi url-t kell elerni. Az url masolasanal figyeljen arra, hogy az url-be ne keruljon sortores.",
 
 #: lib/FAQ/OMatic/submitPass.pm:101
  "Thank you for using Faq-O-Matic."
- => "Faq-O-Matic¤Ë°ÜÆ°",
+ => "Koszonjuk, hogy hasznalja a Faq-O-Matic-ot.",
 
 #: lib/FAQ/OMatic/submitPass.pm:102
  "(Note: if you did not sign up to use the Faq-O-Matic, someone else has attempted to log in using your name. Do not access the URL above; it will validate the password that user has supplied. Instead, send mail to %0 and I will look into the matter.)"
- => "(Ãí°Õ: ¤â¤·¤âFaq-O-Matic¤ò»È¤¦¤¿¤á¤Ë¥µ¥¤¥ó¥¢¥Ã¥×¤·¤Ê¤¤¤Ê¤é¤Ð¡¢¤À¤ì¤«¤¬¤¢¤Ê¤¿¤ÎÌ¾Á°¤Ç¥í¥°¥¤¥ó¤·¤è¤¦¤È»î¤ß¤ë¤À¤í¤¦¡£¾åµ­¤ÎURL¤Ë¥¢¥¯¥»¥¹¤·¤Æ¤Ï¤Ê¤é¤Ê¤¤¡£¤½¤ì¤Ï¥æ¡¼¥¶¤Ë³ä¤êÅö¤Æ¤é¤ì¤¿¥Ñ¥¹¥ï¡¼¥É¤ò¸¡¾Ú¤¹¤ë¤À¤í¤¦¡£¤½¤ÎÂå¤ï¤ê¤Ë¡¢¥á¡¼¥ë¤ò%0¤ËÁ÷¤ê¡¢¤½¤ì¤ò½èÍý¤¹¤ë¤À¤í¤¦¡£",
+ => "(Megjegyzes: Amennyiben nem on hozott letre az e-mail cimevel felhasznalot a Faq-O-Matic-ban, ugy _ne_ lepjen ra a fenti url-re, mert az az on neveben bejelentkezett felhasznalo jelszavat erositene meg. Ebben az esetben forduljon az adminisztratorhoz a(z) %0 cimen.)",
 
 #: lib/FAQ/OMatic/submitPass.pm:106
  "I couldn't mail the authentication secret to \"%0\" and I'm not sure why."
- => "Ç§¾Ú¤Î¤¿¤á¤Î¾ðÊó¤ò \"%0\" ¤ËÁ÷¤ì¤Ê¤«¤Ã¤¿¤¬ÍýÍ³¤¬Ê¬¤«¤é¤Ê¤¤¡£",
+ => "I couldn't mail the authentication secret to \"%0\" and I'm not sure why.",
 
 #: lib/FAQ/OMatic/submitPass.pm:116
  "The secret you entered is not correct."
- => "ÆþÎÏ¤µ¤ì¤¿Ç§¾Ú¾ðÊó¤¬ÉÔÀµ¤Ç¤¢¤ë¡£",
+ => "The secret you entered is not correct.",
 
 #: lib/FAQ/OMatic/submitPass.pm:118
  "Did you copy and paste the secret or the URL completely?"
- => "Ç§¾Ú¾ðÊó¤Þ¤¿¤ÏURL¤òÀµ¤·¤¯¥³¥Ô¡¼¡õ¥Ú¡¼¥¹¥È¤·¤¿¤«?",
+ => "Did you copy and paste the secret or the URL completely?",
 
 #: lib/FAQ/OMatic/submitPass.pm:122
  "I sent email to you at \"%0\". It should arrive soon, containing a URL."
- => "¥á¡¼¥ë¤ò\"%0\" ¤ËÁ÷¤Ã¤¿¡£¤½¤ÎÃæ¤ËURL¤¬´Þ¤Þ¤ì¤Æ¤¤¤ë¡£¤Þ¤â¤Ê¤¯ÅþÃå¤¹¤ë¤À¤í¤¦¡£",
+ => "A megadott címre (%0) egy hivatkozást tartalmazó e-mail elküldve.",
 
 #: lib/FAQ/OMatic/submitPass.pm:126
  "Either open the URL directly, or paste the secret into the form below and click Validate."
- => "URL¤òÄ¾ÀÜ³«¤¯¤«¡¢Ç§¾Ú¾ðÊó¤ò°Ê²¼¤Î¥Õ¥©¡¼¥à¤Ë¥Ú¡¼¥¹¥È¤·¤Æ¥¯¥ê¥Ã¥¯¤·¤ÆÇ§¾Ú¤»¤è¡£",
+ => "Kattintson a levélben található hivatkozásra, vagy másolja az alábbi mezõbe a levélben kapott kódot és kattintson a <em>Megerõsít</em> gombra.",
 
 #: lib/FAQ/OMatic/submitPass.pm:128
  "Thank you for taking the time to sign up."
- => "Ç§¾Úºî¶È¤¬´°Î»¡£",
+ => "Köszönjük, hogy idõt szakított a bejelentkezésre.",
 
-#~ msgid "Your Faq-O-Matic would have a title "
-#~ msgstr "¥¤¥ó¥¹¥È¡¼¥é¤òÁö¤é¤»¤¿»þ¤Ë¤Ç¤­¤ë"
+#: lib/FAQ/OMatic/SearchMod.pm:293
+ "zero days"
+ => "napon belül",
 
-#~ msgid "installer."
-#~ msgstr "¥¿¥¤¥È¥ë¤ò»ý¤Ä¤À¤í¤¦¡£"
+#: lib/FAQ/OMatic/SearchMod.pm:294
+ "day"
+ => "nap",
 
-#~ msgid "deprecated; subsumed by RCSciArgs and RCScoArgs."
-#~ msgstr "ÉÔ»¿À®; RCSciArgs¤ÈRCScoArgs¤Ë¤è¤Ã¤ÆÊñ´Þ¤µ¤ì¤Æ¤¤¤ë¡£"
+#: lib/FAQ/OMatic/SearchMod.pm:295
+ "two days"
+ => "két napon",
 
-#~ msgid "You must enter the correct temporary password to install "
-#~ msgstr "¥¤¥ó¥¹¥È¡¼¥ë¤¹¤ë¤¿¤á¤ËÀµ¤·¤¤°ì»þ¥Ñ¥¹¥ï¡¼¥É¤ò¤³¤ÎFAO-O-MaticÍÑ¤Ë"
+#: lib/FAQ/OMatic/SearchMod.pm:296
+ "week"
+ => "héten",
 
-#~ msgid "this FAQ-O-Matic. If you don't know it, remake the CGI stub "
-#~ msgstr "ÆþÎÏ¤·¤Ê¤±¤ì¤Ð¤Ê¤é¤Ê¤¤¡£¤â¤·¤â¡¢¤½¤ì¤¬ÉÔÌÀ¤Ê¤é¤Ð¡¢CGI¥¹¥¿¥Ö¤ò"
+#: lib/FAQ/OMatic/SearchMod.pm:297
+ "fortnight"
+ => "fortnight",
 
-#~ msgid "to have a new one assigned."
-#~ msgstr "¿·¤·¤¯³ä¤êÅö¤Æ¤ë¤¿¤á¤ËºÆºîÀ®¤·¤Ê¤µ¤¤¡£"
+#: lib/FAQ/OMatic/SearchMod.pm:298
+ "month"
+ => "hónapban",
 
-#~ msgid "Temporary password: <input type=password size=36 name=temppass>\n"
-#~ msgstr "°ì»þ¥Ñ¥¹¥ï¡¼¥É: <input type=password size=36 name=temppass>\n"
+#: lib/FAQ/OMatic/SearchMod.pm:299
+ "three months"
+ => "negyedévben",
+
+#: lib/FAQ/OMatic/SearchMod.pm:300
+ "six months"
+ => "fél évben",
+
+#: lib/FAQ/OMatic/SearchMod.pm:301
+ "year"
+ => "évben",
+
+#: lib/FAQ/OMatic/SearchMod.pm:314
+ "days"
+ => "napon",
 
 
 );  # end of %data hash

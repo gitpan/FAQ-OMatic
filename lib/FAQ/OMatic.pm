@@ -56,7 +56,7 @@ use vars	# these are mod_perl-safe
 	# variables that get reset on every invocation
 	qw($theParams $theLocals);
 
-$VERSION = '2.717';
+$VERSION = '2.718';
 
 # can't figure out how to get file-scoped variables in mod_perl, so
 # we ensure that they're all file scoped by reseting them in dispatch.
@@ -107,11 +107,11 @@ sub fomTitle {
 	if (not $title) {
 		if (FAQ::OMatic::Versions::getVersion('Items')) {
 			# (don't gripe if FAQ not installed yet)
-			FAQ::OMatic::gripe('note', "Your Faq-O-Matic would have a title "
-			 ."if it had an item 1, which it will when you've run the "
-			 ."installer.");
+			FAQ::OMatic::gripe('note',
+				gettext("Your Faq-O-Matic would have a title if it had an item 1, which it will when you've run the installer.")
+			);
 		}
-		$title = "Untitled Faq-O-Matic";
+		$title = gettext("Untitled Faq-O-Matic");
 	}
 	return $title;
 }
@@ -1334,6 +1334,17 @@ sub sendEmail {
 	my $subj = shift;
 	my $mesg = shift;
 
+        my $encode_lang = FAQ::OMatic::I18N::language();
+        if($encode_lang eq "ja_JP.EUC") {
+            require Jcode; import Jcode;
+            require NKF;   import NKF;
+            $subj = jcode($subj)->mime_encode;
+            $mesg = nkf('-j',$mesg);
+        } elsif ($encode_lang ne "en") {
+            require MIME::Words; import MIME::Words qw(:all);
+            $subj = encode_mimeword($subj,"B");
+        }
+
 	return if (not $FAQ::OMatic::Config::mailCommand);
 
 	# untaint $to address
@@ -1649,7 +1660,8 @@ sub stripnph {
 
 sub header {
 	my $cgi = shift;
-	my $hdr = stripnph($cgi->header(@_, '-nph'=>1));
+	my $charset = gettext("http-charset");
+	my $hdr = stripnph($cgi->header((@_,'-charset'=>$charset), '-nph'=>1));
 	return $hdr;
 }
 
@@ -1766,6 +1778,9 @@ sub checkLoadAverage {
 # Used to fix "argument isn't numeric" warnings.
 sub stripInt {
 	my $str = shift;
+	if (not defined $str) {
+		return 0;
+	}
 	if (not $str =~ m/^([\d\-]+)/) {
 		return 0;
 	}
