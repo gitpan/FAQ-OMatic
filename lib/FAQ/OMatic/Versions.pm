@@ -25,45 +25,34 @@
 #                                                                            #
 ##############################################################################
 
-package FAQ::OMatic::changePass;
+###
+### The Versions module is used by the installer and maintenance modules
+### to keep track of upgrade status.
+###
 
-use CGI;
-use FAQ::OMatic::Item;
+package FAQ::OMatic::Versions;
+
 use FAQ::OMatic;
-use FAQ::OMatic::Auth;
+use FAQ::OMatic::Item;
 
-sub main {
-	my $cgi = $FAQ::OMatic::dispatch::cgi;
+sub getVersion {
+	my $property = shift;
 
-	my $params = FAQ::OMatic::getParams($cgi);
+	my $versionItem = new FAQ::OMatic::Item('versionFile',
+		$FAQ::OMatic::Config::metaDir);
+	return $versionItem->{$property} || '';
+}
 
-	my $rt = FAQ::OMatic::pageHeader();
-	
-	my ($id,$aq) = FAQ::OMatic::Auth::getID();
-	$id =~ s/^anonymous$//;
+sub setVersion {
+	my $property = shift;
+	my $version = shift || $FAQ::OMatic::VERSION;
 
-	$rt.="Please enter your username, and select a password.\n";
-	$rt.="<p>Please <b>do not</b> use a password you use anywhere else,\n";
-	$rt.="as it will not be transferred or stored securely!\n";
-
-	$rt.=FAQ::OMatic::makeAref('submitPass',
-			{'badPass'=>'',		# the gedID() call above may (will) set this
-			'_fromChangePass'=>1}, 'POST', 'saveTransients');
-
-	my $idDefault = '';
-	if ($params->{'_admin'}) {
-		$idDefault = $FAQ::OMatic::Config::adminAuth;
-	}
-	$rt.="Email: "
-		."<input type=text name=\"_id\" value=\"$idDefault\" size=60>\n";
-	$rt.= "<br>Password: "
-		."<input type=password name=\"_pass\" value=\"\" size=10>\n";
-	$rt.= "<p><input type=submit name=\"_submit\" value=\"Set Password\">\n";
-	$rt.= "</form>\n";
-
-	$rt .= FAQ::OMatic::pageFooter($params);
-
-	print $rt;
+	my $versionItem = new FAQ::OMatic::Item('versionFile',
+		$FAQ::OMatic::Config::metaDir);
+	$versionItem->setProperty('Title', "Versions Data File");
+	$versionItem->setProperty($property, $version);
+	$versionItem->saveToFile('versionFile',
+		$FAQ::OMatic::Config::metaDir);
 }
 
 1;

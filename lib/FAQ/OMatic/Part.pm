@@ -366,6 +366,8 @@ sub displayPartEditor {
 	$rt .= "> Hide Attributions\n";
 
 	# Type
+	$rt .= "<p><dl>Format text as:\n<dl>\n";
+
 	if ($self->{'Type'} eq 'directory') {
 # TODO: delete this commented block. superseded by submitCatToAns.
 #		if (scalar($self->getChildren()) == 0) {
@@ -390,14 +392,16 @@ sub displayPartEditor {
 			 FAQ::OMatic::commandName(), 
 			 $FAQ::OMatic::dispatch::cgi, 0, 'useHTML');
 		if ($rd) {
-			# TODO: exit is ugly and wrong.
-			print $rd; exit 0;
+			$rt .= "<p><i>Untranslated HTML</i>\n";
+			# problem: how can a user authenticate if he should be able
+			# to use HTML?
 		} else {
 	    	$rt .= "<br><input type=radio name=\"_Type\" value=\"html\"";
 	    	$rt .= " CHECKED" if ($self->{'Type'} eq 'html');
 	    	$rt .= "> Untranslated HTML\n";
 		}
 	}
+	$rt .= "</dl></dl>\n";
 
 	# Submit
 	$rt .= "<br><input type=submit name=\"_submit\" value=\"Submit Changes\">\n";

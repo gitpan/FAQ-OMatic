@@ -964,7 +964,7 @@ sub displayItemEditor {
 
 	# AttributionsTogether
 	$rt .= "<p><input type=checkbox name=\"_AttributionsTogether\"";
-	$rt .= "CHECKED" if $self->{'AttributionsTogether'};
+	$rt .= " CHECKED" if $self->{'AttributionsTogether'};
 	$rt .= "> Show attributions from all parts together at bottom\n";
 
 # TODO: delete this block. superseded by submitAnsToCat
@@ -1106,7 +1106,7 @@ sub setProperty {
 	my $property = shift;
 	my $value = shift;
 
-	if ($value) {
+	if (defined($value) and ($value ne '')) {
 		$self->{$property} = $value;
 		if ($property eq 'Title') {
 			# keep track if title changes after file is loaded;

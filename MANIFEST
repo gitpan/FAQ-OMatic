@@ -19,6 +19,7 @@ lib/FAQ/OMatic/Log.pm
 lib/FAQ/OMatic/Part.pm
 lib/FAQ/OMatic/Search.pm
 lib/FAQ/OMatic/Set.pm
+lib/FAQ/OMatic/Versions.pm
 lib/FAQ/OMatic/Words.pm
 lib/FAQ/OMatic/addItem.pm
 lib/FAQ/OMatic/appearanceForm.pm

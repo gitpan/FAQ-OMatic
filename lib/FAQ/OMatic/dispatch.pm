@@ -48,8 +48,12 @@ sub main {
 		require "$meta/config";
 		if ($meta eq $FAQ::OMatic::Config::metaDir) {
 			$haveMeta = 1;
-		}	# else meta has moved, and config file is out of date: send
-			# user to install screen.
+		} else {
+			print "Content-type: text/plain\n\n";
+			print "meta moved. jonh didn't really feel like dealing\n";
+			print "with this case. Mail him at jonh\@cs.dartmouth.edu .\n";
+			exit 0;
+		}
 	} else {
 		# if unconfigured, the default behavior is to install.
 		# This could be bad -- it means if meta/config becomes inaccessible,

@@ -39,6 +39,7 @@ use CGI;
 use FAQ::OMatic;
 use FAQ::OMatic::Item;
 use FAQ::OMatic::Part;
+use FAQ::OMatic::Versions;
 
 sub main {
 	$cgi = $FAQ::OMatic::dispatch::cgi;
@@ -59,6 +60,8 @@ sub main {
 			{'_restart' => 'install', '_reason'=>'9' },
 			'url', 'saveTransients');
 		print $cgi->redirect(FAQ::OMatic::urlBase($cgi).$url);
+	} elsif ($cgi->param('step') eq 'makeSecure') {
+		makeSecureStep();	# don't print text/html header
 	} else {
 		print $cgi->header("text/html");
 		print $cgi->start_html('-title'=>"Faq-O-Matic Installer",
@@ -78,6 +81,7 @@ my %knownSteps = map {$_=>$_} qw(
 	firstItem		initMetaFiles					setConfig
 	maintenance		makeSecure
 	colorSampler	askColor		setColor
+	upgradeItems
 	);
 
 sub doStep {
@@ -320,88 +324,107 @@ sub mainMenuStep {
 
 	my $maintenanceSecret = $FAQ::OMatic::Config::maintenanceSecret || '';
 
+	my $par = "";	# "<p>" for more space between items
+
 	$rt.="<h3>Configuration Main Menu (install module)</h3>\n";
 	$rt.="<ol>Perform these tasks in order to prepare a new FAQ-O-Matic:\n";
-	$rt.="<p><li><a href=\"".installUrl('askConfig')."\">"
+	$rt.="$par<li><a href=\"".installUrl('askConfig')."\">"
 			.checkBoxFor('askConfig')
 			."Define configuration parameters.</a>\n";
-	$rt.="<p><li><a href=\"".installUrl('configItem')."\">"
+	if (not $FAQ::OMatic::Config::secureInstall) {
+		if ($FAQ::OMatic::Config::mailCommand and $FAQ::OMatic::Config::adminAuth) {
+			$rt.="$par<li><a href=\"".installUrl('makeSecure')."\">"
+				.checkBoxFor('makeSecure')
+				."Set your password and turn on installer security.</a>\n";
+		} else {
+			$rt.="$par<li>"
+				.checkBoxFor('makeSecure')
+				."Set your password and turn on installer security "
+				."(Need to configure "
+				."\$mailCommand and \$adminAuth).\n";
+		}
+	} else {
+		$rt.="$par<li>"
+			.checkBoxFor('makeSecure')
+			."(Installer security is on.)\n";
+	}
+	$rt.="$par<li><a href=\"".installUrl('configItem')."\">"
 			.checkBoxFor('configItem')
 			."Create item, cache, and bags directories.</a>\n";
-	$rt.="<p><li>".checkBoxFor('nothing')
-			."If you are upgrading, copy the contents of your old "
-			."item/ directory to <tt>"
-			.$FAQ::OMatic::Config::itemDir."</tt> now.\n";
-	$rt.="<p><li><a href=\"".installUrl('firstItem')."\">"
+	if ( (0 < FAQ::OMatic::Versions::getVersion('Items'))
+		and (FAQ::OMatic::Versions::getVersion('Items') < 2.604) ) {
+		# items exist but from a version where the itemDir was different
+		$rt.="$par<li>".checkBoxFor('firstItem')
+			."Copy the contents of your old item/ directory to <tt>"
+			.$FAQ::OMatic::Config::itemDir."</tt> now, then "
+			."<a href=\"".installUrl('upgradeItems')."\">"
+			."click here</a> to check this item off; <i> or </i>\n";
+		$rt.="<a href=\"".installUrl('firstItem')."\">"
+			."create an initial category and a trash can.</a>\n";
+	} else {
+		$rt.="$par<li><a href=\"".installUrl('firstItem')."\">"
 			.checkBoxFor('firstItem')
 			."Create an initial category and a trash can.</a>\n";
-	$rt.="<p><li><a href=\"".installUrl('maintenance')."\">"
+	}
+
+	$rt.="$par<li>"
+		.checkBoxFor('rebuildCache')
+		."<a href=\"".installUrl('', 'url', 'maintenance')
+		."&secret=$maintenanceSecret&tasks=rebuildCache\">"
+		."Rebuild the cache and dependency files.</a>\n";
+
+	$rt.="$par<li>"
+		.checkBoxFor('systemBags')
+		."<a href=\"".installUrl('', 'url', 'maintenance')
+		."&secret=$maintenanceSecret&tasks=bagAllImages\">"
+		."Install system images and icons.</a>\n";
+
+	$rt.="$par<li><a href=\"".installUrl('maintenance')."\">"
 			.checkBoxFor('maintenance')
 			."Set up the maintenance cron job</a>\n";
 	if ($maintenanceSecret) {
-		$rt.="<p><li><a href=\"".installUrl('', 'url', 'maintenance')
+		$rt.="$par<li><a href=\"".installUrl('', 'url', 'maintenance')
 				."&secret=$maintenanceSecret\">"
 				.checkBoxFor('manualMaintenance')
 				."Run maintenance script manually now.</a>\n";
 	} else {
-			$rt.="<p><li>"
+			$rt.="$par<li>"
 				.checkBoxFor('manualMaintenance')
 				."Run maintenance script manually now (Need to set up "
 				."the maintenance cron job first).\n";
 	}
-	if (not $FAQ::OMatic::Config::secureInstall) {
-		if ($FAQ::OMatic::Config::mailCommand and $FAQ::OMatic::Config::adminAuth) {
-			$rt.="<p><li><a href=\"".installUrl('makeSecure')."\">"
-				.checkBoxFor('makeSecure')
-				."Turn on installer security.</a>\n";
-		} else {
-			$rt.="<p><li>"
-				.checkBoxFor('makeSecure')
-				."Turn on installer security (Need to configure "
-				."\$mailCommand and \$adminAuth).\n";
-		}
-	} else {
-		$rt.="<p><li>"
-			.checkBoxFor('makeSecure')
-			."(Installer security is on.)\n";
-	}
-	$rt.="<p><li>".checkBoxFor('nothing')
-			."<a href=\"".installUrl('', 'url', 'editGroups')."\">"
+	$rt.="$par<li><a href=\"".installUrl('colorSampler')."\">"
+			.checkBoxFor('customColors')
+			."Select custom colors for your Faq-O-Matic</a> (optional).\n";
+	$rt.="$par<li><a href=\"".installUrl('', 'url', 'editGroups')."\">"
+			.checkBoxFor('customGroups')
 			."Define groups</a> (optional).\n";
-	$rt.="<p><li>".checkBoxFor('nothing')
-			."<a href=\"".installUrl('colorSampler')."\">"
-			."Select colors for your Faq-O-Matic</a> (optional).\n";
-	$rt.="<p><li>".checkBoxFor('nothing')
+	$rt.="$par<li>".checkBoxFor('nothing')
 			."<a href=\"".installUrl('mainMenu')."\">"
 			."Bookmark this link to be able to return to this menu.</a>\n";
 	if ($FAQ::OMatic::Config::secureInstall) {
-		$rt.="<p><li>".checkBoxFor('nothing')
+		$rt.="$par<li>".checkBoxFor('nothing')
 				."<a href=\"".installUrl('', 'url', 'faq')."\">"
 				."Go to the Faq-O-Matic.</a>\n";
 	} else {
-		$rt.="<p><li>".checkBoxFor('nothing')
+		$rt.="$par<li>".checkBoxFor('nothing')
 			."Go to the Faq-O-Matic (need to turn on installer security)";
 	}
 	$rt.="</ol>\n";
 	$rt.="<ul><u>Other available tasks:</u>\n";
-	$rt.="<li>"
-		."<a href=\"".installUrl('', 'url', 'maintenance')
-		."&secret=$maintenanceSecret&tasks=rebuildCache\">"
-		."Rebuild the cache and dependency files.</a>\n";
-	$rt.="<li>"
+	$rt.="$par<li>"
+			.checkBoxFor('nothing')
+			."<a href=\"".installUrl('','url','stats')."\">"
+			."See access statistics.</a>\n";
+	$rt.="$par<li>"
+			.checkBoxFor('nothing')
+			."<a href=\"".installUrl('','url','selectBag')."\">"
+			."Examine all bags.</a>\n";
+	$rt.="$par<li>"
+		.checkBoxFor('nothing')
 		."<a href=\"".installUrl('', 'url', 'maintenance')
 		."&secret=$maintenanceSecret&tasks=expireBags\">"
 		."Check for unreferenced bags (not linked by any FAQ item).</a>\n";
-	$rt.="<li>"
-			."<a href=\"".installUrl('','url','stats')."\">"
-			."See access statistics.</a>\n";
-	$rt.="<li>"
-			."<a href=\"".installUrl('','url','selectBag')."\">"
-			."Examine all uploaded bags.</a>\n";
-	$rt.="<li>"
-		."<a href=\"".installUrl('', 'url', 'maintenance')
-		."&secret=$maintenanceSecret&tasks=bagAllImages\">"
-		."Install system images and icons.</a>\n";
 	$rt.="</ul>\n";
 
 	$rt.="The Faq-O-Matic modules are version $FAQ::OMatic::VERSION.\n";
@@ -420,12 +443,23 @@ sub checkBoxFor {
 		&& (-d "$FAQ::OMatic::Config::itemDir/.")
 		&& (-d "$FAQ::OMatic::Config::cacheDir/.")
 		&& (-d "$FAQ::OMatic::Config::bagsDir/."));
-	$done = 1 if (($thing eq 'firstItem') && (-f "$FAQ::OMatic::Config::itemDir/1"));
+	$done = 1 if (($thing eq 'firstItem')
+		&& FAQ::OMatic::Versions::getVersion('Items') eq $FAQ::OMatic::VERSION);
 	$done = 1
 		if (($thing eq 'maintenance') && ($FAQ::OMatic::Config::maintenanceSecret));
 	$done = 1 if (($thing eq 'makeSecure') && ($FAQ::OMatic::Config::secureInstall));
 	$done = 1 if (($thing eq 'manualMaintenance')
 					&& (-f "$FAQ::OMatic::Config::metaDir/lastMaintenance"));
+	$done = 1 if (($thing eq 'customColors')
+					&& FAQ::OMatic::Versions::getVersion('CustomColors'));
+	$done = 1 if (($thing eq 'rebuildCache')
+					&& (FAQ::OMatic::Versions::getVersion('CacheRebuild')
+						eq $FAQ::OMatic::VERSION));
+	$done = 1 if (($thing eq 'customGroups')
+					&& FAQ::OMatic::Versions::getVersion('CustomGroups'));
+	$done = 1 if (($thing eq 'systemBags')
+					&& (FAQ::OMatic::Versions::getVersion('SystemBags')
+						eq $FAQ::OMatic::VERSION));
 
 	if ($thing eq 'nothing') {
 		$rt.=installUrl('', 'url', 'img', 'space');
@@ -807,6 +841,30 @@ sub firstItemStep {
 		displayMessage("<b>$FAQ::OMatic::Config::itemDir</b> already "
 				."contains a 'help' file.");
 	}
+
+	FAQ::OMatic::Versions::setVersion('Items');
+	doStep('mainMenu');
+}
+
+sub upgradeItemsStep {
+	# user has transferred items from an old FAQ-O-Matic, and
+	# we can indicate in the versions file that they're okay.
+	if (not -f "$FAQ::OMatic::Config::itemDir/1") {
+		FAQ::OMatic::gripe('error',
+			"I don't see $FAQ::OMatic::Config::itemDir/1");
+	}
+	if (not -f "$FAQ::OMatic::Config::itemDir/help000") {
+		FAQ::OMatic::gripe('error',
+			"I don't see $FAQ::OMatic::Config::itemDir/help000");
+	}
+	if (not -f "$FAQ::OMatic::Config::itemDir/trash") {
+		FAQ::OMatic::gripe('error',
+			"I don't see $FAQ::OMatic::Config::itemDir/trash");
+	}
+
+	# indicate that the item files are in place
+	FAQ::OMatic::Versions::setVersion('Items');
+
 	doStep('mainMenu');
 }
 
@@ -936,8 +994,14 @@ sub makeSecureStep {
 	my $map = readConfig();
 	$map->{'$secureInstall'} = "'true'";
 	writeConfig($map);
-	displayMessage("Installer now requires authentication. You will need "
-		."to [Set A New Password] and then log in to continue.", 'default');
+
+	# send admin straight through to changePass, since he can't
+	# have a password yet
+	$url = FAQ::OMatic::makeAref('changePass',
+			{'_restart'=>'install', '_admin'=>1}, 'url');
+	print $cgi->redirect(FAQ::OMatic::urlBase($cgi).$url);
+#	displayMessage("Installer now requires authentication. You will need "
+#		."to [Set A New Password] and then log in to continue.", 'default');
 }
 
 sub colorSamplerStep {
@@ -1070,6 +1134,8 @@ sub setColorStep {
 	my $map = readConfig();
 	$map->{$which} = $colorSpec;
 	writeConfig($map);
+
+	FAQ::OMatic::Versions::setVersion('CustomColors', '1');
 
 	rereadConfig();
 

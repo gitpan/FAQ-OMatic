@@ -41,7 +41,7 @@ use FAQ::OMatic::Appearance;
 use FAQ::OMatic::Intl;
 use FAQ::OMatic::Bags;
 
-$VERSION = '2.606';
+$VERSION = '2.607';
 
 # This is never used to automatically send mail to (that's authorEmail),
 # but when we need to report the author's address, we use this constant:

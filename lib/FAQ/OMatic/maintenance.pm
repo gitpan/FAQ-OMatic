@@ -48,6 +48,7 @@ use FAQ::OMatic;
 use FAQ::OMatic::Log;
 use FAQ::OMatic::Auth;
 use FAQ::OMatic::buildSearchDB;
+use FAQ::OMatic::Versions;
 
 $metaDir = $FAQ::OMatic::Config::metaDir;
 
@@ -361,6 +362,8 @@ sub rebuildCache {
 		my $item = new FAQ::OMatic::Item($itemName);
 		$item->saveToFile('', '', '', 'updateAllDependencies');
 	}
+
+	FAQ::OMatic::Versions::setVersion('CacheRebuild');
 }
 
 sub expireBags {
@@ -401,6 +404,8 @@ sub bagAllImages {
 
 	require FAQ::OMatic::ImageRef;
 	FAQ::OMatic::ImageRef::bagAllImages();
+
+	FAQ::OMatic::Versions::setVersion('SystemBags');
 }
 
 sub mtime {

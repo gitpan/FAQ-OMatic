@@ -31,6 +31,7 @@ use CGI;
 use FAQ::OMatic;
 use FAQ::OMatic::Auth;
 use FAQ::OMatic::Groups;
+use FAQ::OMatic::Versions;
 
 sub main {
 	my $cgi = $FAQ::OMatic::dispatch::cgi;
@@ -55,6 +56,8 @@ sub main {
 		#}
 
 		FAQ::OMatic::Groups::addMember($group, $member);
+
+		FAQ::OMatic::Versions::setVersion('CustomGroups', '1');
 	} elsif ($action eq 'remove') {
 		FAQ::OMatic::Groups::validGroupName($group);
 
