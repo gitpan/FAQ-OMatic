@@ -25,6 +25,8 @@
 #                                                                            #
 ##############################################################################
 
+use strict;
+
 package FAQ::OMatic::addItem;
 
 use CGI;
@@ -37,8 +39,10 @@ sub main {
 	
 	my $params = FAQ::OMatic::getParams($cgi);
 
+	FAQ::OMatic::mirrorsCantEdit($cgi, $params);
+
 	my $file = $params->{'file'} || '';
-	$item = new FAQ::OMatic::Item($file);
+	my $item = new FAQ::OMatic::Item($file);
 	if ($item->isBroken()) {
 		FAQ::OMatic::gripe('error', "The file ($file) doesn't exist.");
 	}
@@ -75,7 +79,7 @@ sub main {
 	# make him feel better
 	if ($params->{'_insert'} eq 'category') {
 		$newitem->makeDirectory()->
-			setText("Subcategories:\n\nAnswers in this category:\n");
+			setText("Subcategories:\n\n\nAnswers in this category:\n");
 	}
 	# passing $file as a name ensures that new child will have the
 	# same type of name as its parent. (such as a helpfile)
@@ -87,6 +91,7 @@ sub main {
 
 	$item->notifyModerator($cgi, 'added a sub-item');
 
+	my $url;
 	if ($duplicateFrom) {
 		$url = FAQ::OMatic::makeAref('editItem',
 			{'file'=>$newitem->{'filename'},

@@ -25,6 +25,8 @@
 #                                                                            #
 ##############################################################################
 
+use strict;
+
 package FAQ::OMatic::recent;
 
 use CGI;
@@ -46,7 +48,7 @@ sub main {
 	my @finalset = ();
 	my $file;
 	foreach $file (@{$matchset}) {
-		$item = new FAQ::OMatic::Item($file);
+		my $item = new FAQ::OMatic::Item($file);
 		if (not $item->hasParent('trash')) {
 			push @finalset, $item;
 		}
@@ -73,12 +75,14 @@ sub main {
 		foreach $item (sort byModDate @finalset) {
 			$rt .= FAQ::OMatic::Appearance::itemStart($params, $item);
 				# goes before & between display item's title
+			$rt .= "<td>\n";
 			$rt .= FAQ::OMatic::makeAref("faq",
 					{ 'file'	=>	$item->{'filename'} })
 					.$item->getTitle()."</a>";
 			$rt .= "<br>"
 					.FAQ::OMatic::Item::compactDate($item->{'LastModifiedSecs'})
 					."\n";
+			$rt .= "</td></tr>\n";
 		}
 		$rt .= FAQ::OMatic::Appearance::itemEnd($params);		# goes after items
 	}

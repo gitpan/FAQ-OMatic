@@ -25,6 +25,8 @@
 #                                                                            #
 ##############################################################################
 
+use strict;
+
 ###
 ### The Versions module is used by the installer and maintenance modules
 ### to keep track of upgrade status.

@@ -25,6 +25,8 @@
 #                                                                            #
 ##############################################################################
 
+use strict;
+
 ###
 ### The Bags module provides services related to bit bags,
 ### binary files stored with and linked to by a FAQ-O-Matic.

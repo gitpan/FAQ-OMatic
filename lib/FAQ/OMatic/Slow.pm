@@ -25,6 +25,8 @@
 #                                                                            #
 ##############################################################################
 
+use strict;
+
 ###
 ### The Slow module provides a mechanism for a long-running process to
 ### continue computing while letting the web browser get feedback sooner.
@@ -92,7 +94,7 @@ sub display {
 			"Taint check failed on ".$params->{'slowFile'});
 	}
 
-	$slowFile = $1;
+	my $slowFile = $1;
 	my $url = FAQ::OMatic::makeAref('-command'=>'displaySlow',
 					'-changedParams' => { 'slowFile' => $slowFile },
 					'-refType'=>'url');

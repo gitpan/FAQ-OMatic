@@ -25,6 +25,8 @@
 #                                                                            #
 ##############################################################################
 
+use strict;
+
 ###
 ### ImageRef.pm
 ###
@@ -37,7 +39,8 @@ package FAQ::OMatic::ImageRef;
 
 use FAQ::OMatic::Bags;
 
-%type = ();     # type of each image
+my %img_type = ();     # type of each image
+my %img_prop = ();     # properties of each image
 
 sub getImage {
 	my $name = shift;
@@ -132,12 +135,16 @@ sub getImageRef {
 
 	# look up size information to append to img tag
 	my $bagName = getBagForImage($name);
-	my $sw = FAQ::OMatic::Bags::getBagProperty($bagName, SizeWidth, '');
-	$sw = " width=$sw" if ($sw ne '');
-	my $sh = FAQ::OMatic::Bags::getBagProperty($bagName, SizeHeight, '');
-	$sh = " height=$sh" if ($sh ne '');
+	my $sw = FAQ::OMatic::Bags::getBagProperty($bagName, 'SizeWidth', '');
+	my $swt = ($sw ne '') ? " width=$sw" : '';
+	my $sh = FAQ::OMatic::Bags::getBagProperty($bagName, 'SizeHeight', '');
+	my $sht = ($sh ne '') ? " height=$sh" : '';
 
-	return "<img src=\"$url\" $imgargs$sw$sh>";
+	if (wantarray) {
+		return ("<img src=\"$url\" $imgargs$swt$sht>", $sw, $sh);
+	} else {
+		return "<img src=\"$url\" $imgargs$swt$sht>";
+	}
 }
 
 sub getImageRefCA {
@@ -212,9 +219,9 @@ $img_prop{'ans-reorder'}{'SizeBytes'} = '191';
 
 $img_type{'ans-small'} = 'gif';
 
-$img_prop{'ans-small'}{'SizeWidth'} = '12';
+$img_prop{'ans-small'}{'SizeWidth'} = '18';
 $img_prop{'ans-small'}{'SizeHeight'} = '14';
-$img_prop{'ans-small'}{'SizeBytes'} = '88';
+$img_prop{'ans-small'}{'SizeBytes'} = '100';
 
 $img_type{'ans-title'} = 'gif';
 
@@ -302,9 +309,9 @@ $img_prop{'cat-reorder'}{'SizeBytes'} = '207';
 
 $img_type{'cat-small'} = 'gif';
 
-$img_prop{'cat-small'}{'SizeWidth'} = '16';
+$img_prop{'cat-small'}{'SizeWidth'} = '18';
 $img_prop{'cat-small'}{'SizeHeight'} = '14';
-$img_prop{'cat-small'}{'SizeBytes'} = '113';
+$img_prop{'cat-small'}{'SizeBytes'} = '104';
 
 $img_type{'cat-title'} = 'gif';
 
@@ -341,6 +348,10 @@ $img_type{'help'} = 'gif';
 $img_prop{'help'}{'SizeWidth'} = '32';
 $img_prop{'help'}{'SizeHeight'} = '24';
 $img_prop{'help'}{'SizeBytes'} = '181';
+
+$img_prop{'picker'}{'SizeWidth'} = '256';
+$img_prop{'picker'}{'SizeHeight'} = '128';
+$img_prop{'picker'}{'SizeBytes'} = '3189';
 
 $img_type{'picker'} = 'jpg';
 

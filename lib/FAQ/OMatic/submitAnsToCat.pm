@@ -25,6 +25,8 @@
 #                                                                            #
 ##############################################################################
 
+use strict;
+
 package FAQ::OMatic::submitAnsToCat;
 
 use CGI;
@@ -36,9 +38,11 @@ sub main {
 	my $cgi = $FAQ::OMatic::dispatch::cgi;
 	my $removed = 0;
 	
-	$params = FAQ::OMatic::getParams($cgi);
+	my $params = FAQ::OMatic::getParams($cgi);
 
-	$item = new FAQ::OMatic::Item($params->{'file'});
+	FAQ::OMatic::mirrorsCantEdit($cgi, $params);
+
+	my $item = new FAQ::OMatic::Item($params->{'file'});
 	if ($item->isBroken()) {
 		FAQ::OMatic::gripe('error', "The file (".
 			$params->{'file'}.") doesn't exist.");
@@ -56,7 +60,7 @@ sub main {
 	}
 
 	$item->makeDirectory()->
-		setText("Subcategories:\n\nAnswers in this category:\n");
+		setText("Subcategories:\n\n\nAnswers in this category:\n");
 
 	# parent and any see-also linkers have changed, since their icons will
 	# be wrong. This is just like changing the title, although it doesn't
@@ -72,7 +76,7 @@ sub main {
 
 	$item->notifyModerator($cgi, "made an answer into a category.");
 
-	$url = FAQ::OMatic::makeAref('-command'=>'faq',
+	my $url = FAQ::OMatic::makeAref('-command'=>'faq',
 				'-params'=>$params,
 				'-changedParams'=>{'checkSequenceNumber'=>''},
 				'-refType'=>'url');

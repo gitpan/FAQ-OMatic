@@ -25,6 +25,8 @@
 #                                                                            #
 ##############################################################################
 
+use strict;
+
 package FAQ::OMatic::submitModOptions;
 
 use CGI;
@@ -35,10 +37,11 @@ use FAQ::OMatic::Auth;
 sub main {
 	my $cgi = $FAQ::OMatic::dispatch::cgi;
 	
-	FAQ::OMatic::getParams($cgi);
-	my $params = \%FAQ::OMatic::theParams;
+	my $params = FAQ::OMatic::getParams($cgi);
 
-	$item = new FAQ::OMatic::Item($params->{'file'});
+	FAQ::OMatic::mirrorsCantEdit($cgi, $params);
+
+	my $item = new FAQ::OMatic::Item($params->{'file'});
 	if ($item->isBroken()) {
 		FAQ::OMatic::gripe('error', "The file (".
 			$params->{'file'}.") doesn't exist.");

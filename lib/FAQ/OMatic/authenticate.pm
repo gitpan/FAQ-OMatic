@@ -25,6 +25,8 @@
 #                                                                            #
 ##############################################################################
 
+use strict;
+
 package FAQ::OMatic::authenticate;
 
 use CGI;
@@ -46,12 +48,16 @@ sub main {
 
 	# Give them the option of setting up a new password
 	# Creating a login is the same thing
-	$newPassButton .= FAQ::OMatic::button(FAQ::OMatic::makeAref('changePass',
-			{'_pass_pass' => '',
-			 '_pass_id' => '' }, '', 'saveTransients'), "Set a New Password");
-	$newLoginButton .= FAQ::OMatic::button(FAQ::OMatic::makeAref('changePass',
-			{'_pass_pass' => '',
-			 '_pass_id' => '' }, '', 'saveTransients'), "Create a New Login");
+	my $newPassButton .= FAQ::OMatic::button(
+			FAQ::OMatic::makeAref('changePass',
+				{'_pass_pass' => '',
+			 	'_pass_id' => '' }, '', 'saveTransients'),
+			"Set a New Password");
+	my $newLoginButton .= FAQ::OMatic::button(
+			FAQ::OMatic::makeAref('changePass',
+				{'_pass_pass' => '',
+			 	'_pass_id' => '' }, '', 'saveTransients'),
+			"Create a New Login");
 
 	if ($params->{'badPass'}) {
 		$rt.="That password is invalid. If you've forgotten your old "

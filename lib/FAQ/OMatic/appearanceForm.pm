@@ -25,6 +25,8 @@
 #                                                                            #
 ##############################################################################
 
+use strict;
+
 package FAQ::OMatic::appearanceForm;
 
 use CGI;
@@ -69,7 +71,7 @@ sub main {
 		['showEditCmds',
 			['', 'Show', 'Hide'],
 			['', '1', ''],
-			'editing commands'],
+			'expert editing commands'],
 		['showAttributions',
 			['Show All', 'Default', 'Hide'],
 			['all', '', 'hide'],

@@ -25,6 +25,8 @@
 #                                                                            #
 ##############################################################################
 
+use strict;
+
 package FAQ::OMatic::editModOptions;
 
 use CGI;
@@ -37,10 +39,12 @@ sub main {
 	my $rt = '';
 	
 	my $params = FAQ::OMatic::getParams($cgi);
+
+	FAQ::OMatic::mirrorsCantEdit($cgi, $params);
 	
 	$rt = FAQ::OMatic::pageHeader($params);
 	
-	$item = new FAQ::OMatic::Item($FAQ::OMatic::theParams{'file'});
+	my $item = new FAQ::OMatic::Item($FAQ::OMatic::theParams{'file'});
 	if ($item->isBroken()) {
 		FAQ::OMatic::gripe('error', "The file (".
 			$FAQ::OMatic::theParams{'file'}.") doesn't exist.");

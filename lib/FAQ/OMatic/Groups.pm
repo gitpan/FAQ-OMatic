@@ -25,6 +25,8 @@
 #                                                                            #
 ##############################################################################
 
+use strict;
+
 ###
 ### FAQ::OMatic::Groups manages group membership, so you can control postings
 ### more finely than {moderator-only or anyone-with-an-email-address}.
@@ -34,7 +36,7 @@ package FAQ::OMatic::Groups;
 
 use FAQ::OMatic;
 
-$groupCache = undef;	# my idea of "declaring" a package-scope var in Perl
+my $groupCache = undef;	# my idea of "declaring" a package-scope var in Perl
 sub readGroups {
 	return $groupCache if (defined $groupCache);
 

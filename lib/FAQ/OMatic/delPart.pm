@@ -25,6 +25,8 @@
 #                                                                            #
 ##############################################################################
 
+use strict;
+
 package FAQ::OMatic::delPart;
 
 use CGI;
@@ -37,7 +39,9 @@ sub main {
 	
 	my $params = FAQ::OMatic::getParams($cgi);
 
-	$item = new FAQ::OMatic::Item($FAQ::OMatic::theParams{'file'});
+	FAQ::OMatic::mirrorsCantEdit($cgi, $params);
+
+	my $item = new FAQ::OMatic::Item($FAQ::OMatic::theParams{'file'});
 	if ($item->isBroken()) {
 		FAQ::OMatic::gripe('error', "The file (".
 			$FAQ::OMatic::theParams{'file'}.") doesn't exist.");
@@ -74,7 +78,7 @@ sub main {
 		"deleted a part, which used to say:\n\n$oldtext\n");
 
 	# send user to item page to see the results of the delete
-	$url = FAQ::OMatic::makeAref('-command'=>'faq',
+	my $url = FAQ::OMatic::makeAref('-command'=>'faq',
 				'-params'=>$params,
 				'-changedParams'=>{'partnum' => '', 'checkSequenceNumber'=>''},
 				'-refType'=>'url');

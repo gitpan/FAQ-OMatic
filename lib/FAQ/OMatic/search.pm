@@ -25,6 +25,8 @@
 #                                                                            #
 ##############################################################################
 
+use strict;
+
 package FAQ::OMatic::search;
 
 use CGI;
@@ -56,7 +58,7 @@ sub main {
 	my @finalset = ();
 	my $file;
 	foreach $file (@{$matchset}) {
-		$item = new FAQ::OMatic::Item($file);
+		my $item = new FAQ::OMatic::Item($file);
 		if (not $item->hasParent('trash')) {
 			push @finalset, $item;
 		}
@@ -79,7 +81,9 @@ sub main {
 		my $item;
 		foreach $item (@finalset) {
 			$rt .= FAQ::OMatic::Appearance::itemStart($params, $item);
+			$rt .= "<td>\n";
 			$rt .= $item->displaySearchContext($params);
+			$rt .= "</td></tr>\n";
 		}
 		$rt .= FAQ::OMatic::Appearance::itemEnd($params);
 	}

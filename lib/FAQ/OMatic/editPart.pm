@@ -25,6 +25,8 @@
 #                                                                            #
 ##############################################################################
 
+use strict;
+
 package FAQ::OMatic::editPart;
 
 use CGI;
@@ -38,9 +40,11 @@ sub main {
 
 	my $params = FAQ::OMatic::getParams($cgi);
 
+	FAQ::OMatic::mirrorsCantEdit($cgi, $params);
+
 	$rt .= FAQ::OMatic::pageHeader($params);
 	
-	$item = new FAQ::OMatic::Item($params->{'file'});
+	my $item = new FAQ::OMatic::Item($params->{'file'});
 	if ($item->isBroken()) {
 		FAQ::OMatic::gripe('error', "The file (".$params->{'file'}
 			.") doesn't exist.");
@@ -53,6 +57,17 @@ sub main {
 	my $insertpart = $params->{'_insertpart'};
 
 	my $partnum = $params->{'partnum'};
+	if ($partnum =~ m/afterLast/) {
+		# it's possible to come from a mirror, who might be enough
+		# out of date that naming a specific part number would cause
+		# the [Amend This Answer] link to sometimes cause people to
+		# unintentionally insert text before existing text.
+		# The pattern match lets us send something like '9999afterLast',
+		# which will cause older versions (which a newer mirror may
+		# point to) to generate a nice error message, instead of
+		# letting the user edit the wrong part.
+		$partnum = scalar(@{$item->{'Parts'}}) - 1;
+	}
 	my $part = undef;
 	if ($partnum >= 0) {
 		$part = $item->getPart($partnum);

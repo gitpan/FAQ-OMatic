@@ -25,6 +25,8 @@
 #                                                                            #
 ##############################################################################
 
+use strict;
+
 package FAQ::OMatic::submitCatToAns;
 
 use CGI;
@@ -36,9 +38,11 @@ sub main {
 	my $cgi = $FAQ::OMatic::dispatch::cgi;
 	my $removed = 0;
 	
-	$params = FAQ::OMatic::getParams($cgi);
+	my $params = FAQ::OMatic::getParams($cgi);
 
-	$item = new FAQ::OMatic::Item($params->{'file'});
+	FAQ::OMatic::mirrorsCantEdit($cgi, $params);
+
+	my $item = new FAQ::OMatic::Item($params->{'file'});
 	if ($item->isBroken()) {
 		FAQ::OMatic::gripe('error', "The file (".
 			$params->{'file'}.") doesn't exist.");
@@ -67,7 +71,7 @@ sub main {
 		if (not defined $partnum) {
 			FAQ::OMatic::gripe('abort',
 				"spooky: directoryHint not defined in category "
-				.$self->{'filename'});
+				.$item->{'filename'});
 		}
 		splice @{$item->{'Parts'}}, $partnum, 1;
 		delete $item->{'directoryHint'};
@@ -93,7 +97,7 @@ sub main {
 
 	$item->notifyModerator($cgi, "made a category into an answer.");
 
-	$url = FAQ::OMatic::makeAref('-command'=>'faq',
+	my $url = FAQ::OMatic::makeAref('-command'=>'faq',
 				'-params'=>$params,
 				'-changedParams'=>{'checkSequenceNumber'=>''},
 				'-refType'=>'url');

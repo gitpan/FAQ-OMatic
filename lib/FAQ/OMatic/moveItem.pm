@@ -25,6 +25,8 @@
 #                                                                            #
 ##############################################################################
 
+use strict;
+
 package FAQ::OMatic::moveItem;
 
 use CGI;
@@ -37,10 +39,12 @@ sub main {
 	my $cgi = $FAQ::OMatic::dispatch::cgi;
 	
 	my $params = FAQ::OMatic::getParams($cgi);
+
+	FAQ::OMatic::mirrorsCantEdit($cgi, $params);
 	
 	my $rt = FAQ::OMatic::pageHeader($params);
 	
-	$item = new FAQ::OMatic::Item($FAQ::OMatic::theParams{'file'});
+	my $item = new FAQ::OMatic::Item($FAQ::OMatic::theParams{'file'});
 	if ($item->isBroken()) {
 		FAQ::OMatic::gripe('error', "The file (".
 			$FAQ::OMatic::theParams{'file'}.") doesn't exist.");

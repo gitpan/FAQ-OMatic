@@ -25,6 +25,8 @@
 #                                                                            #
 ##############################################################################
 
+use strict;
+
 ###
 ### ImageData.pm
 ###
@@ -37,6 +39,8 @@
 ###
 
 package FAQ::OMatic::ImageData;
+
+use vars qw(%img);	# 'import' var names so they're declared
 
 %img = ();		# actual image data
 
@@ -119,9 +123,10 @@ abbd2f9229d6c59d3671dd577180545253e0bec11a6ee528c02e6ba5a842e139
 __EOF__
 
 $img{'ans-small'} = <<__EOF__;
-4749463839610c000e00a10000000000888888ffffffff00ff21f90401000003
-002c000000000c000e00000229847fa320ed6256638e8161a1081c4dc605df43
-4214451a26189a1acbb9650587b16a8bf44c23be5100003b
+47494638396112000e00a10000ff00ff000000ffffff8c8a8c21f90401000000
+002c0000000012000e00000235048299c61d02a340cdc1175fa8464f31844b85
+2160787198246de4c5a66f72a2aee585b61ab7bc0e1c4c7e40dfab2773289614
+4601003b
 __EOF__
 
 $img{'ans-title'} = <<__EOF__;
@@ -264,10 +269,10 @@ $img{'cat-reorder'} = <<__EOF__;
 __EOF__
 
 $img{'cat-small'} = <<__EOF__;
-47494638396110000e00c20000000000fffecb888888ffffffff00ff00000000
-000000000021f90401000004002c0000000010000e0000033648b04cfe0f0441
-4560cdc96a83ff80f68d17c678e642aa2ab94ad2c451a87279337dd9b10b2aad
-dc2f28dc017da3d0115903a6528e04003b
+47494638396112000e00a10000ff00ff000000ffffce8c8a8c21f90401000000
+002c0000000012000e00000239448ea0cb2603874089851785ded3724e55d714
+8e5ba05cc7c7a2ce18c59afb6a71d6a513fbd1887d3b2d5698602e65e21d0d49
+1e8d592a310a003b
 __EOF__
 
 $img{'cat-title'} = <<__EOF__;

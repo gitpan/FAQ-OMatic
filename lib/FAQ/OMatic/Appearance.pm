@@ -25,6 +25,8 @@
 #                                                                            #
 ##############################################################################
 
+use strict;
+
 ###
 ### Appearance.pm
 ###
@@ -60,7 +62,12 @@ sub cPageHeader {
 sub cPageFooter {
 	my $params = shift;		# hash ref
 	my $showLinks = shift || [];	# ref to array of links to show
-	my $numCells = 0;
+
+	my $filename = $params->{'file'} || '1';
+	my $recurse = $params->{'_recurse'} || '';
+	my $item = new FAQ::OMatic::Item($filename);
+
+	my $boxColor = '';	# TODO: I don't think I use this anymore, anyway.
 
 	my @sl;
 	if ($showLinks eq 'all') {
@@ -71,104 +78,116 @@ sub cPageFooter {
 	my %sl = map {$_=>$_} @sl;
 	$showLinks = \%sl;
 
-	my $page= "\n"
-			.partStart({})
-			."<table width=\"100%\">\n";
-	#my $boxColor = "bgcolor=\"$FAQ::OMatic::Config::backgroundColor\"";
-	my $boxColor = '';
-	my $filename = $params->{'file'} || '1';
-	my $recurse = $params->{'_recurse'} || '';
-	my $item = new FAQ::OMatic::Item($filename);
-	$page.="<tr>\n";
+	my $page = "\n<!--footer box at bottom of page with common links -->\n";
+	$page .="<table width=\"100%\" "
+		."bgcolor=\"$FAQ::OMatic::Config::regularPartColor\">\n"
+		."<tr><td><table width=\"100%\">\n";
+
+	my @cells = ();
 
 	if ($showLinks->{'help'}) {
-		$page.=helpButton($params);
-		$numCells++;
+		push @cells, helpButton($params);
 	}
 
 	if ($showLinks->{'search'}) {
 		# Search Form
-		$page.="<td align=center $boxColor>"
+		push @cells,
+			"<td align=center $boxColor>"
 			.FAQ::OMatic::button(
 				FAQ::OMatic::makeAref('-command'=>'searchForm',
 					'-params'=>$params),
 				"Search</a>")
 			."</td>\n";
-		$numCells++;
 	}
 
 	if ($showLinks->{'appearance'}) {
 		# Appearance Options
-		$page.="<td align=center $boxColor>"
+		push @cells,
+			"<td align=center $boxColor>"
 			.FAQ::OMatic::button(
 				FAQ::OMatic::makeAref('-command'=>'appearanceForm',
 					'-params'=>$params),
 			"Appearance")
 			."</td>\n";
-		$numCells++;
 	}
 
 	if ($showLinks->{'entire'}) {
 		# Show This Entire Category
-		if ($item->isCategory() and (not $recurse)) {
-			$page.="<td align=center $boxColor>"
-				.FAQ::OMatic::button(
-					FAQ::OMatic::makeAref('-command'=>'faq',
-						'-params'=>$params,
-						'-changedParams'=>{'_recurse'=>1}),
-					"Show This <em>Entire</em> Category</a>")
-				."</td>\n";
+		if ($item->isCategory()) {
+			if ($recurse) {
+				# provide a way to get rid of the recursive display
+				# THANKS: Jim Adler <jima@sr.hp.com>
+				push @cells,
+					"<td align=center $boxColor>"
+					.FAQ::OMatic::button(
+						FAQ::OMatic::makeAref('-command'=>'faq',
+							'-params'=>$params,
+							'-changedParams'=>{'_recurse'=>''}),
+						"Show Top Category Only</a>")
+					."</td>\n";
+			} else {
+				push @cells,
+				"<td align=center $boxColor>"
+					.FAQ::OMatic::button(
+						FAQ::OMatic::makeAref('-command'=>'faq',
+							'-params'=>$params,
+							'-changedParams'=>{'_recurse'=>1}),
+						"Show This <em>Entire</em> Category</a>")
+					."</td>\n";
+			}
 		} else {
-			$page.="<td align=center></td>\n";
+			push @cells, "<td align=center></td>\n";
 		}
-		$numCells++;
 	}
 
-	if ($showLinks->{'edit'}) {
+	if ($showLinks->{'edit'}
+		and $FAQ::OMatic::Config::showEditOnFaq) {
 		# Show Edit Commands
-		$page.="<td align=center $boxColor>";
+		my $editcell = "<td align=center $boxColor>";
 		if ($params->{'showEditCmds'}) {
-			$page.=FAQ::OMatic::button(
+			$editcell.=FAQ::OMatic::button(
 				FAQ::OMatic::makeAref('-command'=>'faq',
 					'-params'=>$params,
 					'-changedParams'=>{'showEditCmds'=>''}),
 				"Hide Edit Commands");
 		} else {
-			$page.=FAQ::OMatic::button(
+			$editcell.=FAQ::OMatic::button(
 				FAQ::OMatic::makeAref('-command'=>'faq',
 					'-params'=>$params,
 					'-changedParams'=>{'showEditCmds'=>'1'}),
 				"Show Edit Commands");
 		}
-		$page.="</td>\n";
-		$numCells++;
+		$editcell.="</td>\n";
+		push @cells, $editcell;
 	}
 
 	if ($showLinks->{'faq'}) {
-		# Show Edit Commands
+		# return to faq
 		my $cmd = $params->{'cmd'} || '';
 		if ($cmd ne '' and $cmd ne 'faq') {
-			$page.="<td align=center $boxColor>";
-			$page.=FAQ::OMatic::button(
-				FAQ::OMatic::makeAref('-command'=>'faq',
-					'-params'=>$params,
-# kill unneeded params from 'authenticate':
-					'-changedParams'=>{'partnum'=>'',
-						'checkSequenceNumber'=>''},
-				),
-				"Return to FAQ");
-			$numCells++;
+			push @cells,
+				"<td align=center $boxColor>"
+				.FAQ::OMatic::button(
+					FAQ::OMatic::makeAref('-command'=>'faq',
+						'-params'=>$params,
+						# kill unneeded params from 'authenticate':
+						'-changedParams'=>{'partnum'=>'',
+							'checkSequenceNumber'=>''},
+					),
+					"Return to FAQ");
 		}
 	}
 
-	$page.="</tr>\n";
+	$page .= "<tr>\n".join('', @cells)."</tr>\n";
 
+	my $numCells = scalar(@cells) || 0;
+	my $foo = "y".$FAQ::OMatic::VERSION."x";
 	$page.=	"<tr><td colspan=$numCells align=center>\n"
-#			."The <a href=\"http://www.dartmouth.edu/cgi-bin/cgiwrap/jonh/faq.pl\">Faq-O-Matic</a> is by <a href=\"http://www.cs.dartmouth.edu/~jonh\">Jon&nbsp;Howell</a>.\n"
-			."This is <a href=\"http://www.dartmouth.edu/cgi-bin/cgiwrap/jonh/faq.pl\">Faq-O-Matic</a> $FAQ::OMatic::VERSION.\n"
-			."</td></tr>"
-			."</table>"
-			.partEnd({});
+			."This is <a href=\""
+			."http://www.dartmouth.edu/cgi-bin/cgiwrap/jonh/faq.pl"
+			."\">Faq-O-Matic</a> $FAQ::OMatic::VERSION.\n"
+			."</td></tr></table>\n"
+			."</td></tr></table>\n";
 
 	$page .= $FAQ::OMatic::Config::pageFooter || '';
 
@@ -218,26 +237,31 @@ sub itemStart {
 	my $params = shift;
 	my $item = shift;
 	my $alreadyStart = $params->{'_as'} || '';	# info hidden away in $params
+	my $numParts = $params->{'_numParts'} || 1;	# info hidden away in $params
 
-	my $spacer = FAQ::OMatic::ImageRef::getImageRefCA('', '',
+	my ($spacer,$sw) = FAQ::OMatic::ImageRef::getImageRefCA('', '',
 		$item->isCategory(), $params);
 
-	if (not $alreadyStart) {
-		$params->{'_as'} = 1;
-		if (not $params->{'simple'}) {
-			return
-				"<table width=100%><tr><td bgcolor=$FAQ::OMatic::Config::itemBarColor valign=top align=center>"
-				."$spacer</td><td>\n";
-		} else {
-			return "";
-		}
+	if ($params->{'simple'}) {
+		return $alreadyStart
+			? "\n\n<p>\n"
+			: "";
 	} else {
-		if (not $params->{'simple'}) {
-			return "</td></tr><tr><td bgcolor=$FAQ::OMatic::Config::itemBarColor valign=top align=center>"
-					."$spacer</td><td>\n";
-		} else {
-			return "<p>";
+		$params->{'_as'} = 1;
+		# IE doesn't add white space between table cells by default,
+		# so we explicitly use the cellspacing tag to delineate between
+		# parts. Plus we add some cellpadding to give the text inside
+		# the colored boxes a little "air" around it.
+		# THANKS: Jim Adler <jima@sr.hp.com> for the suggestion.
+		my $rt = '';
+		if (not $alreadyStart) {
+			$rt = "<table width=100% cellpadding=5 cellspacing=2>\n";
 		}
+		$rt.="<tr>\n"
+			."<td bgcolor=$FAQ::OMatic::Config::itemBarColor "
+			."valign=top align=center rowspan=$numParts width=$sw>\n"
+			."$spacer\n</td>\n";
+		return $rt;
 	}
 }
 
@@ -245,7 +269,7 @@ sub itemStart {
 sub itemEnd {
 	my $params = shift;
 	if (not $params->{'simple'}) {
-		return "</td></tr></table>\n";
+		return "</table>\n";
 	} else {
 		return "<hr>";
 	}
@@ -257,32 +281,37 @@ sub partStart {
 	my $part = shift;	# can examine the part to see if it's a directory
 
 	if (not $params->{'simple'}) {
-		if (($part->{'Type'} || '') eq 'directory') {
-			return "<table bgcolor=$FAQ::OMatic::Config::directoryPartColor "
-				."width=\"100%\"><tr><td>\n";
-		} else {
-			return "<table bgcolor=$FAQ::OMatic::Config::regularPartColor "
-				."width=\"100%\"><tr><td>\n";
-		}
+		my $color = (($part->{'Type'} || '') eq 'directory')
+					? $FAQ::OMatic::Config::directoryPartColor
+					: $FAQ::OMatic::Config::regularPartColor;
+		return "<tr><td bgcolor=$color>\n";
 	} else {
-		return "<br>\n";
+		return "<p>\n";
 	}
 }
 
 sub partEnd {
 	my $params = shift;
 	if (not $params->{'simple'}) {
-		return "</td></tr></table>\n";
+		return "</td></tr>\n";
 	} else {
-		return "<br>";
+		return "<br>\n";
 	}
 }
+
+use vars qw($editStart $editEnd $otherStart $otherEnd $highlightColor
+	$highlightStart $highlightEnd $graphHistory $graphHeight $graphWidth);
 
 # These surround the editing buttons. I make them smaller so they'll
 # not look as much like part of the item being displayed, and more
 # like little intruders.
-$editStart = "<font size=-1>";
-$editEnd = "</font>";
+# TODO: should be functions to handle 'simple' HTML mode
+$editStart = "<tr><td><font size=-1>\n";
+$editEnd = "\n</font></td></tr>\n";
+
+# These surround other text, such as moderator and attributionsTogether
+$otherStart = "<tr><td>\n";
+$otherEnd = "\n</td></tr>\n";
 
 # These surround words in the document that were in a search query.
 $highlightColor	= $FAQ::OMatic::Config::highlightColor || "#a01010";

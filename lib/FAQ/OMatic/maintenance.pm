@@ -25,6 +25,8 @@
 #                                                                            #
 ##############################################################################
 
+use strict;
+
 ##
 ## maintenance.pm
 ##
@@ -52,7 +54,7 @@ use FAQ::OMatic::Versions;
 use FAQ::OMatic::ImageRef;
 use FAQ::OMatic::Slow;
 
-$metaDir = $FAQ::OMatic::Config::metaDir;
+my $metaDir = $FAQ::OMatic::Config::metaDir;
 
 # global
 my $html = '';
@@ -83,8 +85,9 @@ sub main {
 	}
 
 	my $slow = '';
-	if ($cgi->param('tasks') ne 'mirrorClient'
-		and $cgi->param('tasks') ne 'rebuildCache') {
+	my $tasks = $cgi->param('tasks') || '';
+	if ($tasks ne 'mirrorClient'
+		and $tasks ne 'rebuildCache') {
 		# (don't force out the header for Slow processes, which need
 		# to be able to redirect.)
 		print $cgi->header("-type"=>"text/html");
@@ -96,7 +99,7 @@ sub main {
 	}
 
 	$html.="<pre>\n";
-	foreach $i (sort @tasks) {
+	foreach my $i (sort @tasks) {
 		$i =~ s/\d+ //;
 		if (defined $taskUntaint{$i}) {
 			$i = $taskUntaint{$i};
@@ -193,7 +196,7 @@ sub periodicTasks {
 # }
 
 # set of files to trim in trim()
-%trimset = ();
+my %trimset = ();
 
 ############################################################################
 ########  Task definitions  ################################################
@@ -241,7 +244,12 @@ sub trim {
 	$html.= "trimming: ".join(' ', sort keys %trimset)."\n";
 
 	my $daybefore = FAQ::OMatic::Log::adddays(FAQ::OMatic::Log::numericToday(), -2);
-	while (defined($file = readdir(NEWLOGDIR))) {
+	while (defined(my $file = readdir(NEWLOGDIR))) {
+		# untaint file -- we should be able to trust the operating system
+		# to provide only reasonable filenames from a readdir().
+		$file =~ m/^(.*)$/;
+		$file = $1;
+
 		# uhdb's (unique host databases, part of the access log)
 		if ($trimset{'uhdb'} and ($file =~ m/^[\d-]+.uhdb./)) {
 			my @dates = ($file =~ m/^([\d-]+)/);
@@ -355,16 +363,17 @@ sub invoke {
 
 	my $proto = getprotobyname('tcp');
 	socket(HTTPSOCK, PF_INET, SOCK_STREAM, $proto);
-	$sin = sockaddr_in($port, inet_aton($host));
+	my $httpsock = \*HTTPSOCK;	# filehandles are such a nasty legacy in Perl
+	my $sin = sockaddr_in($port, inet_aton($host));
 	if (not connect(HTTPSOCK, $sin)) {
-		die "bang, $!, $@!\n"
+		die "maintenance::invoke can't connect(): $!, $@!\n"
 	}
-	print HTTPSOCK "GET $url HTTP/1.0\n\n";
-	FAQ::OMatic::flush(FAQ::OMatic::maintenance::HTTPSOCK);
+	print $httpsock "GET $url HTTP/1.0\n\n";
+	FAQ::OMatic::flush($httpsock);
 		# Thanks to Miro Jurisic <meeroh@MIT.EDU> for this fix.
 
-	my @reply = <HTTPSOCK>;
-	close HTTPSOCK;
+	my @reply = <$httpsock>;
+	close $httpsock;
 
 	if ($verbose) {
 		print join('', @reply);
@@ -461,8 +470,11 @@ sub mirrorClient {
 	my $slow = shift || '';
 	my $url = $FAQ::OMatic::Config::mirrorURL;
 
-	if (not defined $url) {
-		die "This FAQ-O-Matic is not configured to be a mirror.";
+	if ((not defined $url)
+		or ($url eq '')) {
+		$html.="mirrorClient() exiting silently because this is "
+			."not a mirror.\n";
+		return;
 	}
 
 	if ($slow) {
@@ -517,11 +529,12 @@ sub mirrorClient {
 	my @configs = grep { m/^config\s/ } @reply;
 	my $config;
 	my $map = FAQ::OMatic::install::readConfig();
+	$html .= "configs supplied: ".scalar(@configs)."\n";
 	foreach $config (@configs) {
 		my ($left,$right) =
 			($config =~ m/config (\$\S+) = (.*)$/);
 		$map->{$left} = $right;
-		#$html.="$left => $right\n";
+		$html.="$left => $right\n";
 	}
 	FAQ::OMatic::install::writeConfig($map);
 	# now make sure that config takes effect for all the cache
@@ -615,32 +628,35 @@ sub mirrorItem {
 	my $itemDir = shift;
 
 	my $proto = getprotobyname('tcp');
+	my $sin = sockaddr_in($port, inet_aton($host));
+
 	socket(HTTPSOCK, PF_INET, SOCK_STREAM, $proto);
-	$sin = sockaddr_in($port, inet_aton($host));
-	if (not connect(HTTPSOCK, $sin)) {
-		die "bang, $!, $@!\n"
+	my $httpsock = \*HTTPSOCK;
+
+	if (not connect($httpsock, $sin)) {
+		die "mirrorItem can't connect(): $!, $@!\n"
 	}
 	my $request = "GET $path HTTP/1.0";
-	print HTTPSOCK "$request\n\n";
-	FAQ::OMatic::flush(FAQ::OMatic::maintenance::HTTPSOCK);
+	print $httpsock "$request\n\n";
+	FAQ::OMatic::flush($httpsock);
 		# Thanks to Miro Jurisic <meeroh@MIT.EDU> for this fix.
-	my $httpstatus = <HTTPSOCK>;	# get initial result
+	my $httpstatus = <$httpsock>;	# get initial result
 	chomp $httpstatus;
 	my ($statusNum) = ($httpstatus =~ m/\s(\d+)\s/);
 	if ($statusNum != 200) {
 		$html .= "<br>Request '$request' for $itemFilename from "
 			."$host:$port failed: ($statusNum) $httpstatus\n";
-		close(HTTPSOCK);
+		close($httpsock);
 		return;
 	}
-	while (<HTTPSOCK>) {			# blow past HTTP headers
+	while (<$httpsock>) {			# blow past HTTP headers
 		last if ($_ =~ m/^[\r\n]*$/);
 	}
 
 	my $item = new FAQ::OMatic::Item();
 	$item->{'filename'} = $itemFilename;
-	$item->loadFromFileHandle(\*HTTPSOCK);
-	close(HTTPSOCK);
+	$item->loadFromFileHandle($httpsock);
+	close($httpsock);
 
 	$item->{'titleChanged'} = 'true';
 		# since we just mirrored this guy, the title may very well
@@ -666,48 +682,51 @@ sub mirrorBag {
 	my $bagFilename = shift;	# already untainted by caller
 
 	my $proto = getprotobyname('tcp');
+	my $sin = sockaddr_in($port, inet_aton($host));
+
 	socket(HTTPSOCK, PF_INET, SOCK_STREAM, $proto);
-	$sin = sockaddr_in($port, inet_aton($host));
-	if (not connect(HTTPSOCK, $sin)) {
-		die "bang, $!, $@!\n"
+	my $httpsock = \*HTTPSOCK;	# filehandles are such a nasty legacy in Perl
+
+	if (not connect($httpsock, $sin)) {
+		die "mirrorBag can't connect(): $!, $@!\n"
 	}
 	my $request = "GET $path HTTP/1.0";
-	print HTTPSOCK "$request\n\n";
-	FAQ::OMatic::flush(FAQ::OMatic::maintenance::HTTPSOCK);
+	print $httpsock "$request\n\n";
+	FAQ::OMatic::flush($httpsock);
 		# Thanks to Miro Jurisic <meeroh@MIT.EDU> for this fix.
-	my $httpstatus = <HTTPSOCK>;	# get initial result
+	my $httpstatus = <$httpsock>;	# get initial result
 	chomp $httpstatus;
 	my ($statusNum) = ($httpstatus =~ m/\s(\d+)\s/);
 	if ($statusNum != 200) {
 		$html .= "<br>Request '$request' for $bagFilename from "
 			."$host:$port failed: ($statusNum) $httpstatus\n";
-		close(HTTPSOCK);
+		close($httpsock);
 		return;
 	}
-	while (<HTTPSOCK>) {			# blow past HTTP headers
+	while (<$httpsock>) {			# blow past HTTP headers
 		last if ($_ =~ m/^[\r\n]*$/);
 	}
 
 	# input looks good at this point -- open output bag file
 	if (not open(BAGFILE, ">".$FAQ::OMatic::Config::bagsDir.$bagFilename)) {
 		$html .= "<br>open of $bagFilename failed: $!\n";
-		close HTTPSOCK;
+		close $httpsock;
 		return;
 	}
 
 	my $sizeBytes = 0;
 	my $buf;
-	while (read(HTTPSOCK, $buf, 4096)) {
+	while (read($httpsock, $buf, 4096)) {
 		print BAGFILE $buf;
 		$sizeBytes += length($buf);
 		# TODO: maybe have (mirror-site-admin)-configurable length limit here
 	}
 	close(BAGFILE);
-	close(HTTPSOCK);
+	close($httpsock);
 
 	if (not chmod(0644, $FAQ::OMatic::Config::bagsDir.$bagFilename)) {
 		FAQ::OMatic::gripe('problem', "chmod("
-			.$FAQ::OMatic::Config::bagsDir.$bagFileame
+			.$FAQ::OMatic::Config::bagsDir.$bagFilename
 			." failed: $!");
 	}
 

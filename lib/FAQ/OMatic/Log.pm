@@ -25,6 +25,8 @@
 #                                                                            #
 ##############################################################################
 
+use strict;
+
 ##
 ## FaqLog.pm -- access logging facilities
 ##
@@ -122,14 +124,18 @@ sub summarizeDay {
 	#$ENV{'PATH'} = '';
 	# First, copy the unique hosts database from the previous day to today
 	if ($FAQ::OMatic::Config::statUniqueHosts) {
+		my $dbfile;
 		foreach $dbfile (FAQ::OMatic::safeGlob($FAQ::OMatic::Config::metaDir,
 					"^$prevdate.uhdb")) {
 			my $newname = $dbfile;
 			$newname =~ s#/$prevdate#/$date#;
-			if (system("cp $dbfile $newname")) {
+			my @msrc = FAQ::OMatic::mySystem("cp $dbfile $newname");
+			if (scalar(@msrc)) {
 				FAQ::OMatic::gripe('note',
-			"FAQ::OMatic::Log::summarizeDay: cp $dbfile $newname failed. ($!)");
+				"FAQ::OMatic::Log::summarizeDay: cp $dbfile $newname failed: "
+					.join(', ', @msrc));
 				# assume yesterday is just plain broken, and start fresh
+				my $file;
 				foreach $file (FAQ::OMatic::safeGlob(
 								$FAQ::OMatic::Config::metaDir,
 								"^$date.uhdb")) {
@@ -192,6 +198,7 @@ sub summarizeDay {
 
 	# compute cumulative stats for Operations and Hits
 	my %opnames=('Hits'=>1);
+	my $key;
 	foreach $key (keys %{$oldItem}) {
 		$opnames{$key}=1 if ($key =~ m/^Oper/);
 		$key =~ s/^Cum//;

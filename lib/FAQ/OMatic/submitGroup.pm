@@ -25,6 +25,8 @@
 #                                                                            #
 ##############################################################################
 
+use strict;
+
 package FAQ::OMatic::submitGroup;
 
 use CGI;
@@ -36,6 +38,8 @@ use FAQ::OMatic::Versions;
 sub main {
 	my $cgi = $FAQ::OMatic::dispatch::cgi;
 	my $params = FAQ::OMatic::getParams($cgi);
+
+	FAQ::OMatic::mirrorsCantEdit($cgi, $params);
 
 	my $action = $params->{'_action'};
 	my $group = $params->{'group'};
@@ -73,7 +77,7 @@ sub main {
 		FAQ::OMatic::gripe('error', "Invalid action '$action'.");
 	}
 
-	$url = FAQ::OMatic::makeAref('editGroups', {}, 'url');
+	my $url = FAQ::OMatic::makeAref('editGroups', {}, 'url');
 	print $cgi->redirect(FAQ::OMatic::urlBase($cgi).$url);
 }
 

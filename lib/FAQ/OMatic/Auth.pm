@@ -25,6 +25,8 @@
 #                                                                            #
 ##############################################################################
 
+use strict;
+
 ###
 ### The FaqAuth module provides identification, authentication,
 ### and authorization services for the Faq-O-Matic.
@@ -44,7 +46,7 @@ use FAQ::OMatic::Item;
 use FAQ::OMatic::AuthLocal;
 use FAQ::OMatic::Groups;
 
-$trustedID = undef;
+my $trustedID = undef;
 						# Perm values only:
 						# '7','9' -- returned by perm routines to indicate
 						#		authQuality must be 5, and user must be the
@@ -52,16 +54,18 @@ $trustedID = undef;
 						# '6' -- a perm that indicates a group membership
 						#		requirement. (actually "6 group_name".)
 						# $authQuality's and Perm* values:
-$authQuality = undef;	# '5' -- user has provided proof that ID is correct
+my $authQuality = undef;
+						# '5' -- user has provided proof that ID is correct
 						# '3' -- user has merely claimed this ID
 						# '1' -- no ID is offered
 
 # If anyone thinks these should be user-configurable, let me know
 # and I'll move them to FaqConfig.pm in the next release. --jonh
-$cookieLife = 3600;	# 60 sec * 60 min == 1 hour
-$cookieExtra = 600;	# 10 extra minutes to submit forms after filling them out
-					# so you don't have to worry about losing your text.
-$cookieActual = $cookieLife;
+my $cookieLife = 3600;	# 60 sec * 60 min == 1 hour
+my $cookieExtra = 600;	# 10 extra minutes to submit forms after filling
+						# them out so you don't have to worry about
+						# losing your text.
+my $cookieActual = $cookieLife;
 
 sub getID {
 	my $params = \%FAQ::OMatic::theParams;
@@ -105,6 +109,7 @@ sub checkPerm {
 		return 0;
 	}
 
+	getInheritedProperty($item, 'Moderator');
 	# prove user has at least moderator priveleges
 	if ((($whocan==7) and ($aq==5))
 		and (($id eq getInheritedProperty($item, 'Moderator'))
@@ -127,6 +132,10 @@ sub getInheritedProperty {
 	if (isPropertyGlobal($property)) {
 		# save a recursive walk up the tree
 		return getDefaultProperty($property);
+	}
+	if (not ref $item) {
+		# get property from top item if no item specified
+		$item = new FAQ::OMatic::Item('1');
 	}
 
 	return $item->{$property}
@@ -418,7 +427,7 @@ sub authenticate {
 	return ($id, $aq);
 }
 
-%staticErrors = (
+my %staticErrors = (
 	9 => 'the administrator of this Faq-O-Matic',
 	5 => 'someone who has proven their identification',
 	3 => 'someone who has offered identification',

@@ -25,6 +25,8 @@
 #                                                                            #
 ##############################################################################
 
+use strict;
+
 package FAQ::OMatic::editGroups;
 
 use CGI;
@@ -35,6 +37,9 @@ use FAQ::OMatic::Groups;
 sub main {
 	my $cgi = $FAQ::OMatic::dispatch::cgi;
 	my $params = FAQ::OMatic::getParams($cgi);
+
+	FAQ::OMatic::mirrorsCantEdit($cgi, $params);
+
 	my $html = '';
 
 	my $group = $params->{'group'};

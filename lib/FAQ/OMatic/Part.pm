@@ -25,6 +25,8 @@
 #                                                                            #
 ##############################################################################
 
+use strict;
+
 ###
 ### A FAQ::OMatic::Part is a member of a FAQ::OMatic::Item, and contains one chunk of
 ### text, plus its attributions, modification date, and other
@@ -123,6 +125,7 @@ sub displayAsFile {
 	my $self = shift;
 	my $rt = "";
 
+	my $key;
 	foreach $key (sort keys %{$self}) {
 		if (($key =~ m/^[a-z]/)
 			or ($key eq 'Text')) {
@@ -162,6 +165,7 @@ sub display {
 	my $rt = "";	# return text
 
 	$rt .= "<ul>\n";
+	my $key;
 	foreach $key (sort keys %$self) {
 		$rt .= "<li>$key => $self->{$key}<br>\n";
 	}
@@ -175,16 +179,17 @@ sub displayHTML {
 	my $item = shift;
 	my $partnum = shift;
 	my $params = shift;
-	my $rt = ""; 	# return text
 	my $showAttributions = $params->{'showAttributions'} || 'default';
+	my @boxes = ();		# return one table row per @boxes element
 
+	my $rt = '';
 	$rt .= FAQ::OMatic::Appearance::partStart($params,$self);
 
 	my $tmp = FAQ::OMatic::insertLinks($params, $self->{'Text'},
 					   $self->{'Type'} eq 'html',
 					   $self->{'Type'} eq 'directory');
 	$tmp = FAQ::OMatic::highlightWords($tmp, $params);
-	$type = $self->{'Type'} || '';
+	my $type = $self->{'Type'} || '';
 	if ($type eq 'monospaced'){
 		## monospaced text
 		$tmp =~ s/\n$//;
@@ -238,9 +243,11 @@ sub displayHTML {
 	}
 
 	$rt .= FAQ::OMatic::Appearance::partEnd($params);
+	push @boxes, $rt;	# that's the end of the main part content
 
-	my $filename = $item->{'filename'};
 	if ($params->{'showEditCmds'} and $item->ordinaryItem()) {
+		my $filename = $item->{'filename'};
+		$rt = '';
 		#$rt .= "<br>\n" if ($showAttributions eq 'all');
 		$rt .= $FAQ::OMatic::Appearance::editStart;
 			#."Edit Part: ";
@@ -252,6 +259,15 @@ sub displayHTML {
 							'_insertpart'=>1,
 							'checkSequenceNumber'=>$item->{'SequenceNumber'}}),
 				"Insert Text Here")."\n";
+		$rt .= FAQ::OMatic::button(
+			FAQ::OMatic::makeAref('-command'=>'editPart',
+				'-params'=>$params,
+				'-changedParams'=>{'file'=>$filename,
+							'partnum'=>$partnum,
+							'_insertpart'=>1,
+							'_upload'=>1,
+							'checkSequenceNumber'=>$item->{'SequenceNumber'}}),
+				"Insert Uploaded Text Here")."\n";
 		$rt .= FAQ::OMatic::button(
 			FAQ::OMatic::makeAref('-command'=>'editPart',
 				'-params'=>$params,
@@ -315,10 +331,12 @@ sub displayHTML {
 				"Select bag to replace with new upload")."\n";
 		}
 
-		$rt .= $FAQ::OMatic::Appearance::editEnd."<br>\n";
+		$rt =~ s/\n$//;
+		$rt .= $FAQ::OMatic::Appearance::editEnd;
+		push @boxes, $rt;	# that's the end of the main part content
 	}
 
-	return $rt;
+	return @boxes;
 }
 
 sub displayPartEditor {
@@ -335,36 +353,52 @@ sub displayPartEditor {
 
 	$rt .= FAQ::OMatic::makeAref('-command'=>'submitPart',
 						'-params'=>$params,
+						'-changedParams'=>{'partnum'=>$partnum},
 						'-refType'=>'POST',
 						'-saveTransients'=>1);
 
+	$rt.="<table><tr>\n";
+	$rt.="<td colspan=2>\n";
 	$rt .= "<input type=hidden name=\"checkSequenceNumber\" value=\""
 		.$item->{'SequenceNumber'}."\">\n";
 
-	# THANKS: no text boxes wrap anymore -- it breaks long URLs.
-	# THANKS: to Billy Naylor <banjo@actrix.gen.nz> for the fix
-	# THANKS: to "Alan R. Zimmerman" <mailto:alanz@mdhost.cse.tek.com>) for
-	# noticing it a long time ago. I just forgot about his bug report! Blush.
-	$rt .= "<input type=radio name=\"_inputType\" value=\"textarea\" CHECKED>\n"
-		." Enter text in this box:";
-	$rt .= "<br><textarea cols=80 rows=$rows name=_newText>";
-
-	my $text = $self->{'Text'};
-	$text =~ s/&/&amp;/gs;		# all browsers I've met correctly
-	$text =~ s/</&lt;/gs;		# convert textarea entities into the real thing
-	$text =~ s/>/&gt;/gs;
-
-	$text = FAQ::OMatic::addTitleToFaqomaticReferences($text);
-	$rt .= $text."</textarea>\n";
-
-	# Upload file instead of typing in textarea
-	# THANKS: to John Goerzen
-	$rt .= "<p><input type=radio name=\"_inputType\" value=\"file\">\n"
-		." <i>or</i> replace text with uploaded file: ";
-	$rt .= "<input type=file name=\"_newTextFile\"><br>";
-	if ($self->{'Text'} ne '') {
-		$rt .= "Warning: file contents will <b>replace</b> "
-				."text in box above.\n";
+	if (not $params->{'_upload'}) {
+		# no text boxes wrap anymore -- it breaks long URLs.
+		# THANKS: to Billy Naylor <banjo@actrix.gen.nz> for the fix
+		# THANKS: to "Alan R. Zimmerman" <mailto:alanz@mdhost.cse.tek.com>) for
+		# noticing it a long time ago. I just forgot about his bug report!
+		# Blush.
+		# Wait -- it wouldn't if it were SOFT wrapping! Silly me.
+		my $wrap = ($self->{'Type'} eq 'monospaced')
+			? 'off'
+			: 'soft';
+		$rt .= "<input type=hidden name=\"_inputType\" value=\"textarea\">\n";
+		$rt .= "<textarea cols=80 rows=$rows name=_newText wrap=$wrap>";
+	
+		my $text = $self->{'Text'};
+		$text =~ s/&/&amp;/gs;		# all browsers I've met correctly
+		$text =~ s/</&lt;/gs;		# convert textarea entities into the
+									# real thing
+		$text =~ s/>/&gt;/gs;
+	
+		$text = FAQ::OMatic::addTitleToFaqomaticReferences($text);
+		$rt .= $text."</textarea>\n";
+	
+		$rt.="</td>\n";
+		$rt.="</tr><tr>\n";
+		$rt.="<td align=left valign=top width=\"50%\">\n";
+	} else {
+		# Upload file instead of typing in textarea
+		# THANKS: to John Goerzen
+		$rt .= "<p><input type=hidden name=\"_inputType\" value=\"file\">\n"
+			."Upload file: ";
+		$rt .= "<input type=file name=\"_newTextFile\"><br>";
+		if ($self->{'Text'} ne '') {
+			my @count = ($self->{'Text'} =~ m/\n/gs);
+			my $count = scalar(@count);
+			$rt .= "Warning: file contents will <b>replace</b> "
+					."previous text ($count lines).\n";
+		}
 	}
 
 	# HideAttributions
@@ -409,10 +443,15 @@ sub displayPartEditor {
 		}
 	}
 	$rt .= "</dl></dl>\n";
+	$rt.="</td>\n";
 
 	# Submit
+	# THANKS: to Jim Adler <jima@sr.hp.com> for suggesting using a
+	# table to bring the Submit button up higher so users don't have
+	# to scroll just to get past the rest of the form.
+	$rt.="<td align=left valign=top width=\"50%\">\n";
 	$rt .= "<br><input type=submit name=\"_submit\" value=\"Submit Changes\">\n";
-	$rt .= "<input type=reset name=\"_reset\" value=\"Revert\">\n";
+	$rt .= "<br><input type=reset name=\"_reset\" value=\"Revert\">\n";
 	$rt .= "<input type=hidden name=\"_zzverify\" value=\"zz\">\n";
 		# this lets the submit script check that the whole POST was
 		# received.
@@ -424,6 +463,8 @@ sub displayPartEditor {
 #					'checkSequenceNumber'=>''}
 #				),
 #			'Cancel and return to FAQ');
+	$rt.="</td>\n";
+	$rt.="</tr></table>\n";
 
 	return $rt;
 }
@@ -518,7 +559,7 @@ sub mergeDirectory {
 		and ($self->{'Text'} =~ m/\n\nAnswers in this categ/)) {
 		# Insert subcategories above "Answers in this category" header, if
 		# one exists.
-		$self->{'Text'} =~ s/\n\nAnswers in this categ/\n\nfaqomatic:$filename\n\nAnswers in this categ/s;
+		$self->{'Text'} =~ s/(\n?\n\nAnswers in this categ)/\n\nfaqomatic:$filename$&/s;
 	} else {
 		# just tack on the end with all the other answers
 		$self->{'Text'} .= "\nfaqomatic:$filename\n";

@@ -25,6 +25,8 @@
 #                                                                            #
 ##############################################################################
 
+use strict;
+
 ###
 ### install.pm
 ###
@@ -32,7 +34,7 @@
 ### Faq-O-Matic.
 ###
 
-$VERSION = undef;
+my $VERSION = undef;
 # This is NOT really the version number. See FAQ/OMatic.pm.
 # THANKS: "Andreas J. Koenig" <andreas.koenig@anima.de> says that I need
 # THANKS: a dummy VERSION string to fix a weird interaction among MakeMaker,
@@ -47,6 +49,11 @@ use FAQ::OMatic;
 use FAQ::OMatic::Item;
 use FAQ::OMatic::Part;
 use FAQ::OMatic::Versions;
+
+use vars qw($configInfo);	 # needs to be available to mirrorServer
+
+my $cgi;
+my $params;
 
 sub main {
 	$cgi = $FAQ::OMatic::dispatch::cgi;
@@ -67,7 +74,7 @@ sub main {
 			{'_restart' => 'install', '_reason'=>'9' },
 			'url', 'saveTransients');
 		print $cgi->redirect(FAQ::OMatic::urlBase($cgi).$url);
-	} elsif ($cgi->param('step') eq 'makeSecure') {
+	} elsif (($cgi->param('step')||'') eq 'makeSecure') {
 		makeSecureStep();	# don't print text/html header
 	} else {
 		print $cgi->header("text/html");
@@ -83,7 +90,6 @@ sub main {
 my %knownSteps = map {$_=>$_} qw(
 	default			askMeta			configMeta		initConfig
 	mainMenu		
-#	askItem			
 	configItem		askConfig
 	firstItem		initMetaFiles					setConfig
 	maintenance		makeSecure
@@ -201,7 +207,7 @@ __EOF__
 sub configMetaStep {
 	my $rt.='';
 
-	$meta = $FAQ::OMatic::dispatch::meta;
+	my $meta = $FAQ::OMatic::dispatch::meta;
 	if (not -d "$meta/.") {
 		# try mkdir
 		if (not mkdir(stripSlash($meta), 0700)) {
@@ -255,7 +261,7 @@ sub initConfigStep {
 		}
 	
 		my $ciDfl = which("ci");
-		my $userDfl = 'getpwuid($<)';
+		my $userDfl = 'getpwuid($>)';
 	
 		my $map = {
 			'$adminAuth'		=> "''",
@@ -280,6 +286,14 @@ sub initConfigStep {
 			'$serveDir'			=> "''",
 			'$serveURL'			=> "''"
 		};
+
+		# THANKS: to Jim Adler <jima@sr.hp.com> for this fix that
+		# keeps HP-UX's RCS happy. (I'd recommend just installing
+		# GNU RCS, but this will be convenient for some.)
+		if ($Config{osname} eq 'hpux' and
+			($ciDfl eq '/usr/bin/ci' or $ciDfl eq '/bin/ci')) {
+			$map->{'$RCSargs'} = "'-l -mnull'";
+		}
 	
 		writeConfig($map);
 		displayMessage("Created new config file.");
@@ -302,7 +316,7 @@ sub initMetaFilesStep {
 
 sub which {
 	my $prog = shift;
-	foreach $path (split(':', $ENV{'PATH'})) {
+	foreach my $path (split(':', $ENV{'PATH'})) {
 		if (-x "$path/$prog") {
 			return "$path/$prog";
 		}
@@ -318,8 +332,19 @@ sub rereadConfig {
 		my @cfg = <IN>;
 		close IN;
 		my $cfg = join('', @cfg);
-		$cfg =~ m/^(.*)$/s;
-		eval($1);
+
+		$cfg =~ m/^(.*)$/s;	 # untaint (since data is from a file)
+		$cfg = $1;
+
+		{
+			no strict 'vars';
+				# config file is not written in 'strict' form (vars are
+				# not declared/imported).
+			local $SIG{'__WARN__'} = sub { die $_[0] };
+				# ensure we can see any warnings that come from the eval
+			eval($cfg);
+			die $@ if ($@);
+		}
 	}
 }
 
@@ -687,7 +712,7 @@ $configInfo = {
 	ci('maintSendErrors',	'-sort'=>'n-m2', '-choices'=>[ "'true'", "''" ],
 		'-desc'=> 'If true, FAQ-O-Matic will mail the log file to the '
 		.'administrator whenever it is truncated.'),
-	ci('RCSuser',	'-sort'=>'y-r3', '-free', '-choices'=>['getpwuid($<)'],
+	ci('RCSuser',	'-sort'=>'y-r3', '-free', '-choices'=>['getpwuid($>)'],
 		'-desc'=> 'User to use for RCS ci command (default is process UID)'),
 	ci('useServerRelativeRefs', '-sort'=>'y-s1',
 		'-choices'=>[ "'true'", "''" ], '-desc'=>
@@ -696,6 +721,12 @@ $configInfo = {
 	ci('showLastModifiedAlways', '-sort'=>'y-s2', '-mirror',
 		'-choices'=>[ "'true'", "''" ], '-desc'=>
 		'Items always display their last-modified dates.'),
+	ci('showEditOnFaq', '-sort'=>'y-s3', '-mirror',
+		'-choices'=>[ "'true'", "''" ], '-desc'=>
+		'The old [Show Edit Commands] button appears in footer of FAQ pages.'),
+	ci('hideEasyEdits', '-sort'=>'y-s4', '-mirror',
+		'-choices'=>[ "'true'", "''" ], '-desc'=>
+		'Hide [Amend This Answer] and [Add New Answer in ...] buttons.'),
 
 	ci('sep_z', '-sort'=>'z--sep', '-separator', '-desc'=>
 			'Other configurations that you should probably ignore if present.'),
@@ -778,6 +809,7 @@ sub askConfigStep {
 		$right = $map->{$left};
 		my $aleft = $left;
 		$aleft =~ s/^\$//;
+		my $isLegacy = not $right=~m/^'/;	# if value isn't a free input
 		my $aright = stripQuotes($right);
 		my ($sort,$desc,$choices,$free,$cmd,$separator,$mirror);
 		my $ch = $configInfo->{$aleft} || {'-free'=>1};
@@ -809,11 +841,21 @@ sub askConfigStep {
 			my $selected = 0;		# don't show $right in free field if
 									# it was available by a select button
 			if (scalar(@{$choices})) {
-				foreach $choice (@{$choices}) {
+				foreach my $choice (@{$choices}) {
 					$wd.="<input type=radio name=\"$left-select\" "
 						.($right eq $choice ? ' checked' : '')
 						." value=\"$choice\"> $choice<br>\n";
 					$selected = 1 if ($right eq $choice);
+				}
+				if ($selected == 0 and $isLegacy) {
+					# there is an unquoted value that's no longer
+					# a given choice, but can't go in the free field
+					# (because otherwise it'll pick up quotes.)
+					$wd.="<input type=radio name=\"$left-select\" "
+						."checked value=\"$right\"> $right "
+						."<i><font color=red>This is no longer a "
+						."recommended selection.</font></i><br>\n";
+					$selected = 1;
 				}
 				if ($free) {
 					$wd.="<input type=radio name=\"$left-select\" "
@@ -970,7 +1012,7 @@ sub firstItemStep {
 		# the [New Answer] button by making the initial item as a
 		# category (giving it a directory).
 		$item->makeDirectory()->
-			setText("Subcategories:\n\nAnswers in this category:\n");
+			setText("Subcategories:\n\n\nAnswers in this category:\n");
 
 		$item->saveToFile('1');
 		displayMessage("Created an initial category (file=1).");
@@ -1044,6 +1086,7 @@ sub copyItemsStep {
 
 sub maintenanceStep {
 	require FAQ::OMatic::Auth;
+	my $rt = '';
 	my $secret = FAQ::OMatic::Auth::getRandomHex();
 
 	my @oldTab = getCurrentCrontab();
@@ -1112,25 +1155,33 @@ sub maintenanceStep {
 	# and add our new one.
 	print CRONTAB $cronLine;
 	close CRONTAB;
-	system("crontab $FAQ::OMatic::Config::metaDir/cronfile");
+	
+	# TODO: let user provide a path to crontab
+	my $crontabbin = which('crontab');
+	my $cmd = "$crontabbin $FAQ::OMatic::Config::metaDir/cronfile";
+	my @msrc = FAQ::OMatic::mySystem($cmd);
+	if (scalar(@msrc)) {
+		$rt.="'$cmd' failed: ".join('', @msrc)."\n";
+	}
 
 	my $map = readConfig();
 	$map->{'$maintenanceSecret'} = "'$secret'";
 	writeConfig($map);
 
-	my $rt ='';
 	if (@oldReplacing) {
 		$rt.="I replaced this old crontab line, which appears to be an "
-			."older one for this same FAQ:\n<pre><font size=-1>\n"
+			."older one for this same FAQ:\n<tt><p><font size=-1>\n"
 			.$oldReplacing[0]
-			."</font></pre>\n";
+			."</font></tt>\n";
 	}
 
 	# perform a simple test to verify our cron line got installed
 	my @newTab = getCurrentCrontab();
-	if (scalar(grep {m/$path/} @newTab) != 1) {
+	if (scalar(grep {m/$path/} @newTab) != 1
+		or scalar(grep {m/$secret/} @newTab) != 1) {
 		displayMessage("I thought I installed a new cron job, but it didn't\n"
 			."appear to take.\n"
+			."tab".join("<br>\n",@newTab)
 			."You better add\n"
 			."<pre><font size=-1>$cronLine</font></pre>\n"
 			."to some crontab yourself with <b><tt>crontab -e</tt></b>.\n",
@@ -1144,15 +1195,24 @@ sub maintenanceStep {
 }
 
 sub getCurrentCrontab {
-	my $crontab = which('crontab');
-	if (not $crontab) {
+	my $crontabbin = which('crontab');
+	if (not $crontabbin) {
 		displayMessage("I can't find a suitable crontab program in "
 			.$ENV{'PATH'}.".", 'default', 'abort');
 	}
 
-	open(CRONTAB, "$crontab -l 2>&1 |");
-	my @oldTab = <CRONTAB>;
-	close CRONTAB;
+	my $cmd = "$crontabbin -l";
+	my @systemrc = FAQ::OMatic::mySystem($cmd, 'alwaysWantReply');
+	my @oldTab;
+	if ($systemrc[0]==1 and $systemrc[3]=~m/open.*crontab/i) {
+		# looks like the "error" you get if you don't have a crontab.
+		@oldTab = ();
+	} elsif ($systemrc[0] != 0) {
+		displayMessage("crontab -l failed: ".join(',', @systemrc),
+			'default', 'abort');
+	} else {
+		@oldTab = @{$systemrc[4]};
+	}
 
 	if ((scalar(@oldTab)==1) and (not $oldTab[0] =~ m/^\s*[0-9*#]/)) {
 		# crontab returned one line, and it doesn't look like a
@@ -1172,11 +1232,9 @@ sub makeSecureStep {
 
 	# send admin straight through to changePass, since he can't
 	# have a password yet
-	$url = FAQ::OMatic::makeAref('changePass',
+	my $url = FAQ::OMatic::makeAref('changePass',
 			{'_restart'=>'install', '_admin'=>1}, 'url');
 	print $cgi->redirect(FAQ::OMatic::urlBase($cgi).$url);
-#	displayMessage("Installer now requires authentication. You will need "
-#		."to [Set A New Password] and then log in to continue.", 'default');
 }
 
 sub colorSamplerStep {

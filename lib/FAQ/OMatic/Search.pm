@@ -25,6 +25,8 @@
 #                                                                            #
 ##############################################################################
 
+use strict;
+
 ### Search.pm
 ###
 ### Support for search functions
@@ -204,7 +206,7 @@ sub getRecentSet {
 	my $params = shift;
 	my $recentList = [];
 
-	$durationdays = $params->{'_duration'};
+	my $durationdays = $params->{'_duration'};
 		# used directly to compare against perl's floating-point -M file test
 	my $then = time() - $durationdays*24*60*60;
 		# Used to compare against LastModifiedSecs field.

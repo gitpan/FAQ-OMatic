@@ -25,6 +25,8 @@
 #                                                                            #
 ##############################################################################
 
+use strict;
+
 package FAQ::OMatic::submitBag;
 
 use CGI;
@@ -38,13 +40,15 @@ sub main {
 	my $rt = '';
 	
 	my $params = FAQ::OMatic::getParams($cgi);
+
+	FAQ::OMatic::mirrorsCantEdit($cgi, $params);
 	
 	my $bagName = FAQ::OMatic::Bags::untaintBagName($params->{'_bagName'});
 
 	if ($bagName eq '') {
 		FAQ::OMatic::gripe('error', "Bag names may only contain letters, "
 			."numbers, underscores (_), hyphens (-), and periods (.), and "
-			."may not end in ".desc". "
+			."may not end in '.desc'. "
 			."Yours was \"$bagName\".");
 	}
 
@@ -66,9 +70,13 @@ sub main {
 	}
 	# THANKS: to John Nolan <JNolan@n2k.com> for fixing the reference
 	# to the filehandle returned by CGI.pm in the next line.
-	my $formDataHandle = $cgi->param('_bagData');
 	my $sizeBytes = 0;
 	my $buf;
+	my $formDataHandle = $cgi->param('_bagData');
+
+	# The next line will make the 'use strict' pragma throw an error
+	# if you're using an old CGI.pm. It has been tested and seen
+	# to work with CGI.pm 2.46 and newer, so upgrade.
 	while (read($formDataHandle, $buf, 4096)) {
 		print BAGFILE $buf;
 		$sizeBytes += length($buf);
@@ -124,7 +132,8 @@ sub main {
 	# currently, # so it's reasonable to do the dependency-drive
 	# updates here. If it ever becomes the case that we write bags
 	# in another place, factor this code out.
-	foreach $dependent (FAQ::OMatic::Item::getDependencies("bags.".$bagName)) {
+	foreach my $dependent
+		(FAQ::OMatic::Item::getDependencies("bags.".$bagName)) {
 		my $dependentItem = new FAQ::OMatic::Item($dependent);
 		$dependentItem->writeCacheCopy();
 	}

@@ -25,6 +25,8 @@
 #                                                                            #
 ##############################################################################
 
+use strict;
+
 package FAQ::OMatic::AuthLocal;
 
 # To implement a local authentication scheme, return a true value

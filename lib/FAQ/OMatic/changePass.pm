@@ -25,6 +25,8 @@
 #                                                                            #
 ##############################################################################
 
+use strict;
+
 package FAQ::OMatic::changePass;
 
 use CGI;
@@ -43,8 +45,12 @@ sub main {
 	$id =~ s/^anonymous$//;
 
 	$rt.="Please enter your username, and select a password.\n";
-	$rt.="<p>Please <b>do not</b> use a password you use anywhere else,\n";
-	$rt.="as it will not be transferred or stored securely!\n";
+	$rt.="<p>I will send a secret number to the email address you enter \n"
+		."to verify "
+		."that it is valid. If you prefer not to give your email address "
+		."to this web form, please contact $FAQ::OMatic::Config::adminEmail. "
+		."<p>Please <b>do not</b> use a password you use anywhere else, "
+		."as it will not be transferred or stored securely!\n";
 
 	$rt.=FAQ::OMatic::makeAref('submitPass',
 			{'badPass'=>'',		# the gedID() call above may (will) set this

@@ -25,6 +25,8 @@
 #                                                                            #
 ##############################################################################
 
+use strict;
+
 package FAQ::OMatic::editBag;
 
 use CGI;
@@ -37,6 +39,8 @@ sub main {
 	my $rt = '';
 	
 	my $params = FAQ::OMatic::getParams($cgi);
+
+	FAQ::OMatic::mirrorsCantEdit($cgi, $params);
 	
 	$rt = FAQ::OMatic::pageHeader($params);
 	

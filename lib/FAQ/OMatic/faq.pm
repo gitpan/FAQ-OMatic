@@ -25,6 +25,8 @@
 #                                                                            #
 ##############################################################################
 
+use strict;
+
 package FAQ::OMatic::faq;
 
 use CGI;
@@ -33,7 +35,7 @@ use FAQ::OMatic;
 
 sub main {
 	my $cgi = $FAQ::OMatic::dispatch::cgi;
-	
+
 	my $params = FAQ::OMatic::getParams($cgi);
 	# supply some default parameters where necessary
 	$params->{'file'} = 1 if (not $params->{'file'});
@@ -57,19 +59,11 @@ sub main {
 		exit(0);
 	}
 
-	if ($FAQ::OMatic::Config::mirrorURL
-		and $params->{'showEditCmds'}) {
-		# whoah -- we're a mirror site, and the user wants to
-		# edit! (they either used the [Show Edit Cmds] link, or the
-		# Appearance page.) Send them to the original site.
-		my $url = FAQ::OMatic::makeAref('-command' => 'faq',
-			'-urlBase'=>$FAQ::OMatic::Config::mirrorURL,
-			'-refType'=>'url');
-		print $cgi->redirect($url);
-		exit 0;
+	if ($params->{'showEditCmds'}) {
+		FAQ::OMatic::mirrorsCantEdit($cgi, $params);
 	}
 
-	$item = new FAQ::OMatic::Item($params->{'file'});
+	my $item = new FAQ::OMatic::Item($params->{'file'});
 	if ($item->isBroken()) {
 		FAQ::OMatic::gripe('error', "The file (".
 			$params->{'file'}.") doesn't exist.");
@@ -78,14 +72,14 @@ sub main {
 	if ($params->{'debug'}) {
 		$html .= $item->display();
 	}
-	$html .= $item->displayHTML($params);
 
-	## print the url for people to reference
-	$html .= FAQ::OMatic::Item::basicURL($params);
-	
-	if (not $params->{'file'} =~ m/^help/) {
-		$html .= FAQ::OMatic::pageFooter($params, 'all');
-	}
+	$html .= $item->getWholePage($params);
+
+# TODO: worry about this when we turn the help system back on
+# TODO- (perhaps just stuff it into getWholePage().)
+#	if (not $params->{'file'} =~ m/^help/) {
+#		$html .= FAQ::OMatic::pageFooter($params, 'all');
+#	}
 
 	print $html;
 }

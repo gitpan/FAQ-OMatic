@@ -25,6 +25,8 @@
 #                                                                            #
 ##############################################################################
 
+use strict;
+
 package FAQ::OMatic::submitPart;
 
 use CGI;
@@ -36,9 +38,11 @@ sub main {
 	my $cgi = $FAQ::OMatic::dispatch::cgi;
 	my $removed = 0;
 	
-	$params = FAQ::OMatic::getParams($cgi);
+	my $params = FAQ::OMatic::getParams($cgi);
 
-	$item = new FAQ::OMatic::Item($params->{'file'});
+	FAQ::OMatic::mirrorsCantEdit($cgi, $params);
+
+	my $item = new FAQ::OMatic::Item($params->{'file'});
 	if ($item->isBroken()) {
 		FAQ::OMatic::gripe('error', "The file (".
 			$params->{'file'}.") doesn't exist.");
@@ -94,7 +98,8 @@ sub main {
 		my $formFileHandle = $cgi->param('_newTextFile');
 		$params->{'_newText'} = '';		# scrap <textarea> text and load file
 		my $sizesum = 0;
-		while (my $line = <$formFileHandle>) {
+		# if the nextline gives you an error, update your CGI.pm.
+		while (defined(my $line = <$formFileHandle>)) {
 			$sizesum += length($line);
 			if ($sizesum > 64*1024) {
 				FAQ::OMatic::gripe('error',
@@ -252,7 +257,7 @@ sub main {
 		$item->notifyModerator($cgi, 'edited a part', $partnum);
 	}
 
-	$url = FAQ::OMatic::makeAref('-command'=>'faq',
+	my $url = FAQ::OMatic::makeAref('-command'=>'faq',
 				'-params'=>$params,
 				'-changedParams'=>{'partnum'=>'', 'checkSequenceNumber'=>''},
 				'-refType'=>'url');
@@ -268,7 +273,7 @@ sub main {
 # done with 'em.
 sub killS_Params {
 	my $params = shift;
-	foreach $i (keys %{$params}) {
+	foreach my $i (keys %{$params}) {
 		next if (not $i =~ m/^s_/);
 		delete $params->{$i};
 	}

@@ -25,6 +25,8 @@
 #                                                                            #
 ##############################################################################
 
+use strict;
+
 ##
 ## Intl.pm
 ##
@@ -35,6 +37,8 @@
 ##
 
 package FAQ::OMatic::Intl;
+
+use vars qw(%pageDesc);
 
 %pageDesc = (
 	'authenticate' => 'Log In',

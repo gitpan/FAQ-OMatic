@@ -25,14 +25,16 @@
 #                                                                            #
 ##############################################################################
 
+use strict;
+
 package FAQ::OMatic::ColorPicker;
 
-$f16 = 1/6;
-$f26 = 2/6;
-$f36 = 3/6;
-$f46 = 4/6;
-$f56 = 5/6;
-$f66 = 1;
+my $f16 = 1/6;
+my $f26 = 2/6;
+my $f36 = 3/6;
+my $f46 = 4/6;
+my $f56 = 5/6;
+my $f66 = 1;
 
 sub findRGB {
 	my $horizFrac = shift;	# fraction of distance along horizontal of image

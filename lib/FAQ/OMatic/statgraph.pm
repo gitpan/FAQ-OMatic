@@ -25,6 +25,8 @@
 #                                                                            #
 ##############################################################################
 
+use strict;
+
 package FAQ::OMatic::statgraph;
 
 use CGI;
@@ -33,6 +35,9 @@ use GD;
 use FAQ::OMatic;
 use FAQ::OMatic::Item;
 use FAQ::OMatic::Log;
+
+my $width;
+my $height;
 
 my ($minx, $rangex, $basex, $sizex);
 my ($miny, $rangey, $basey, $sizey);
@@ -60,9 +65,9 @@ sub min {
 sub emptygraph {
 	my ($message) = shift;
 
-	$image = new GD::Image (200, 12);
-	$white = $image->colorAllocate(255, 255, 255);
-	$red = $image->colorAllocate(255, 0, 0);
+	my $image = new GD::Image (200, 12);
+	my $white = $image->colorAllocate(255, 255, 255);
+	my $red = $image->colorAllocate(255, 0, 0);
 	$image->filledRectangle(0, 0, $width, $height, $white);
 	$image->string(gdSmallFont, 0, 0, $message, $red);
 	print $image->gif;
@@ -118,9 +123,9 @@ sub round {
 sub rerange {
 	my ($min, $max) = @_;
 
-	$interval = autorange($max-$min);
-	$newmin = (round($min/$interval)-1)*$interval;
-	$newmax = (round($max/$interval)+1)*$interval;
+	my $interval = autorange($max-$min);
+	my $newmin = (round($min/$interval)-1)*$interval;
+	my $newmax = (round($max/$interval)+1)*$interval;
 	return ($newmin, $newmax, $newmax-$newmin, $interval);
 }
 
@@ -167,6 +172,7 @@ sub main {
 	my @mydata = ();	# The data point itself
 	my @myindex = ();	# The day "number" (-$duration .. 0) of that data point
 						# (i.e. where it goes on the graph)
+	my $i;
 	for ($day = $today, $i=0;
 		$day ge $earliestday;
 		$day = FAQ::OMatic::Log::adddays($day, -$resolution), $i-=$resolution) {
@@ -183,10 +189,10 @@ sub main {
 
 	# days run from negative (history) to zero (today)
 	$minx = $myindex[0];
-	$maxx = $myindex[$#myindex];
+	my $maxx = $myindex[$#myindex];
+	my $maxy;
 	($miny, $maxy) = (+10000000, -1000000);
-	my $i;
-	foreach $i (@mydata) {
+	foreach my $i (@mydata) {
 		$miny = min($miny, $i);
 		$maxy = max($maxy, $i);
 	}
@@ -194,27 +200,28 @@ sub main {
 	# autorange y
 	$miny = 0;	#Want bottom of graph to be at 0
 	$maxy = max($maxy,1);	# make sure range doesn't collapse to 0
+	my $intervaly;
 	($miny, $maxy, $rangey, $intervaly) = rerange($miny, $maxy);
 	$miny = 0;	# autoranging may have nudged miny to -1, so fix it
 	$rangey = $maxy-$miny;	# thus fix range, too.
 
 	# get x interval automatically
 	$rangex = $maxx - $minx;
-	($intervalx,$unitsx) = autoIntervalDays($rangex);
+	my ($intervalx,$unitsx) = autoIntervalDays($rangex);
 
-	my $width = $FAQ::OMatic::Appearance::graphWidth;
-	my $height = $FAQ::OMatic::Appearance::graphHeight;	# from FAQ::OMatic::FaqConfig
+	$width = $FAQ::OMatic::Appearance::graphWidth;
+	$height = $FAQ::OMatic::Appearance::graphHeight;	# from FAQ::OMatic::FaqConfig
 	my $borderx = 30;
 	my $bordery = 10;
 
-	$image = new GD::Image ($width, $height);
-	$transparent = $image->colorAllocate(255, 255, 255);
-	$framefill = $image->colorAllocate(255, 255, 255);
-	$grid = $image->colorAllocate(192, 192, 192);
-	$datafill = $image->colorAllocate(0, 0, 132);
-	$datacolor = $image->colorAllocate(240, 0, 0);
-	$frame = $image->colorAllocate(128, 0, 0);
-	$labels = $image->colorAllocate(10, 88, 0);
+	my $image = new GD::Image ($width, $height);
+	my $transparent = $image->colorAllocate(255, 255, 255);
+	my $framefill = $image->colorAllocate(255, 255, 255);
+	my $grid = $image->colorAllocate(192, 192, 192);
+	my $datafill = $image->colorAllocate(0, 0, 132);
+	my $datacolor = $image->colorAllocate(240, 0, 0);
+	my $frame = $image->colorAllocate(128, 0, 0);
+	my $labels = $image->colorAllocate(10, 88, 0);
 
 	# draw the graph in this order, back-to-front:
 	# transparent (whole image background)
@@ -258,7 +265,7 @@ sub main {
 	}
 
 	# ticks - provide scale for image
-	$tickwidth = 5;
+	my $tickwidth = 5;
 	for ($i=$maxx; $i>$minx; $i-=$intervalx) {
 		$image->line(calcx($i), calcy($miny),
 			calcx($i), calcy($miny)-$tickwidth, $grid);
@@ -267,7 +274,7 @@ sub main {
 		$image->string(gdTinyFont, calcx($i)-2, calcy($miny)+1,
 			$label, $labels);
 	}
-	$title=$params->{'title'} || $property;
+	my $title=$params->{'title'} || $property;
 	$image->string(gdSmallFont, calcx($minx+$rangex*0.5)-length($title)*6/2,
 		calcy($maxy)-12, $title, $labels);
 	for ($i=$miny; $i<=$maxy; $i+=$intervaly) {
@@ -312,7 +319,7 @@ sub main {
 				  [ 0, 1,$framefill],
 				  [-1, 1,$framefill],
 				  [ 0, 0,$datafill] );
-	foreach $spot (@spots) {
+	foreach my $spot (@spots) {
 		$image->string(gdTinyFont, calcx($maxx)-5*length($value)+18+$spot->[0],
 			max(calcy($mydata[$#mydata])-9+$spot->[1],$basey+2),
 			$value, $spot->[2]);

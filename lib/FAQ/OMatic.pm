@@ -25,6 +25,8 @@
 #                                                                            #
 ##############################################################################
 
+use strict;
+
 ##
 ## FAQ::OMatic.pm
 ##
@@ -41,13 +43,17 @@ use FAQ::OMatic::Appearance;
 use FAQ::OMatic::Intl;
 use FAQ::OMatic::Bags;
 
-$VERSION = '2.611';
+# use vars lets us leave these variables globally-visible (when
+# fully qualified) without getting a gripe from 'use strict'.
+use vars qw($VERSION $authorAddress %theParams $userGripes);
 
-# This is never used to automatically send mail to (that's authorEmail),
-# but when we need to report the author's address, we use this constant:
+$VERSION = '2.615';
+
 $authorAddress = 'jonh@cs.dartmouth.edu';
-
-my $seenHeader = 0;
+	# This is never used to automatically send mail to (that's authorEmail),
+	# but when we need to report the author's address, we use this constant:
+%theParams=();		# the parameters for this invocation (hash ref)
+$userGripes = '';	# accumulated warnings and error messages
 
 sub pageHeader {
 	my $params = shift || \%theParams;
@@ -144,8 +150,6 @@ sub shortdate {
 		$date[5], $date[4], $date[3], $date[2], $date[1], $date[0]);
 }
 
-$userGripes = "";
-
 sub gripe {
 	# interesting severity values:
 	# 'note': appends msg to log
@@ -196,7 +200,7 @@ sub gripe {
 
 	# abort
 	if ($severity eq 'error' or $severity eq 'panic' or $severity eq 'abort') {
-		print FAQ::OMatic::pageHeader() if (not $seenHeader);
+		print FAQ::OMatic::pageHeader();
 		print FAQ::OMatic::pageFooter();
 		exit 0;
 	}
@@ -258,9 +262,9 @@ sub baginlineReference {
 		return "[no bag '$filename' on server]";
 	}
 
-	my $sw = FAQ::OMatic::Bags::getBagProperty($filename, SizeWidth, '');
+	my $sw = FAQ::OMatic::Bags::getBagProperty($filename, 'SizeWidth', '');
 	$sw = " width=$sw" if ($sw ne '');
-	my $sh = FAQ::OMatic::Bags::getBagProperty($filename, SizeHeight, '');
+	my $sh = FAQ::OMatic::Bags::getBagProperty($filename, 'SizeHeight', '');
 	$sh = " height=$sh" if ($sh ne '');
 
 	# should point directly to bags dir
@@ -413,8 +417,6 @@ sub entify {
 	return $arg;
 }
 
-%theParams=();	# the parameters for this invocation (hash ref)
-
 # returns ref to %theParams
 sub getParams {
 	my $cgi = shift;
@@ -509,12 +511,14 @@ sub makeAref {
 	# never make it into a new Aref. That way we can introduce new
 	# transient parameters, and they automatically get deleted here.
 	if (not $saveTransients) {
+		my $i;
 		foreach $i (keys %newParams) {
 			delete $newParams{$i} if ($i =~ m/^_/);
 		}
 	}
 
 	# change the requested parameters
+	my $i;
 	foreach $i (keys %{ $changedParams }) {
 		if (not defined($changedParams->{$i})
 			or ($changedParams->{$i} eq '')) {
@@ -691,8 +695,17 @@ sub makeBagRef {
 sub button {
 	my $ahref = shift;
 	my $label = shift;
+	my $image = shift || '';
+	my $params = shift || {};	# needed to get correct image refs from cache
+
 	$label =~ s/ /\&nbsp;/g;
-	return "[$ahref$label</a>]";
+	if ($image ne '') {
+		return "<center>$ahref"
+			.FAQ::OMatic::ImageRef::getImageRef($image, 'border=0', $params)
+			."<br>$label</a></center>\n";
+	} else {
+		return "[$ahref$label</a>]";
+	}
 }
 
 sub getAllItemNames {
@@ -744,17 +757,17 @@ sub highlightWords {
 		# see Camel ed. 2 p. 221
 		my $matchstr = '((^|>)([^<]*[^\w<&])?)(('.join(')|(',@hw).'))';
 		my $numparens = scalar(@hw)+4;
-		@parts = split(/$matchstr/i, $text);
+		my @pieces = split(/$matchstr/i, $text);
 
-		# reassemble the split parts according to the description above
+		# reassemble the split pieces according to the description above
 		my $i;
 		$rt = '';
-		for ($i=0; $i<@parts; $i+=$numparens+1) {
-			$rt .= $parts[$i+0];
-			$rt .= $parts[$i+1] if ($i+1<@parts);
+		for ($i=0; $i<@pieces; $i+=$numparens+1) {
+			$rt .= $pieces[$i+0];
+			$rt .= $pieces[$i+1] if ($i+1<@pieces);
 			$rt .= $FAQ::OMatic::Appearance::highlightStart
-					.$parts[$i+4]
-					.$FAQ::OMatic::Appearance::highlightEnd if ($i+4 < @parts);
+					.$pieces[$i+4]
+					.$FAQ::OMatic::Appearance::highlightEnd if ($i+4 < @pieces);
 		}
 		$text = $rt;
 	}
@@ -800,7 +813,7 @@ sub notACGI {
 sub binpath {
 	my $binpath = $0;
 	$binpath =~ s#[^/]*$##;
-	$binpath = "." if (not $path);
+	$binpath = "." if (not $binpath);
 	return $binpath;
 }
 
@@ -853,11 +866,13 @@ sub sendEmail {
 sub safeGlob {
 	my $dir = shift;
 	my $match = shift;		# perl regexp
-	my @filelist = ();
 
 	return () if (not opendir(GLOBDIR, $dir));
 
-	@filelist = map { "$dir/$_" } (grep { m/$match/ } readdir(GLOBDIR));
+	my @firstlist = map { m/^(.*)$/; $1 } readdir(GLOBDIR);
+		# untaint data -- we can hopefully trust the operating system
+		# to provide a valid list of files!
+	my @filelist = map { "$dir/$_" } (grep { m/$match/ } @firstlist);
 	closedir GLOBDIR;
 
 	return @filelist;
@@ -873,9 +888,9 @@ sub isTainted {
 }
 
 # the crummy "require 'flush.pl';" is not acting reliably for me.
-# this is the same routine, but copied into this package. Grr.
+# this is the same routine [made strict], but copied into this package. Grr.
 sub flush {
-	local($old) = select(shift);
+	my $old = select(shift);
     $| = 1;
 	print "";
 	$| = 0;
@@ -916,6 +931,101 @@ sub describeSize {
 		return sprintf("(%3.1f K)", $num/1024);		# kilobytes
 	} else {
 		return "($num bytes)";
+	}
+}
+
+# This is a variation on system().
+# If it succeeds, you get an empty list ().
+# If it fails (nonzero result code), you get a list containing the
+# exit() value, the signal that stopped the process, the $! translation
+# of the exit() value, and all of the text the child sent to stdout and
+# stderr.
+sub mySystem {
+	my $cmd = shift;
+	my $alwaysWantReply = shift || 0;
+
+	my $count = 0;
+	my $pid;
+
+	# flush now, lest data in a buffer get flushed on close() in every stinking
+	# child process.
+	flush(\*STDOUT);
+	flush(\*STDERR);
+
+	pipe READPIPE, WRITEPIPE or die "getting pipes";
+	# "bulletproof fork" from camel book, 2ed, page 167
+	FORK: {
+		$count++;
+		if ($pid = fork()) {
+			# parent here; child in $pid
+			close WRITEPIPE;
+			# (drop out of conditional to parent code below to wait for child)
+		} elsif (defined $pid) {
+			# child here
+
+			# set real uid = effective uid,
+			#     real gid = effective gid.
+			# this keeps RCS from choking in suid situations.
+			# RCS has really weird rules about how it uses real and effective
+			# uids which probably make a lot of sense when multiple users
+			# are competing for the same RCS store.
+			$< = $>;
+			$( = $);
+
+			close READPIPE;		# close our fd to the other end of the pipe
+			close STDOUT;		# redirect stderr, stdout into the pipe
+			open STDOUT, ">&WRITEPIPE";
+			close STDERR;
+			open STDERR, ">&WRITEPIPE";
+			close STDIN;		# don't let child dangle on stdin
+			exec $cmd;
+			die "mySystem($cmd) failed: $!\n";
+			exit -1;			# be DARN sure child exits
+		} elsif (($count < 5) && $! =~ /No more process/) {
+			# EAGAIN, supposedly recoverable fork error
+			sleep(5);
+			redo FORK;
+		} else {
+			die "Can't fork: $! (tried $count times)\n";
+		}
+	}
+
+	my @stdout = <READPIPE>;	# read child output in its entirety
+	close READPIPE;
+	my $stdout = join('', @stdout);
+	my $wrc = waitpid($pid, 0);		# just in case
+
+	my $statusword = $?;
+	my $signal = $statusword & 0x0ff;
+	my $exitstatus = ($statusword >> 8) & 0x0ff;
+	if ($exitstatus == 0 and not $alwaysWantReply) {
+		return ();
+	} else {
+		return ($exitstatus,$signal,$!,$stdout,\@stdout,"pid=$pid","wrc=$wrc");
+	}
+}
+
+sub stackTrace {
+	my $rt = '';
+	my $i=0;
+	while (my ($pack, $file, $line) = caller($i++)) {
+		$rt .= "$pack $file $line\n";
+	}
+	return $rt;
+}
+
+sub mirrorsCantEdit {
+	my $cgi = shift;
+	my $params = shift;
+
+	if ($FAQ::OMatic::Config::mirrorURL) {
+		# whoah -- we're a mirror site, and the user wants to
+		# edit! Send them to the original site.
+		my $url = makeAref('-command' => commandName(),
+			'-urlBase'=>$FAQ::OMatic::Config::mirrorURL,
+			'-refType'=>'url');
+		print $cgi->redirect($url);
+		exit 0;
 	}
 }
 

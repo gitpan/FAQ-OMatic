@@ -25,6 +25,8 @@
 #                                                                            #
 ##############################################################################
 
+use strict;
+
 ###
 ### dispatch.pm
 ###
@@ -34,6 +36,8 @@
 ### parameters to decide which module to load and run.
 
 package FAQ::OMatic::dispatch;
+
+use vars qw($meta $cgi);
 
 sub main {
 	$meta = shift;	# The single adjustable parameter in the actual CGI
@@ -45,6 +49,8 @@ sub main {
 	$ENV{'PATH'} = '/bin:/usr/bin:/usr/sbin:/usr/local/bin';
 
 	if (-f "$meta/config") {
+		# note config file is not subject to 'use strict,' since it is
+		# inside its own file.
 		require "$meta/config";
 		if ($meta eq $FAQ::OMatic::Config::metaDir) {
 			$haveMeta = 1;
@@ -65,7 +71,7 @@ sub main {
 	# to test membership. This is the set of modules we know (prevents
 	# the user from making up some other module and getting it into
 	# our eval()).
-	%knownModules = map { $_ => $_ } (
+	my %knownModules = map { $_ => $_ } (
 		'faq', 				'help',				'appearanceForm',
 		'search',			'searchForm',		'recent',
 		'stats', 			'statgraph',
@@ -86,9 +92,10 @@ sub main {
 	# a mismatch, but some need to, since they're accessed from
 	# the installer. Can add another version check in maintenance.pm
 	# if I need to later, I guess.
-	%versionSafeFunc = map { $_ => $_ } (
+	my %versionSafeFunc = map { $_ => $_ } (
 		'install',			'img',
-		'authenticate',		'maintenance'
+		'authenticate',		'maintenance',
+		'displaySlow'
 	);
 	
 	use CGI;
@@ -108,6 +115,10 @@ sub main {
 		# (But mod_perl will accumulate modules, and only load them
 		# if they haven't been loaded before, of course.)
 		# This invocation will call the $func module's main()
+
+		# from here inside, catch warnings as errors.
+		local $SIG{'__WARN__'} = sub { die $_[0] };
+
 		eval {
 			require "FAQ/OMatic/$func.pm";
 
@@ -121,7 +132,8 @@ sub main {
 					."$FAQ::OMatic::Config::adminEmail.");
 			}
 
-			&{"FAQ::OMatic::".$func."::main"}();
+			eval "FAQ::OMatic::".$func."::main();";
+			die $@ if ($@);	# pass internal errors out to next eval
 		};
 		$problem = $@;
 	} else {
@@ -129,10 +141,14 @@ sub main {
 	}
 	
 	if ($problem) {
+		# something broken happened. Let the admin know,
+		# lest it was a script that failed to compile, or a
+		# 'use strict' message or -w warning.
 		# try a nice presentation, else fall back on text:
+		# (unfortunately, text errors don't get mailed to $faqAdmin.)
 		require FAQ::OMatic;
 		eval("require FAQ::OMatic; "
-			."FAQ::OMatic::gripe('error', \$problem)");
+			."FAQ::OMatic::gripe('abort', \$problem)");
 		if ($@) {
 			print $cgi->header('-type'=>"text/html");
 			print "<tt>\n$problem\n</tt>\n";

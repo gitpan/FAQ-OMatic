@@ -25,6 +25,8 @@
 #                                                                            #
 ##############################################################################
 
+use strict;
+
 package FAQ::OMatic::submitMove;
 
 use CGI;
@@ -35,6 +37,8 @@ use FAQ::OMatic::Auth;
 sub main {
 	my $cgi = $FAQ::OMatic::dispatch::cgi;
 	my $params = FAQ::OMatic::getParams($cgi);
+
+	FAQ::OMatic::mirrorsCantEdit($cgi, $params);
 
 	my $movingFilename = $params->{'file'};
 	my $newParentFilename = $params->{'_newParent'};
@@ -127,7 +131,7 @@ sub main {
 			.$oldParentItem->getTitle());
 	}
 
-	$url = FAQ::OMatic::makeAref('faq', {'file'=>$newParentFilename}, 'url');
+	my $url = FAQ::OMatic::makeAref('faq', {'file'=>$newParentFilename}, 'url');
 
 	print $cgi->redirect(FAQ::OMatic::urlBase($cgi).$url);
 }

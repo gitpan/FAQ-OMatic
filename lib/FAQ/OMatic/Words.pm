@@ -25,6 +25,8 @@
 #                                                                            #
 ##############################################################################
 
+use strict;
+
 ### Words.pm
 ###
 ### Support for extracting "words" from strings

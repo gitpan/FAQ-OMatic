@@ -25,6 +25,8 @@
 #                                                                            #
 ##############################################################################
 
+use strict;
+
 ###
 ### A FAQ::OMatic::Set keeps track of a nonrepeating list of strings,
 ### such as authors of a part. It can keep the strings in order of insertion,
@@ -44,7 +46,7 @@ sub new {
 	$set->{'Hash'} = {};
 	$set->{'keepOrdered'} = $keepOrdered;
 	if ($keepOrdered) {
-		$part->{'List'} = [];
+		$set->{'List'} = [];
 	}
 
 	return $set;

@@ -25,6 +25,8 @@
 #                                                                            #
 ##############################################################################
 
+use strict;
+
 package FAQ::OMatic::buildSearchDB;
 
 use FAQ::OMatic::Item;
@@ -55,17 +57,18 @@ sub build {
 	## use the old ones (and not get confused when we mv in the new ones)
 	## because of Unix' cool file semantics.
 
+	my %wordsdb;
 	dbmopen %wordsdb, "$FAQ::OMatic::Config::metaDir/search$$", 600;
 	open INDEXFILE, ">$FAQ::OMatic::Config::metaDir/search$$.index" or die ".index $!";
 	open WORDSFILE, ">$FAQ::OMatic::Config::metaDir/search$$.words" or die ".words $!";
 
-	foreach $i (@wordlist) {
+	foreach my $i (@wordlist) {
 		## Write down in the hash the file pointer where we can find
 		## this entry:
 		$wordsdb{$i} = (tell INDEXFILE)." ".(tell WORDSFILE);
 		## Then dump out all the items with this word in them:
 		my @list = sort keys %{ $words->{$i} };
-		foreach $j (@list) {
+		foreach my $j (@list) {
 			print INDEXFILE "$j\n";
 		}
 		## And append the word to the words file
@@ -83,11 +86,11 @@ sub build {
 	my @searchfiles = FAQ::OMatic::safeGlob($FAQ::OMatic::Config::metaDir,
 						"^search$$");
 
-	foreach $i (@searchfiles) {
+	foreach my $i (@searchfiles) {
 		chmod 0644, $i;
 	}
 
-	foreach $i (@searchfiles) {
+	foreach my $i (@searchfiles) {
 		my $j = $i;
 		$j =~ s/$$//;
 		rename($i,$j) or FAQ::OMatic::gripe('debug', "rename($i,$j) failed");

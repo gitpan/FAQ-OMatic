@@ -25,6 +25,8 @@
 #                                                                            #
 ##############################################################################
 
+use strict;
+
 ###
 ### A FAQ::OMatic::Item is a data structure that contains an entire item
 ### from the FAQ. (One file.)
@@ -40,14 +42,14 @@ use FAQ::OMatic::Groups;
 use FAQ::OMatic::Words;
 use FAQ::OMatic::Help;
 
-%itemCache = ();	# contains (filename => item ref) mappings
+my %itemCache = ();	# contains (filename => item ref) mappings
 
 sub new {
 	my ($class) = shift;
 	my ($arg) = shift;	# what file the item data lives in
 	my ($dir) = shift;	# what dir we should look in for the item data
 						# (default $FAQ::OMatic::Config::itemDir)
-	$item = {};
+	my $item = {};
 	bless $item;
 
 	# if we have the item loaded already, use the in-core copy!
@@ -120,7 +122,7 @@ sub loadFromFile {
 	# take note of which file we came from
 	$self->{'filename'} = $filename;
 
-	$self->loadFromFileHandle(\*FILE);
+	$self->loadFromFileHandle(\*FILE, $filename);
 
 	close(FILE);
 
@@ -130,6 +132,7 @@ sub loadFromFile {
 sub loadFromFileHandle {
 	my $self = shift;
 	my $fh = shift;
+	my $filename = shift || 'an item read from a filehandle';
 
 	# process item headers
 	while (<$fh>) {
@@ -154,7 +157,8 @@ sub loadFromFileHandle {
 			$self->setProperty($key, $value);
 		} else {
 			FAQ::OMatic::gripe('problem',
-				"FAQ::OMatic::Item::loadFromFile was confused by this header in file $filename: \"$_\"");
+				"FAQ::OMatic::Item::loadFromFileHandle was confused by this "
+				."header in $filename: \"$_\"");
 			# this marks the item "broken" so that the save routine will
 			# refuse to save this corrupted file out and lose more data.
 			delete $self->{'Title'};
@@ -215,6 +219,7 @@ sub compactDateToSecs {
 	if (not defined $ampm) {
 		return -1;		# can't parse string
 	}
+	my $month_i;
 	for ($month_i=0; $month_i<12; $month_i++) {
 		if ($mo eq $monthMap[$month_i]) {
 			$mo = $month_i;		# notice months run 0..11
@@ -308,6 +313,7 @@ sub saveToFile {
 		FAQ::OMatic::unlockFile($lock);
 		return;
 	}
+	my $key;
 	foreach $key (sort keys %{$self}) {
 		if (($key =~ m/^[a-z]/) or ($key eq 'Parts')) {
 			next;
@@ -328,6 +334,7 @@ sub saveToFile {
 	}
 	# now save the parts out
 	my $partCount = 0;
+	my $part;
 	foreach $part (@{$self->{'Parts'}}) {
 		print FILE "Part: $partCount\n";
 		print FILE $part->displayAsFile();
@@ -349,16 +356,11 @@ sub saveToFile {
 		$ENV{"USER"} = $FAQ::OMatic::Config::RCSuser;
 	   	$ENV{"LOGNAME"} = $FAQ::OMatic::Config::RCSuser;
 		my $cmd = "$FAQ::OMatic::Config::RCSci $FAQ::OMatic::Config::RCSargs "
-				."$dir/$filename $FAQ::OMatic::Config::metaDir/RCS/$filename,v "
-				."2> $FAQ::OMatic::Config::metaDir/rcserr";
-		if (system($cmd)) {
-			open ERRF, "<$FAQ::OMatic::Config::metaDir/rcserr";
-			my @problem = <ERRF>;
-			close ERRF;
-			my $problem = join("", @problem);
-			$problem =~ s/\n/ /gs;
+				."$dir/$filename $FAQ::OMatic::Config::metaDir/RCS/$filename,v";
+		my @result = FAQ::OMatic::mySystem($cmd);
+		if (scalar(@result)) {
 			FAQ::OMatic::gripe('problem',
-				"RCS \"$cmd\" failed, saying \"$problem\"");
+				"RCS \"$cmd\" failed: (".join(", ", @result).")");
 		}
 	}
 	# RCS has a habit of making item files read-only by the user -- fix that
@@ -385,6 +387,7 @@ sub saveToFile {
 			# this item's title has changed:
 			# update the cache for any items that refer to this one (and
 			# thus have this one's title in their cached HTML)
+			my $dependent;
 			foreach $dependent (getDependencies($self->{'filename'})) {
 				my $dependentItem = new FAQ::OMatic::Item($dependent);
 				$dependentItem->writeCacheCopy();
@@ -466,8 +469,9 @@ sub adjustDependencies {
 sub updateAllChildren {
 	my $self = shift;
 
+	my $filei;
 	foreach $filei ($self->getChildren()) {
-		$itemi = new FAQ::OMatic::Item($filei);
+		my $itemi = new FAQ::OMatic::Item($filei);
 		$itemi->writeCacheCopy();
 	}
 }
@@ -522,10 +526,7 @@ sub writeCacheCopy {
 			# this link is coming from inside the cache, so we
 			# can use relative links. That's nice if we later
 			# wrap up the cache and mail it somewhere.
-		my $staticHtml = FAQ::OMatic::pageHeader($params, 'suppressType')
-						.$self->displayHTML($params)
-						.basicURL($params)
-						.FAQ::OMatic::pageFooter($params, 'all', 'isCached');
+		my $staticHtml = $self->getWholePage($params, 1);
 		if (not open(CACHEFILE, ">$staticFilename")) {
 			FAQ::OMatic::gripe('problem',
 				"Can't write $staticFilename: $!");
@@ -540,14 +541,27 @@ sub writeCacheCopy {
 	}
 }
 
+sub getWholePage {
+	my $self = shift;
+	my $params = shift;
+	my $isCached = shift || '';
+
+	return FAQ::OMatic::pageHeader($params, 'suppressType')
+		.$self->displayHTML($params)
+		.basicURL($params)
+		.FAQ::OMatic::pageFooter($params, 'all', $isCached);
+}
+
 sub display {
 	my $self = shift;
 	my @keys;
 	my $rt = "";	# return text
 
+	my $key;
 	foreach $key (sort keys %$self) {
 		if ($key eq 'Parts') {
 			$rt .= "<li>Parts\n";
+			my $part;
 			foreach $part (@{$self->{$key}}) {
 				$rt .=  $part->display();
 			}
@@ -687,19 +701,19 @@ sub displaySiblings {
 	return $rt;
 }
 
-sub hasParent {
-	my $self = shift;
-	my $parentQuery = shift;
-	my ($titles,$filenames) = $self->getParentChain();
-
-	my $i;
-	foreach $i (@{$filenames}) {
-		my $item = new FAQ::OMatic::Item($i);
-		return 'true' if ($item->{'filename'} eq $parentQuery);
-	}
-
-	return '';
-}
+# sub hasParent {
+# 	my $self = shift;
+# 	my $parentQuery = shift;
+# 	my ($titles,$filenames) = $self->getParentChain();
+# 
+# 	my $i;
+# 	foreach $i (@{$filenames}) {
+# 		my $item = new FAQ::OMatic::Item($i);
+# 		return 'true' if ($item->{'filename'} eq $parentQuery);
+# 	}
+# 
+# 	return '';
+# }
 
 sub displayCoreHTML {
 	my $self = shift;
@@ -709,56 +723,73 @@ sub displayCoreHTML {
 
 	# we'll pass this to makeAref to get file param right in links
 	my @fixfn =('file'=>$self->{'filename'});
+	my $title = $self->getTitle();
 
-	$rt .= FAQ::OMatic::Appearance::itemStart($params, $self);
+	# accumulate the title, the parts, and the editing sections into
+	# a list @boxes, so that when we construct the <table>, we know in
+	# advance how many rows it has.
+	my @boxes = ();
 
-	my $titlebox = "\n\n";	# visual separation for Page Source view
-	$titlebox .= "<a name=\"file_"
-			.$self->{'filename'}."\">\n";	# link for internal refs
-
-	# prefix item title with a path back to the root, so that user
-	# can find his way back up. (This replaces the old "Up to:" line.)
-	my ($titles,$filenames) = $self->getParentChain();
-	my ($thisTitle) = shift @{$titles};
-	my ($thisFilename) = shift @{$filenames};
-	my (@parentTitles) = reverse @{$titles};
-	my (@parentFilenames) = reverse @{$filenames};
-	my $i;
-	for ($i=0; $i<@parentTitles; $i++) {
-		# all parent icons are necessarily categories, duh. :v)
-		$titlebox.=
-			FAQ::OMatic::makeAref('-command'=>'faq',
-				'-params'=>$params,
-				'-changedParams'=>{"file"=>$parentFilenames[$i]})
-			.FAQ::OMatic::ImageRef::getImageRef('cat-small',
-				'border=0', $params)
-			.$parentTitles[$i]
-			."</a>:";
+	# create the title
+	{
+		my $titlebox = "<td>\n";	# a special case -- first box shouldn't
+									# have a <tr> tag, since it's in the
+									# same "row" as the long vertical cell.
+		$titlebox .= "<a name=\"file_"
+				.$self->{'filename'}."\">\n";	# link for internal refs
+	
+		# prefix item title with a path back to the root, so that user
+		# can find his way back up. (This replaces the old "Up to:" line.)
+		my ($titles,$filenames) = $self->getParentChain();
+		my ($thisTitle) = shift @{$titles};
+		my ($thisFilename) = shift @{$filenames};
+		my (@parentTitles) = reverse @{$titles};
+		my (@parentFilenames) = reverse @{$filenames};
+		my $i;
+		for ($i=0; $i<@parentTitles; $i++) {
+			# all parent icons are necessarily categories, duh. :v)
+			$titlebox.=
+				FAQ::OMatic::makeAref('-command'=>'faq',
+					'-params'=>$params,
+					'-changedParams'=>{"file"=>$parentFilenames[$i]})
+				.FAQ::OMatic::ImageRef::getImageRef('cat-small',
+					'border=0', $params)
+				.$parentTitles[$i]
+				."</a> : \n";
+		}
+		$titlebox.="<br>" if (@parentTitles);
+		# THANKS: to Jim Adler <jima@sr.hp.com> who suggested this graphical
+		# improvement: larger type to make the titles stand out.
+		# TODO: make things like this admin-tweakable.
+		$titlebox.="<font size=+1><b>$thisTitle</b></font>";
+		$titlebox .= $FAQ::OMatic::Appearance::otherEnd;
+		push @boxes, $titlebox;
 	}
-	$titlebox.="<br>" if (@parentTitles);
-	$titlebox.="<b>$thisTitle</b>";
-
-	$rt.=$titlebox;
 
 	if ($params->{'showModerator'}) {
 		my $mod = FAQ::OMatic::Auth::getInheritedProperty($self, 'Moderator');
-		$rt .= "<br>Moderator: <a href=\"mailto:$mod\">$mod</a>";
-		$rt .= " <i>(inherited from parent)</i>" if (not $self->{'Moderator'});
-		$rt .= "\n";
+		my $brt = '';
+		$brt .= $FAQ::OMatic::Appearance::otherStart;
+		$brt .= "<br>Moderator: <a href=\"mailto:$mod\">$mod</a>";
+		$brt .= " <i>(inherited from parent)</i>" if (not $self->{'Moderator'});
+		$brt .= "\n";
+		$brt .= $FAQ::OMatic::Appearance::otherEnd;
+		push @boxes, $brt;
 	}
 
 	## Edit commands:
 	if ($params->{'showEditCmds'}) {
-		$rt .= "<br>";
-		$rt .= $FAQ::OMatic::Appearance::editStart;
+		my $brt = '';
+		#$brt .= "<br>";
+		$brt .= $FAQ::OMatic::Appearance::editStart;
 				#."Edit Item: ";
-		$rt .= FAQ::OMatic::button(
+		$brt .= FAQ::OMatic::button(
 			FAQ::OMatic::makeAref('-command'=>'editItem',
 					'-params'=>$params,
 					'-changedParams'=>{@fixfn}),
 			"Edit $whatAmI Title and Options")."\n";
 
-		$rt .= FAQ::OMatic::button(
+		$brt .= FAQ::OMatic::button(
 			FAQ::OMatic::makeAref('-command'=>'editModOptions',
 					'-params'=>$params,
 					'-changedParams'=>{@fixfn}),
@@ -779,7 +810,7 @@ sub displayCoreHTML {
 			my $dupTitle = ($whatAmI eq 'Answer')
 						? "Duplicate Answer"
 						: "Duplicate Category as Answer";
-			$rt .= FAQ::OMatic::button(
+			$brt .= FAQ::OMatic::button(
 				FAQ::OMatic::makeAref('-command'=>'addItem',
 						'-params'=>$params,
 						'-changedParams'=>{'_insert'=>'answer',
@@ -790,14 +821,14 @@ sub displayCoreHTML {
 	
 			# Move it (if not at the top)
 			if ($self->{'Parent'} ne $self->{'filename'}) {
-				$rt .= FAQ::OMatic::button(
+				$brt .= FAQ::OMatic::button(
 						FAQ::OMatic::makeAref('-command'=>'moveItem',
 							'-params'=>$params,
 							'-changedParams'=>{@fixfn}),
 						"Move $whatAmI")."\n";
 	
 				# Trash it (same rules as for moving)
-				$rt .= FAQ::OMatic::button(
+				$brt .= FAQ::OMatic::button(
 						FAQ::OMatic::makeAref('-command'=>'submitMove',
 							'-params'=>$params,
 							'-changedParams'=>{@fixfn,
@@ -811,7 +842,7 @@ sub displayCoreHTML {
 			# THANKS: for clarity.
 			if ($self->isCategory()
 					and scalar($self->getChildren())==0) {
-				$rt .= FAQ::OMatic::button(
+				$brt .= FAQ::OMatic::button(
 					FAQ::OMatic::makeAref('-command'=>'submitCatToAns',
 							'-params'=>$params,
 							'-changedParams'=>{
@@ -819,7 +850,7 @@ sub displayCoreHTML {
 							  @fixfn}),
 						"Convert to Answer")."\n";
 			} elsif (not $self->isCategory()) {
-				$rt .= FAQ::OMatic::button(
+				$brt .= FAQ::OMatic::button(
 					FAQ::OMatic::makeAref('-command'=>'submitAnsToCat',
 							'-params'=>$params,
 							'-changedParams'=>{
@@ -832,30 +863,32 @@ sub displayCoreHTML {
 			if ($self->isCategory()) {
 				# suggestion of adding cat title to reduce confusion is from
 				# THANKS: pauljohn@ukans.edu
-				my $title = $self->getTitle();
 				if (length($title) > 15) {
 					$title = substr($title, 0, 12)."...";
 				}
-				$rt .= FAQ::OMatic::button(
+				$brt .= FAQ::OMatic::button(
 					FAQ::OMatic::makeAref('-command'=>'addItem',
 							'-params'=>$params,
 							'-changedParams'=>{'_insert'=>'answer', @fixfn}),
 						"New Answer in \"$title\"")."\n";
-				$rt .= FAQ::OMatic::button(
+				$brt .= FAQ::OMatic::button(
 					FAQ::OMatic::makeAref('-command'=>'addItem',
 							'-params'=>$params,
 							'-changedParams'=>{'_insert'=>'category', @fixfn}),
-						"New Subcategory of \"$title\"")."\n";
+						"New Subcategory of \"$title\"");
 			}
 		}
 
-		$rt .= $FAQ::OMatic::Appearance::editEnd."\n";
-		$needbr = 1;
+		$brt .= $FAQ::OMatic::Appearance::editEnd."\n";
+		push @boxes, $brt;
+
+		my $needbr = 1;
 
 		# Allow user to insert a part before any other
-		if ($self->ordinaryItem()) {
-			$rt .= "<br>"
-				.$FAQ::OMatic::Appearance::editStart
+		if ($self->ordinaryItem()) {	# as opposed to trash, help, ...
+			$brt = '';
+			#$brt .= "<br>";
+			$brt .= $FAQ::OMatic::Appearance::editStart
 				#."Edit Part: "
 				.FAQ::OMatic::button(
 					FAQ::OMatic::makeAref('-command'=>'editPart',
@@ -866,16 +899,65 @@ sub displayCoreHTML {
 							@fixfn}
 						),
 					"Insert Text Here")
+				.FAQ::OMatic::button(
+					FAQ::OMatic::makeAref('-command'=>'editPart',
+						'-params'=>$params,
+						'-changedParams'=>{'partnum'=>'-1',
+							'_insertpart'=>'1',
+							'_upload'=>'1',
+							'checkSequenceNumber'=>$self->{'SequenceNumber'},
+							@fixfn}
+						),
+					"Insert Uploaded Text Here")
 				.$FAQ::OMatic::Appearance::editEnd."\n";
+			push @boxes, $brt;
 		}
 	}
 
 	my $partnum = 0;
 	my @authorList = ();	# for AttributionsTogether
+	my $part;
 	foreach $part (@{$self->{'Parts'}}) {
-		$rt .= $part->displayHTML($self, $partnum, $params);
-		push @authorList, @{ $part->{'Author'} };
+		push @boxes, $part->displayHTML($self, $partnum, $params);
+		push @authorList, $part->{'Author-Set'}->getList();
 		++$partnum;
+	}
+
+	# TODO: test a config var to see if admin wants editability to be
+	# obvious
+	if (not $FAQ::OMatic::Config::hideEasyEdits) {
+		if ($self->isCategory()) {
+			# Categories: offer a way to insert a new answer
+			# TODO: does this link belong just below the directory
+			# part, rather than at the bottom?
+			my $title = $self->getTitle();
+			push @boxes,
+				$FAQ::OMatic::Appearance::editStart
+				.FAQ::OMatic::button(
+					FAQ::OMatic::makeAref('-command'=>'addItem',
+							'-params'=>$params,
+							'-changedParams'=>{'_insert'=>'answer', @fixfn}),
+					"Add a New Answer in \"$title\"",
+					'cat-new-ans', $params)
+				."\n"
+				.$FAQ::OMatic::Appearance::editEnd;
+		} else {
+			# answers: offer a way to append an item
+			my $partnum = scalar(@{$self->{'Parts'}})-1;
+			push @boxes,
+				$FAQ::OMatic::Appearance::editStart
+				.FAQ::OMatic::button(
+					FAQ::OMatic::makeAref('-command'=>'editPart',
+						'-params'=>$params,
+						'-changedParams'=>{'partnum'=>'9999afterLast',
+							'_insertpart'=>'1',
+							'checkSequenceNumber'=>$self->{'SequenceNumber'},
+							@fixfn}
+						),
+					"Amend This Answer",
+					'ans-ins-part', $params)
+				.$FAQ::OMatic::Appearance::editEnd."\n";
+		}
 	}
 
 	my $needbr = 1;	# this is a hack to straighten out the fact that half
@@ -892,9 +974,17 @@ sub displayCoreHTML {
 		($showAttributions ne 'hide') and
 		($showAttributions ne 'all')) {
 		my %authorHash = map { ($_,1) } (@authorList);
-		$rt .= "<i>".join(", ",
-			map { "<a href=\"mailto:$_\">$_</a>" } (sort keys %authorHash)
-			)."</i><br>\n";
+		my $brt = '';
+		$brt .= $FAQ::OMatic::Appearance::otherStart;
+		# TODO: pass mailto:s to insertLinks to have it linkified
+		# TODO: in a central place; that will support anti-spam
+		# TODO: configurations, too.
+		$brt .= "<i>"
+			.join(", ", map { "<a href=\"mailto:$_\">$_</a>" }
+				(sort keys %authorHash))
+			."</i><br>\n";
+		$brt .= $FAQ::OMatic::Appearance::otherEnd;
+		push @boxes, $brt;
 		$needbr = 0;
 	}
 
@@ -904,10 +994,18 @@ sub displayCoreHTML {
 	# THANKS: parker@austx.tandem.com
 	if ($lastModified and
 		($showLastModified or $FAQ::OMatic::Config::showLastModifiedAlways)) {
-		$rt .= "<br>" if ($needbr);
-		$rt .= "<i>".compactDate($self->{'LastModifiedSecs'})."</i>\n";
+		my $brt = '';
+		$brt .= $FAQ::OMatic::Appearance::otherStart;
+		#$brt .= "<br>" if ($needbr);
+		$brt .= "<i>".compactDate($self->{'LastModifiedSecs'})."</i>\n";
+		$brt .= $FAQ::OMatic::Appearance::otherEnd;
+		push @boxes, $brt;
 		$needbr = 1;
 	}
+
+	$params->{'_numParts'} = scalar(@boxes);
+	$rt .= FAQ::OMatic::Appearance::itemStart($params, $self);
+	$rt .= join("\n\n", @boxes)."\n";
 
 	## recurse on children
 	if ($params->{'recurse'} or $params->{'_recurse'}) {
@@ -949,10 +1047,8 @@ sub displayHTML {
 
 
 	my $useTable = not $params->{'simple'};
-	$rt.="<table>\n" if $useTable;
-
+	$rt.="\n<table><!-- Sibling links -->\n" if $useTable;
 	$rt.= $self->displaySiblings($params);
-
 	$rt.="</table>\n" if $useTable;
 
 	$rt.=FAQ::OMatic::Help::helpFor($params,
@@ -1060,7 +1156,7 @@ sub displayItemEditor {
 	$rt .= FAQ::OMatic::makeAref('-command'=>'submitItem',
 			'-params'=>$params,
 			'-changedParams'=>{'_insert'=>$params->{'_insert'}},
-			'-refType'=>POST);
+			'-refType'=>'POST');
 
 	# SequenceNumber protects the database from race conditions --
 	# if person A gets this form,
@@ -1124,10 +1220,6 @@ sub displayItemEditor {
 #			"Cancel and return to FAQ");
 
 	$rt .= FAQ::OMatic::Help::helpFor($params, 'editItem', "<br>\n");
-	if ($showModOptions) {
-		$rt .= FAQ::OMatic::Help::helpFor($params, 'moderatorOptions',
-			"<br>\n");
-	}
 
 	return $rt;
 }
@@ -1145,7 +1237,7 @@ sub displayModOptionsEditor {
 	$rt .= FAQ::OMatic::makeAref('-command'=>'submitModOptions',
 			'-params'=>$params,
 			'-changedParams'=>{'_insert'=>$params->{'_insert'}},
-			'-refType'=>POST);
+			'-refType'=>'POST');
 
 	$rt .= "<input type=hidden name=\"checkSequenceNumber\" value=\""
 			.$self->{'SequenceNumber'}."\">\n";
@@ -1400,7 +1492,8 @@ sub displaySearchContext {
 	my $rt = "";
 	my $text = "";
 	my $context = "";
-	my @pieces=(), @parts=();
+	my @pieces=();
+	my @parts=();
 	my @hw;
 	my $wordmatch;
 	my $i;
