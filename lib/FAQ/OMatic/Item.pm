@@ -37,6 +37,7 @@ use FAQ::OMatic;
 use FAQ::OMatic::Auth;
 use FAQ::OMatic::Appearance;
 use FAQ::OMatic::Groups;
+use FAQ::OMatic::Words;
 
 %itemCache = ();	# contains (filename => item ref) mappings
 
@@ -58,10 +59,15 @@ sub new {
 
 	if ($arg) {
 		$item->loadFromFile($arg,$dir);
-		$itemCache{$item->{'filename'}} = $item;
+		if ($item->{'filename'}) {
+			$itemCache{$item->{'filename'}} = $item;
+		}
 	} else {
 		$item->{'Title'} = "New Item";
 	}
+
+	$item->{'SequenceNumber'} = 0 if (not defined($item->{'SequenceNumber'}));
+
 	return $item;
 }
 
@@ -70,8 +76,11 @@ sub loadFromFile {
 	my $filename = shift;
 	my $dir = shift;		# optional -- almost always itemDir
 
-	$filename =~ s#/##;		# untaint user input (so they can't express
-							# a file of ../../../../../../etc/passwd)
+	# untaint user input (so they can't express
+	# a file of ../../../../../../etc/passwd)
+	$filename =~ m/([\w-.]*)/;
+	$filename = $1;
+
 	$dir = $FAQ::OMatic::Config::itemDir if (not $dir);
 
 	if (not -f "$dir/$filename") {
@@ -153,9 +162,9 @@ sub compactDate {
 
 sub saveToFile {
 	my $self = shift;
-	my $filename = shift;
-	my $dir = shift;		# optional -- almost always itemDir
-	my $lastModified = shift;	# optional -- normally today
+	my $filename = shift || '';
+	my $dir = shift || '';			# optional -- almost always itemDir
+	my $lastModified = shift || '';	# optional -- normally today
 
 	$dir = $FAQ::OMatic::Config::itemDir if (not $dir);
 
@@ -163,10 +172,13 @@ sub saveToFile {
 		FAQ::OMatic::gripe('error', "Tried to save a broken item to $filename.");
 	}
 
+	$filename =~ m/([\w-.]*)/;	# Untaint filename
+	$filename = $1;
+
 	if (not $filename) {
 		$filename = $self->{'filename'};
 	} else {
-		# change of filename (so far, only from a new, anonymous item)
+		# change of filename (from a new, anonymous item)
 		$self->{'filename'} = $filename;
 	}
 
@@ -174,7 +186,7 @@ sub saveToFile {
 
 	my $lock = FAQ::OMatic::lockFile("$filename");
 	return if not $lock;
-		
+
 	if (not open(FILE, ">$dir/$filename")) {
 		FAQ::OMatic::gripe('problem',
 			"saveToFile: Couldn't write to $dir/$filename because $!");
@@ -203,11 +215,14 @@ sub saveToFile {
 	close FILE;
 	FAQ::OMatic::unlockFile($lock);
 
-	# perform RCS ci so we can always get the files back in the face
-	# of net-creeps. Don't do it for .smry files (which also use the
-	# FAQ::OMatic::Item mechanism).
-	## Tell RCS who we are
-	if (not $filename =~ m#\.smry#) {
+	# For item files (not .smry files, which also use the FAQ::OMatic::Item
+	# mechanism for storage), do these things:
+	# 1. Perform RCS ci so we can always get the files back in the face
+	#    of net-creeps.
+	# 2. Clear the search hint so we know to regenerate the search index
+	# 3. Rewrite the static cached HTML copy
+	if ($dir eq $FAQ::OMatic::Config::itemDir) {
+		## Tell RCS who we are
 		$ENV{"USER"} = $FAQ::OMatic::Config::RCSuser;
 	   	$ENV{"LOGNAME"} = $FAQ::OMatic::Config::RCSuser;
 		my $cmd = "$FAQ::OMatic::Config::RCSci $FAQ::OMatic::Config::RCSargs "
@@ -229,9 +244,32 @@ sub saveToFile {
 		utime(time(),$lastModified,"$dir/$filename");
 	}
 
-	# only clear hint if it's a regular item (not a .smry item)
+	# As I was saying, ...
+	# 2. Clear the search hint so we know to regenerate the search index
+	# 3. Rewrite the static cached HTML copy
 	if ($dir eq $FAQ::OMatic::Config::itemDir) {
 		unlink("$FAQ::OMatic::Config::metaDir/freshSearchDBHint");
+
+		if (defined($FAQ::OMatic::Config::cacheDir)
+			&& (-w $FAQ::OMatic::Config::cacheDir)) {
+			my $staticFilename =
+				"$FAQ::OMatic::Config::cacheDir/$filename.html";
+			my $params = {'file'=>$self->{'filename'},
+						'_fullUrls'=>1};	# static pages need rooted urls
+											# to get back to the CGI side
+			my $staticHtml = FAQ::OMatic::pageHeader($params, 'suppressType')
+							.$self->displayHTML($params)
+							.basicURL($params)
+							.FAQ::OMatic::pageFooter($params, 'links');
+			if (not open(CACHEFILE, ">$staticFilename")) {
+				FAQ::OMatic::gripe('problem',
+					"Can't write $staticFilename: $!");
+			} else {
+				print CACHEFILE $staticHtml;
+				close CACHEFILE;
+				chmod(0644, $staticFilename);
+			}
+		}
 	}
 }
 
@@ -320,9 +358,10 @@ sub displaySiblings {
 		}
 		$rt.="Previous: ";
 		$rt.="</td><td valign=top align=left>\n" if $useTable;
-		$rt.="<a href=\""
-			.FAQ::OMatic::makeAref('faq', {"file"=>$prevs}, 'url')
-			."\">$prevTitle</a>\n";
+		$rt.=FAQ::OMatic::makeAref('-command'=>'faq',
+							'-params'=>$params,
+							'-changedParams'=>{"file"=>$prevs})
+			."$prevTitle</a>\n";
 		$rt.="</td></tr>\n" if $useTable;
 	}
 	if ($nexts) {
@@ -335,9 +374,10 @@ sub displaySiblings {
 		}
 		$rt.="Next: ";
 		$rt.="</td><td valign=top align=left>\n" if $useTable;
-		$rt.="<a href=\""
-			.FAQ::OMatic::makeAref('faq', {"file"=>$nexts}, 'url')
-			."\">$nextTitle</a>\n";
+		$rt.=FAQ::OMatic::makeAref('-command'=>'faq',
+							'-params'=>$params,
+							'-changedParams'=>{"file"=>$nexts})
+			."$nextTitle</a>\n";
 		$rt.="</td></tr>\n" if $useTable;
 	}
 	return $rt;
@@ -363,7 +403,7 @@ sub displayCoreHTML {
 	my $rt = "";		# return text
 
 	# we'll pass this to makeAref to get file param right in links
-	my @fixfn = ('file',$self->{'filename'});
+	my @fixfn =('file'=>$self->{'filename'});
 
 	$rt .= FAQ::OMatic::Appearance::itemStart($params);
 
@@ -385,9 +425,9 @@ sub displayCoreHTML {
 	my (@parentFilenames) = reverse @{$filenames};
 	my $i;
 	for ($i=0; $i<@parentTitles; $i++) {
-		$rt.=FAQ::OMatic::makeAref('faq',
-			{"file"=>$parentFilenames[$i]},
-			'')
+		$rt.=FAQ::OMatic::makeAref('-command'=>'faq',
+					'-params'=>$params,
+					'-changedParams'=>{"file"=>$parentFilenames[$i]})
 			.$parentTitles[$i]
 			."</a>:";
 	}
@@ -408,7 +448,9 @@ sub displayCoreHTML {
 				#."Edit Item: ";
 		my $whatAmI = $self->whatAmI();
 		$rt .= FAQ::OMatic::button(
-			FAQ::OMatic::makeAref('editItem', {@fixfn}),
+			FAQ::OMatic::makeAref('-command'=>'editItem',
+					'-params'=>$params,
+					'-changedParams'=>{@fixfn}),
 			"Edit $whatAmI Title and Options")."\n";
 
 		# Duplicate it
@@ -416,29 +458,35 @@ sub displayCoreHTML {
 					? "Duplicate Answer"
 					: "Duplicate Category as Answer";
 		$rt .= FAQ::OMatic::button(
-			FAQ::OMatic::makeAref('addItem',
-				{'_insert'=>'answer',
-				 '_duplicate'=>$self->{'filename'},
-				'file'=>$self->{'Parent'}}),
+			FAQ::OMatic::makeAref('-command'=>'addItem',
+					'-params'=>$params,
+					'-changedParams'=>{'_insert'=>'answer',
+				 			'_duplicate'=>$self->{'filename'},
+							'file'=>$self->{'Parent'}}
+				),
 				$dupTitle)."\n";
 
 		# Move it (if not at the top)
 		if (($self->{'Parent'} ne $self->{'filename'})
 			and ($self->{'filename'} ne '1')) {
 			$rt .= FAQ::OMatic::button(
-				FAQ::OMatic::makeAref('moveItem', {@fixfn}),
+					FAQ::OMatic::makeAref('-command'=>'moveItem',
+						'-params'=>$params,
+						'-changedParams'=>{@fixfn}),
 					"Move $whatAmI")."\n";
 		}
 
 		# Create new children
 		if (defined $self->{'directoryHint'}) {
 			$rt .= FAQ::OMatic::button(
-				FAQ::OMatic::makeAref('addItem',
-					{'_insert'=>'answer', @fixfn}),
+				FAQ::OMatic::makeAref('-command'=>'addItem',
+						'-params'=>$params,
+						'-changedParams'=>{'_insert'=>'answer', @fixfn}),
 					"New Answer")."\n";
 			$rt .= FAQ::OMatic::button(
-				FAQ::OMatic::makeAref('addItem',
-					{'_insert'=>'category', @fixfn}),
+				FAQ::OMatic::makeAref('-command'=>'addItem',
+						'-params'=>$params,
+						'-changedParams'=>{'_insert'=>'category', @fixfn}),
 					"New Subcategory")."\n";
 		}
 
@@ -449,8 +497,14 @@ sub displayCoreHTML {
 		$rt .= "<br>"
 			.$FAQ::OMatic::Appearance::editStart
 			#."Edit Part: "
-			.FAQ::OMatic::button(FAQ::OMatic::makeAref('editPart',
-				{'partnum'=>'-1','_insertpart'=>'1',@fixfn}),
+			.FAQ::OMatic::button(
+				FAQ::OMatic::makeAref('-command'=>'editPart',
+					'-params'=>$params,
+					'-changedParams'=>{'partnum'=>'-1',
+							'_insertpart'=>'1',
+							'checkSequenceNumber'=>$self->{'SequenceNumber'},
+							@fixfn}
+					),
 				"Insert Text Here")
 			.$FAQ::OMatic::Appearance::editEnd."\n";
 	}
@@ -471,9 +525,11 @@ sub displayCoreHTML {
 
 	# AttributionsTogether displays all attributions for any part in
 	# this item together at the bottom of the item to reduce clutter.
-	if ($self->{'AttributionsTogether'} and 
-		($params->{'showAttributions'} ne 'hide') and
-		($params->{'showAttributions'} ne 'all')) {
+	my $attributionsTogether = $self->{'AttributionsTogether'} || '';
+	my $showAttributions = $params->{'showAttributions'} || '';
+	if ($attributionsTogether and 
+		($showAttributions ne 'hide') and
+		($showAttributions ne 'all')) {
 		my %authorHash = map { ($_,1) } (@authorList);
 		$rt .= "<i>".join(", ",
 			map { "<a href=\"mailto:$_\">$_</a>" } (sort keys %authorHash)
@@ -481,7 +537,9 @@ sub displayCoreHTML {
 		$needbr = 0;
 	}
 
-	if ($params->{'showLastModified'} and $self->{'LastModified'}) {
+	my $showLastModified = $params->{'showLastModified'};
+	my $lastModified = $self->{'LastModified'};
+	if ($showLastModified and $lastModified) {
 		$rt .= "<br>" if ($needbr);
 		$rt .= "<i>".$self->{'LastModified'}."</i>\n";
 		$needbr = 1;
@@ -489,7 +547,8 @@ sub displayCoreHTML {
 
 	## recurse on children
 	my $dirPart = $self->getDirPart();
-	if ($params->{'recurse'} and defined($dirPart)) {
+	if (($params->{'recurse'} or $params->{'_recurse'})
+		and defined($dirPart)) {
 		my $filei;
 		my $itemi;
 		foreach $filei ($dirPart->getChildren()) {
@@ -516,115 +575,25 @@ sub displayHTML {
 
 	$rt.= $self->displaySiblings($params);
 
-#### -- now defunct code -- from how I used to control appearance/search
-#### options with a menu rather than a separate page.
-#	if (0 and (not $params->{'suppressControls'})) {
-#		## Searching
-#		$rt.="<tr><td valign=top align=right>\n" if $useTable;
-#		$rt .= FAQ::OMatic::makeAref('search', {}, 'GET');
-#		$rt .= "<input type=\"submit\" name=\"_submit\" "
-#			."value=\"Search for\">\n";
-#		$rt.="</td><td valign=top align=left>\n" if $useTable;
-#		$rt .= "<input type=\"text\" name=\"_search\"> matching\n";
-#		$rt .= "<select name=\"_minMatches\">\n";
-#		$rt .= "<option value=\"\">all\n";
-#		$rt .= "<option value=\"1\">any\n";
-#		$rt .= "<option value=\"2\">two\n";
-#		$rt .= "<option value=\"3\">three\n";
-#		$rt .= "<option value=\"4\">four\n";
-#		$rt .= "<option value=\"5\">five\n";
-#		$rt .= "</select>\n";
-#		$rt .= "words.\n";
-#		$rt .= "</form>\n";
-#		$rt.="</td></tr>\n" if $useTable;
-#	
-#		## Recent documents
-#		$rt.="<tr><td valign=top align=right>\n" if $useTable;
-#		$rt .= FAQ::OMatic::makeAref('recent',
-#				{'showLastModified'=>'1'}, 'GET');
-#		$rt .= "<input type=\"submit\" name=\"_submit\" "
-#			."value=\"Show documents\">\n";
-#		$rt.="</td><td valign=top align=left>\n" if $useTable;
-#		$rt .= " modified in the last \n";
-#		$rt .= "<select name=\"_duration\">\n";
-#		$rt .= "<option value=\"1\">day.\n";
-#		$rt .= "<option value=\"2\">two days.\n";
-#		$rt .= "<option value=\"3\">three days.\n";
-#		$rt .= "<option value=\"7\" SELECTED>week.\n";
-#		$rt .= "<option value=\"14\">fortnight.\n";
-#		$rt .= "<option value=\"31\">month.\n";
-#		$rt .= "</select>\n";
-#		$rt .= "</form>\n";
-#		$rt.="</td></tr>\n" if $useTable;
-#	
-#		## User switches:
-#		$rt.="<tr><td valign=top align=right>\n" if $useTable;
-#		$rt.=FAQ::OMatic::makeAref('faq', {}, 'GET')
-#			."\n"
-#			."<input type=submit name=\"appearance\" "
-#			."value=\"Change Appearance:\">\n";
-#		$rt.="</td><td valign=top align=left>\n" if $useTable;
-#		$rt.="<select name=\"theChange\">\n";
-#		$rt .= "<option value=\"\">( choose one )</option>\n";
-#		$rt .= ($params->{'recurse'})
-#			?	"<option value=\"recurseEQUALS\">"
-#				."Show Only This Item</option>\n"
-#			:	"<option value=\"recurseEQUALS1\">"
-#				."Show All Items Below Here</option>\n";
-#		$rt .= ($params->{'simple'})
-#			?	"<option value=\"simpleEQUALS\">"
-#				."Use Fancy HTML</option>\n"
-#			:	"<option value=\"simpleEQUALS1\">"
-#				."Use Simple HTML</option>\n";
-#		$rt .= ($params->{'showModerator'})
-#			?	"<option value=\"showModeratorEQUALS\">"
-#				."Hide Moderator</option>\n"
-#			:	"<option value=\"showModeratorEQUALS1\">"
-#				."Show Moderator</option>\n";
-#		$rt .= ($params->{'showLastModified'})
-#			?	"<option value=\"showLastModifiedEQUALS\">"
-#				."Hide Modification Date</option>\n"
-#			:	"<option value=\"showLastModifiedEQUALS1\">"
-#				."Show Modification Date</option>\n";
-#		if ($params->{'showAttributions'} ne 'hide') {
-#			$rt .= "<option value=\"showAttributionsEQUALShide\">"
-#				."Hide Attributions</option>\n";
-#		}
-#		if ($params->{'showAttributions'} ne '') {
-#			$rt .= "<option value=\"showAttributionsEQUALS\">"
-#				."Default Attributions</option>\n";
-#		}
-#		if ($params->{'showAttributions'} ne 'all') {
-#			$rt .= "<option value=\"showAttributionsEQUALSall\">"
-#				."Show All Attributions</option>\n";
-#		}
-#		$rt.="</select>\n"
-#			."</form>\n";
-#		$rt.="</td></tr>\n" if $useTable;
-#	
-#		## Show Editing Commands button
-#		$rt.="<tr><td valign=top align=right>\n" if $useTable;
-#		$rt .= FAQ::OMatic::makeAref(FAQ::OMatic::commandName(),
-#			{}, 'GET');
-#		if ($params->{'showEditCmds'}) {
-#			$rt.="<input type=\"submit\" name=\"appearance\" "
-#				."value=\"Hide Editing Commands\">\n";
-#			$rt.="<input type=\"hidden\" name=\"theChange\" "
-#				."value=\"showEditCmdsEQUALS\">\n";
-#		} else {
-#			$rt.="<input type=\"submit\" name=\"appearance\" "
-#				."value=\"Show Editing Commands\">\n";
-#			$rt.="<input type=\"hidden\" name=\"theChange\" "
-#				."value=\"showEditCmdsEQUALS1\">\n";
-#		}
-#		$rt.="</form>\n";
-#		$rt.="</td><td valign=top align=left>\n" if $useTable;
-#		$rt.="</td></tr>\n" if $useTable;
-#	}
-
 	$rt.="</table>\n" if $useTable;
 
 	return $rt;
+}
+
+sub basicURL {
+	my $params = shift;
+	
+	my %killParams = %{$params};
+	delete $killParams{'file'};
+	delete $killParams{'recurse'} if ($params->{'recurse'});
+	my $i; foreach $i (keys %killParams) { $killParams{$i} = ''; }
+
+	my $url = FAQ::OMatic::makeAref('-command'=>'faq',
+				'-params' => $params,
+				'-changedParams'=>\%killParams,
+				'-refType'=>'url',
+				'-fullUrls'=>1);
+	return "This document is: <i>$url</i><br>\n";
 }
 
 sub permissionBox {
@@ -666,15 +635,27 @@ sub displayItemEditor {
 	my $cgi = shift;
 	my $rt = ""; 	# return text
 
-	if ($params->{'_insert'} eq 'category') {
+	my $insertHint = $params->{'_insert'} || '';
+	if ($insertHint eq 'category') {
 		$rt .= "New Category\n";
-	} elsif ($params->{'_insert'} eq 'answer') {
+	} elsif ($insertHint eq 'answer') {
 		$rt .= "New Answer\n";
 	} else {
 		$rt .= "Editing item <b>".$self->getTitle()."</b>\n";
 	}
-	$rt .= FAQ::OMatic::makeAref('submitItem',
-		{'_insert'=>$params->{'_insert'}}, POST);
+	$rt .= FAQ::OMatic::makeAref('-command'=>'submitItem',
+			'-params'=>$params,
+			'-changedParams'=>{'_insert'=>$params->{'_insert'}},
+			'-refType'=>POST);
+
+	# SequenceNumber protects the database from race conditions --
+	# if person A gets this form,
+	# then person B gets this form,
+	# then person A returns the form (incrementing the sequence number),
+	# then person B returns the form, the sequence number won't match,
+	# so B will be turned back, so he can't mistakenly overwrite A's changes.
+	$rt .= "<input type=hidden name=\"checkSequenceNumber\" value=\""
+			.$self->{'SequenceNumber'}."\">\n";
 
 	# Title
 	$rt .= "<br>Title:<br><input type=text name=\"_Title\" value=\""
@@ -768,13 +749,16 @@ sub displayItemEditor {
 		$rt .= " may edit these Moderator options.\n";
 
 		$rt .= "<p>".FAQ::OMatic::button(
-			FAQ::OMatic::makeAref(FAQ::OMatic::commandName(),
-				{'modOptions'=>''}), "Hide Moderator Options")."\n";
+			FAQ::OMatic::makeAref('-command'=>FAQ::OMatic::commandName(),
+				'-params'=>$params,
+				'-changedParams'=>{'modOptions'=>''}),
+			"Hide Moderator Options")."\n";
 	} else {
 		$rt .= "<p>".FAQ::OMatic::button(
-			FAQ::OMatic::makeAref(FAQ::OMatic::commandName(),
-					{'modOptions'=>'1', '_fromEdit'=>1}),
-				"Show Moderator Options")."\n";
+			FAQ::OMatic::makeAref('-command'=>FAQ::OMatic::commandName(),
+				'-params'=>$params,
+				'-changedParams'=>{'modOptions'=>'1', '_fromEdit'=>1}),
+			"Show Moderator Options")."\n";
 	}
 
 	# Submit
@@ -785,7 +769,9 @@ sub displayItemEditor {
 		# received.
 	$rt .= "</form>\n";
 	$rt .= FAQ::OMatic::button(
-			FAQ::OMatic::makeAref('faq', {}),
+			FAQ::OMatic::makeAref('-command'=>'faq',
+				'-params'=>$params,
+				'-changedParams'=>{'checkSequenceNumber'=>''}),
 			"Cancel and return to FAQ");
 
 	return $rt;
@@ -844,6 +830,7 @@ sub addSubItem {
 	}
 
 	$self->makeDirectory()->mergeDirectory($subfilename);
+	$self->incrementSequence();
 }
 
 sub removeSubItem {
@@ -864,6 +851,7 @@ sub removeSubItem {
 		splice @{$self->{'Parts'}}, $self->{'directoryHint'}, 1;
 		delete $self->{'directoryHint'};
 	}
+	$self->incrementSequence();
 }
 
 sub extractWordsFromString {
@@ -871,17 +859,15 @@ sub extractWordsFromString {
 	my $filename = shift;
 	my $words = shift;
 
-	$string =~ s/'//g;			# apostrophes are not word breaks
-	$string =~ tr/[A-Z]/[a-z]/;	# searches are case-insensitive
-	my @wordlist = ($string =~ m/($FAQ::OMatic::Intl::wordchars+)/gso);
+	my @wordlist = FAQ::OMatic::Words::getWords( $string );
 
 	# Associate words with this file in index
 	my $i;
 	foreach $i (@wordlist) {
 		# do it for every prefix, too
-		while ($i) {
-			$words->{$i}{$filename} = 1;
-			$i = substr($i, 0, length($i)-1);
+		my $prefix;
+		foreach $prefix ( FAQ::OMatic::Words::getPrefixes( $i ) ) {
+			$words->{$prefix}{$filename} = 1;
 		}
 	}
 }
@@ -932,7 +918,9 @@ sub displaySearchContext {
 	my $count;
 
 	# start with a title that's a link
-	$rt = FAQ::OMatic::makeAref("faq",
+	$rt = FAQ::OMatic::makeAref('-command'=>'faq',
+		'-params'=>$params,
+		'-changedParams'=>
 		{	'file'				=>	$self->{'filename'},
 			'_highlightWords'	=>	join(' ', @{$params->{'_searchArray'}})
 		}
@@ -997,7 +985,8 @@ sub notifyModerator {
 	my $didWhat = shift;
 	my $changedPart = shift;
 
-	my $mail = FAQ::OMatic::Auth::getInheritedProperty($self, 'MailModerator');
+	my $mail = FAQ::OMatic::Auth::getInheritedProperty($self, 'MailModerator')
+				|| '';
 	return if ($mail ne '1');	# didn't want mail anyway
 
 	my $moderator = FAQ::OMatic::Auth::getInheritedProperty($self, 'Moderator');
@@ -1010,8 +999,13 @@ sub notifyModerator {
 	$msg .= "Who:      $id\n";
 	$msg .= "Item:     ".$self->getTitle()."\n";
 	$msg .= "File:     ".$self->{'filename'}."\n";
-	my $url = FAQ::OMatic::makeAref('faq', {'file'=>$self->{'filename'}},
-						'url', 0, 'blastAll');
+	my $url = FAQ::OMatic::makeAref('-command'=>'faq',
+			# sleazy hack that will bite me later -- go ahead and use
+			# global params, because that's always "okay" here.
+			#'-params'=>$params,
+			'-changedParams'=>{'file'=>$self->{'filename'}},
+			'-reftype'=>'url',
+			'-blastAll'=>1);
 	$msg .= "URL:      ".$url."\n";
 	$msg .= "What:     ".$didWhat."\n";
 
@@ -1053,9 +1047,14 @@ sub getSiblings {
 	return (undef,undef);
 }
 
+sub isCategory {
+	my $self = shift;
+	return (defined $self->{'directoryHint'}) ? 1 : 0;
+}
+
 sub whatAmI {
 	my $self = shift;
-	return (defined $self->{'directoryHint'})
+	return ($self->isCategory())
 			? 'Category'
 			: 'Answer';
 }
@@ -1103,4 +1102,38 @@ sub clone {
 	return $newitem;
 }
 
-'true';
+sub checkSequence {
+	my $self = shift;
+	my $params = shift;
+
+	my $checkSequenceNumber =
+		defined($params->{'checkSequenceNumber'})
+		? $params->{'checkSequenceNumber'}
+		: -1;
+	if ($checkSequenceNumber ne $self->{'SequenceNumber'}) {
+		my $button = FAQ::OMatic::button(
+			FAQ::OMatic::makeAref('-command'=>'faq',
+				'-params'=>$params,
+				'-changedParams'=>{'partnum'=>'', 'checkSequenceNumber'=>''}
+			),
+			"Return to the FAQ");
+		FAQ::OMatic::gripe('error',
+			"Either someone has changed the answer or category you were "
+			."editing since you received the editing form, or you submitted "
+			."the same form twice.\n"
+			."<p>Please $button and "
+			."start again to make sure no changes are lost. Sorry for "
+			."the inconvenience."
+			."<p>(Sequence number in form: $checkSequenceNumber; in item: "
+			.$self->{'SequenceNumber'}.")"
+			);
+	}
+}
+
+sub incrementSequence {
+	my $self = shift;
+
+	$self->setProperty('SequenceNumber', $self->{'SequenceNumber'}+1);
+}
+
+1;

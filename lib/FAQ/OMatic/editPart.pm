@@ -46,6 +46,10 @@ sub main {
 			.") doesn't exist.");
 	}
 
+	# check sequence number to prevent later confusion -- the user's
+	# insert or change request came from an out-of-date page.
+	$item->checkSequence($params);
+
 	my $insertpart = $params->{'_insertpart'};
 
 	my $partnum = $params->{'partnum'};
@@ -104,9 +108,10 @@ sub main {
 	}
 	
 	if ($params->{'_insertpart'}) {
-		if ($params->{'_insert'} eq 'answer') {
+		my $insertHint = $params->{'_insert'} || '';
+		if ($insertHint eq 'answer') {
 			$rt .= "Enter the answer to <b>".$item->getTitle()."</b>\n";
-		} elsif ($params->{'_insert'} eq 'category') {
+		} elsif ($insertHint eq 'category') {
 			$rt .= "Enter a description for <b>".$item->getTitle()."</b>\n";
 		} elsif ($params->{'_duplicate'}) {
 			$rt .= "Edit duplicated text for <b>".$item->getTitle()."</b>\n";

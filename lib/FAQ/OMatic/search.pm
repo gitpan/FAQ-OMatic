@@ -55,12 +55,7 @@ sub main {
 		$rt.="No items matched "
 			.$params->{'_minMatches'}." of these words: <i>"
 			.join(", ", @{$params->{'_searchArray'}})
-			."</i>. "
-			."(This may happen when the search database is out of date.)"
-			."\n<br>\n";
-		$rt.=FAQ::OMatic::button(
-				FAQ::OMatic::makeAref('faq', {'_minMatches'=>'','search'=>''}),
-				'Return to FAQ');
+			."</i>.\n<br>\n";
 	} else {
 		$rt.="Search results for "
 			.($params->{'_minMatches'} eq 'all' ?
@@ -69,7 +64,7 @@ sub main {
 			.join(", ", @{$params->{'_searchArray'}})
 			."</i>:<p>\n";
 
-		my $file, $item;
+		my ($file, $item);
 		foreach $file (@{$matchset}) {
 			$item = new FAQ::OMatic::Item($file);
 			$rt .= FAQ::OMatic::Appearance::itemStart($params);
@@ -77,6 +72,16 @@ sub main {
 		}
 		$rt .= FAQ::OMatic::Appearance::itemEnd($params);
 	}
+
+	if (not -f "$FAQ::OMatic::Config::metaDir/freshSearchDBHint") {
+		$rt .= "<br>Results may be incomplete, because the search "
+			."index has not been refreshed since the most recent change "
+			."to the database.<p>\n";
+	}
+
+	$rt.=FAQ::OMatic::button(
+		FAQ::OMatic::makeAref('faq', {'_minMatches'=>'','search'=>''}),
+		'Return to FAQ');
 	
 	$rt .= FAQ::OMatic::pageFooter();
 

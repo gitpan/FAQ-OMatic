@@ -33,6 +33,7 @@
 package FAQ::OMatic::Search;
 
 use FAQ::OMatic::Item;
+use FAQ::OMatic::Words;
 use FAQ::OMatic;
 
 my %wordDB;
@@ -123,7 +124,7 @@ sub getMatchesForSet {
 	my %accumulator=();
 	my @hitfiles=();
 
-	my $word, $file;
+	my ($word, $file);
 	foreach $word (@{$setref}) {
 		my $classref = getWordClass($word);
 		my $matches = getMatchesForClass($classref);
@@ -149,9 +150,7 @@ sub convertSearchParams {
 	# and store it in another parameter.
 	
 	$pattern = $params->{'_search'};
-	$pattern =~ s/'//g;		# apostrophes don't count
-	$pattern =~ tr/[A-Z/[a-z]/;
-	my @patternwords = ($pattern =~ m/($FAQ::OMatic::Intl::wordchars+)/gso);
+	my @patternwords = FAQ::OMatic::Words::getWords( $pattern );
 
 	$params->{'_searchArray'} = \@patternwords;
 }
@@ -217,4 +216,4 @@ sub getRecentSet {
 	return $recentList;
 }
 
-true;
+1;

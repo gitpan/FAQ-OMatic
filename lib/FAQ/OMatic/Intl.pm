@@ -50,7 +50,4 @@ package FAQ::OMatic::Intl;
 	'submitPass' => 'Validate'
 );
 
-# These are the characters that make up words in the local language.
-# This defines how we extract words from text to put into the search
-# database, and how we split search queries into words.
-$wordchars = '[A-Za-z0-9\-]';
+1;

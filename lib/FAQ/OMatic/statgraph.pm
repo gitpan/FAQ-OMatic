@@ -135,7 +135,7 @@ sub main {
 	my $params = \%FAQ::OMatic::theParams;
 	my $property = $params->{'property'};
 	my $duration = $params->{'duration'} || $FAQ::OMatic::Appearance::graphHistory;
-	my $resolution = int($params->{'resolution'}) || 1;
+	my $resolution = int($params->{'resolution'} || '1');
 	my $today = $params->{'today'} || FAQ::OMatic::Log::numericToday();
 
 	# gotta sanity-check these things, because of stupid infinite loop

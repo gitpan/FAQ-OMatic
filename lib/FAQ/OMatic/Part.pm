@@ -41,15 +41,17 @@ use Text::Tabs;
 sub new {
 	my ($class) = shift;
 
-	$item = {};
-	bless $item;
-	$item->{'Type'} = '';			# type is always defined, since '' is a
+	my $part = {};
+	bless $part;
+	$part->{'Type'} = '';			# type is always defined, since '' is a
 									# valid type.
-	$item->{'AuthorHash'} = {};		# start with empty author hash and list
-	$item->{'Author'} = [];			# hash keeps us from mentioning an author
+	$part->{'Text'} = '';			# might as well define the text, since
+									# that's the point of a part.
+	$part->{'AuthorHash'} = {};		# start with empty author hash and list
+	$part->{'Author'} = [];			# hash keeps us from mentioning an author
 									# twice; list keeps them in order.
 
-	return $item;
+	return $part;
 }
 
 sub loadFromFile {
@@ -126,6 +128,9 @@ sub displayAsFile {
 	$text =~ s/([^\n])\r([^\n])/$1\n$2/gs;	# standalone LF's become \n's.
 	$text =~ s/\r//gs;						# Remove any bogus extra \r's
 	$text .= "\n" if (not ($text =~ m/\n$/));	# ensure final \n
+	$self->{'Text'} = $text;				# make sure in-memory copy
+											# reflects the one we're saving
+
 	$rt .= "Lines: ".countLines($text)."\n".$text;
 
 	return $rt;
@@ -162,9 +167,10 @@ sub displayHTML {
 
 	$rt .= FAQ::OMatic::Appearance::partStart($params,$self);
 
-	my $tmp = FAQ::OMatic::insertLinks($self->{'Text'});
+	my $tmp = FAQ::OMatic::insertLinks($params, $self->{'Text'});
 	$tmp = FAQ::OMatic::highlightWords($tmp, $params);
-	if ($self->{'Type'} eq 'monospaced'){
+	$type = $self->{'Type'} || '';
+	if ($type eq 'monospaced'){
 		## monospaced text
 		$tmp =~ s/\n$//;
 		$tmp = "<pre>\n".$tmp."</pre>";
@@ -174,11 +180,8 @@ sub displayHTML {
 		## tag. Note that directories are standard format too, we just
 		## enforce a rule when editing to keep the structure consistent.
 		$tmp .= "<br>";				# keep attributions below part
-		# next two lines are jonh's original rules:
-		#$tmp =~ s/\n\n/\n<p>\n/gs;
-		#$tmp =~ s/\n\s+/\n<br>/gs;
 		# These are Andreas Kluﬂmann <Andreas.Klussmann@infosys.heitec.net>'s
-		# new rules: triple-space for a paragraph, double for a break,
+		# cool rules: triple-space for a paragraph, double for a break,
 		# indent for <pre>formatted text.
 		$tmp =~ s/\n\n\n/\n<p>\n/gs;
 		$tmp =~ s/\n\n/<br>\n/gs;
@@ -220,23 +223,38 @@ sub displayHTML {
 		$rt .= $FAQ::OMatic::Appearance::editStart;
 			#."Edit Part: ";
 		$rt .= FAQ::OMatic::button(
-			FAQ::OMatic::makeAref('editPart',
-				{"file"=>$filename, "partnum"=>$partnum, "_insertpart"=>1}),
+			FAQ::OMatic::makeAref('-command'=>'editPart',
+				'-params'=>$params,
+				'-changedParams'=>{'file'=>$filename,
+							'partnum'=>$partnum,
+							'_insertpart'=>1,
+							'checkSequenceNumber'=>$item->{'SequenceNumber'}}),
 				"Insert Text Here")."\n";
 		$rt .= FAQ::OMatic::button(
-			FAQ::OMatic::makeAref('editPart',
-				{"file"=>$filename, "partnum"=>$partnum}),
-				"Edit Above Text")."\n";
+			FAQ::OMatic::makeAref('-command'=>'editPart',
+				'-params'=>$params,
+				'-changedParams'=>{'file'=>$filename,
+							'partnum'=>$partnum,
+							'checkSequenceNumber'=>$item->{'SequenceNumber'}}),
+			"Edit Above Text")."\n";
 		$rt .= FAQ::OMatic::button(
-			FAQ::OMatic::makeAref('editPart',
-				{"file"=>$filename, "partnum"=>$partnum,
-				 "_insertpart"=>1, "_duplicate"=>1}),
-				"Duplicate Above Text")."\n";
-		if ($self->{'Type'} ne 'directory') {
+			FAQ::OMatic::makeAref('-command'=>'editPart',
+				'-params'=>$params,
+				'-changedParams'=>{'file'=>$filename,
+							'partnum'=>$partnum,
+							'_insertpart'=>1,
+							'_duplicate'=>1,
+							'checkSequenceNumber'=>$item->{'SequenceNumber'}}),
+			"Duplicate Above Text")."\n";
+		if ($type ne 'directory') {
 			$rt .= FAQ::OMatic::button(
-			FAQ::OMatic::makeAref('delPart',
-				{"file"=>$filename, "partnum"=>$partnum}),
-				"Remove Above Text")."\n";
+				FAQ::OMatic::makeAref('-command'=>'delPart',
+					'-params'=>$params,
+					'-changedParams'=>{"file"=>$filename,
+						'partnum'=>$partnum,
+						'checkSequenceNumber'=>$item->{'SequenceNumber'}}
+				),
+			"Remove Above Text")."\n";
 		}
 		$rt .= $FAQ::OMatic::Appearance::editEnd."<br>\n";
 	}
@@ -256,7 +274,14 @@ sub displayPartEditor {
 	$rows = 15 if ($rows < 15);	# make sure it's never too teeny
 	$rows = 30 if ($rows > 30);	# and never way big
 
-	$rt .= FAQ::OMatic::makeAref('submitPart', {}, POST, 'saveTransients');
+	$rt .= FAQ::OMatic::makeAref('-command'=>'submitPart',
+						'-params'=>$params,
+						'-refType'=>'POST',
+						'-saveTransients'=>1);
+
+	$rt .= "<input type=hidden name=\"checkSequenceNumber\" value=\""
+		.$item->{'SequenceNumber'}."\">\n";
+
 	if ($self->{'Type'} eq 'directory') {
 		#FAQ::OMatic::gripe('error', "You can't directly edit a directory part.");
 		# --now you can
@@ -305,8 +330,12 @@ sub displayPartEditor {
 		# received.
 	$rt .= "</form>\n";
 	$rt .= FAQ::OMatic::button(
-			FAQ::OMatic::makeAref('faq', {"partnum"=>""}),
-			"Cancel and return to FAQ");
+			FAQ::OMatic::makeAref('-command'=>'faq',
+				'-params'=>$params,
+				'-changedParams'=>{'partnum'=>'',
+					'checkSequenceNumber'=>''}
+				),
+			'Cancel and return to FAQ');
 
 	return $rt;
 }
@@ -381,7 +410,8 @@ sub unmergeDirectory {
 	my $filename = shift;
 
 	if ($self->{'Type'} ne 'directory') {
-		FAQ::OMatic::gripe('panic', "mergeDirectory: self is not a directory");
+		FAQ::OMatic::gripe('panic',
+			"unmergeDirectory: self is not a directory");
 	}
 
 	# since directories can now contain textual content, we
@@ -430,4 +460,4 @@ sub clone {
 	return $newpart;
 }
 
-'true';
+1;

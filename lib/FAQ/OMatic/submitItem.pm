@@ -53,6 +53,9 @@ sub main {
 			"Your browser or WWW cache has truncated your POST.");
 	}
 
+	$item->checkSequence($params);
+	$item->incrementSequence();
+
 	if (defined $params->{'_Title'}) {
 		$item->setProperty('Title', $params->{'_Title'})
 	}
@@ -129,12 +132,22 @@ sub main {
 
 	$item->notifyModerator($cgi, 'edited the item configuration');
 
+	my $url;
 	if ($params->{'_insert'}) {
-		$url = FAQ::OMatic::makeAref('editPart',
-			{'_insertpart'=>1, 'partnum'=>'-1',
-			'_insert'=>$params->{'_insert'}}, 'url');
+		$url = FAQ::OMatic::makeAref(
+			'-command'=>'editPart',
+			'-params'=>$params,
+			'-changedParams'=>{'_insertpart'=>1,
+				'partnum'=>'-1',
+				'checkSequenceNumber'=>$item->{'SequenceNumber'},
+				'_insert'=>$params->{'_insert'}},
+			'-refType'=>'url');
 	} else {
-		$url = FAQ::OMatic::makeAref('faq', {}, 'url');
+		$url = FAQ::OMatic::makeAref(
+			'-command'=>'faq',
+			'-params'=>$params,
+			'-changedParams'=>{'checkSequenceNumber'=>''},
+			'-refType'=>'url');
 	}
 
 	print $cgi->redirect(FAQ::OMatic::urlBase($cgi).$url);

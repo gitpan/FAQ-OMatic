@@ -80,7 +80,8 @@ sub build {
 	## make sure the files are readable
 	# Using wildcards lets us remain ignorant of dbm's extension(s), which
 	# vary machine to machine.
-	my @searchfiles = glob("$FAQ::OMatic::Config::metaDir/search$$*");
+	my @searchfiles = FAQ::OMatic::safeGlob($FAQ::OMatic::Config::metaDir,
+						"^search$$");
 
 	foreach $i (@searchfiles) {
 		chmod 0644, $i;
@@ -89,7 +90,7 @@ sub build {
 	foreach $i (@searchfiles) {
 		my $j = $i;
 		$j =~ s/$$//;
-		rename($i,$j);
+		rename($i,$j) or FAQ::OMatic::gripe('debug', "rename($i,$j) failed");
 	}
 
 	# create a freshSearchDBHint to let me know I don't need to do

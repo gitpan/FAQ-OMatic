@@ -25,85 +25,83 @@
 #                                                                            #
 ##############################################################################
 
-package FAQ::OMatic::appearanceForm;
+### Words.pm
+###
+### Support for extracting "words" from strings
+###
+### To change these routines to support other character sets,
+### copy this file to a location outside of the FAQ::OMatic tree and
+### add the following lines to the start of your cgi-bin/fom file:
+###	use lib '/Whatever/your/directory/path/is';
+###	require Words;
+###	#existing use lib line
+###	use FAQ::OMatic::Words
+### This will override the definitions in this file.
 
-use CGI;
-use FAQ::OMatic;
 
-sub main {
-	my $cgi = $FAQ::OMatic::dispatch::cgi;
-	
-	my $params = FAQ::OMatic::getParams($cgi);
+package FAQ::OMatic::Words;
 
-	my $page = '';
+sub cannonical {
+    my $string = shift;
 
-	$page.=FAQ::OMatic::pageHeader();
-	
-	$page.="<h3>Appearance Options</h3>";
+    # convert the input string into cannonical form.
+    #
+    # The default is to strip parenthesis and apostrophies, and
+    # convert to ASCII lower case.
+    #
+    # If you use another character set (e.g. ISO-8859-?), you'll want
+    # to override to do correct lower case handling.
+    #
+    # This routine is called both when the indicies are created and
+    # when the search pattern is formed, so things will be done
+    # consistantly.
 
-	my $boxes = [
-#		['recurse',
-#			['', 'Show', 'Hide'],
-#			['', '1', ''],
-#			'all categories and answers below current category'],
-		['showModerator',
-			['', 'Show', 'Hide'],
-			['', '1', ''],
-			'name of moderator who organizes current category'],
-		['showLastModified',
-			['', 'Show', 'Hide'],
-			['', '1', ''],
-			'last modified date'],
-		['showEditCmds',
-			['', 'Show', 'Hide'],
-			['', '1', ''],
-			'editing commands'],
-		['showAttributions',
-			['Show All', 'Default', 'Hide'],
-			['all', '', 'hide'],
-			'attributions'],
-		['simple',
-			['', 'Simple', 'Fancy'],
-			['', '1', ''],
-			'HTML']
-	];
+    # convert
+    #	timer(s) to timers
+    #   timer's to timers
+    #   e-mail  to email
+    $string =~ s/[()'-]//g;
+    $string =~ tr/A-Z/a-z/;  # 7-bit ASCII
 
-	$page.=FAQ::OMatic::makeAref("faq",
-			# kill all params that have a form entry
-			{ map {$_->[0] => ''} @{$boxes} },
-			'POST')
-		."<table>\n";
-	my ($setup, $choice);
-	foreach $setup (@{$boxes}) {
-		$page.="<tr>";
-		foreach $choice (0, 1, 2) {
-			$page.="<td>";
-			if ($setup->[1][$choice]) {
-				$page.="<input type=radio name=\""
-					.$setup->[0]
-					."\" value=\""
-					.$setup->[2][$choice]
-					."\"";
-				my $existing = $params->{$setup->[0]} || '';
-				if ($existing eq $setup->[2][$choice]) {
-					$page.=" checked\n";
-				}
-				$page.="> "
-					.$setup->[1][$choice];
-			}
-			$page.="</td>\n";
-		}
-		$page.= "<td>".$setup->[3]."</td>\n";
-		$page.="</tr>";
-	}
-	$page.="<tr><td></td><td></td><td></td><td align=left>"
-		."<input type=submit name=\"_fromAppearance\" value=\"Accept\">"
-		."</td></tr>\n";
-	$page.="</table></form>\n";
+#    # for ISO-8859-1 char set, add
+#    $string =~ tr/\300-\326/\340-\366/; # from &Agrave; through &Ouml;
+#					# into &agrave; through &ouml;
+#    $string =~ tr/\330-\336/\370-\376/; # from &Oslash; through &THORN;
+#					# into &oslash; through &thorn;
 
-	$page.= FAQ::OMatic::pageFooter();
-
-	print $page;
+    $string;
 }
 
-1;
+sub getWords {
+	my $string = shift;
+
+	# given a user-input string, we break it into "legal" words
+	# and return an array of them
+	
+	$string = cannonical( $string );
+
+	my $wordPattern = '[A-Za-z0-9\-]';
+	# for ISO-8859-1 char set, try
+	#my $wordPattern = '[A-Za-z0-9\-\300-\326\330-\366\370-\377]';
+	my @words = ($string =~ m/($wordPattern+)/gso);
+
+	@words;
+}
+
+sub getPrefixes {
+    my $word = shift;
+
+    # given a word, return an array of prefixes which should be
+    # indexed.
+    #
+    # default routine returns all substrings
+    my @prefix;
+    my $i = length( $word );
+    while( $i ) {
+        push @prefix, substr( $word, 0, $i-- );
+    }
+
+    @prefix;
+}
+
+'true';

@@ -42,9 +42,18 @@ sub main {
 	my $what = $params->{'_restart'};
 	my $why = FAQ::OMatic::Auth::authError($params->{'_reason'});
 
+	# Give them the option of setting up a new password
+	# Creating a login is the same thing
+	$newPassButton .= FAQ::OMatic::button(FAQ::OMatic::makeAref('changePass',
+			{'_pass_pass' => '',
+			 '_pass_id' => '' }, '', 'saveTransients'), "Set a New Password");
+	$newLoginButton .= FAQ::OMatic::button(FAQ::OMatic::makeAref('changePass',
+			{'_pass_pass' => '',
+			 '_pass_id' => '' }, '', 'saveTransients'), "Create a New Login");
+
 	if ($params->{'badPass'}) {
 		$rt.="That password is invalid. If you've forgotten your old "
-			."password, you can set a new one with the link below.\n";
+			."password, you can $newPassButton.\n";
 
 		delete $params->{'badPass'};
 		# We had to use a nontransient param because the func that sets
@@ -86,13 +95,21 @@ sub main {
 			} else {
 				$rt.="Items can only be moved by $why.";
 			}
+		} elsif ($what eq 'install') {
+			$rt.="The FAQ-O-Matic can only be configured by $why.";
 		} else {
 			$rt.="The operation you attempted ($what) can "
 				."only be done by $why.";
 		}
 	
-		$rt .= "\n(If you have already logged in before, it may be that the "
-			."token I use to identify you has expired. Please log in again.)\n";
+		$rt .= "<ul><li>If you have never established a password to use with "
+			."FAQ-O-Matic, you can $newLoginButton.\n";
+		$rt .= "<li>If you have forgotten your password, "
+			."you can $newPassButton.\n";
+		$rt .= "<li>If you have already logged in earlier today, it may be "
+			."that the token I use to identify you has expired. "
+			."Please log in again.\n";
+		$rt .= "</ul>\n";
 	}
 
 	$rt .= FAQ::OMatic::makeAref($params->{'_restart'},
@@ -124,18 +141,13 @@ sub main {
 
 	# Give them the option of leaving whatever authentication they
 	# used to have intact, and giving up on "better" auth.
-	$rt .= FAQ::OMatic::button(FAQ::OMatic::makeAref('faq', {}),
+	$rt .= FAQ::OMatic::button(FAQ::OMatic::makeAref(
+				'-command'=>'faq',
+				'-params'=>$params,
+				'-changedParams'=>{'partnum'=>'',
+					'checkSequenceNumber'=>''}
+				),
 			"Cancel and Return to FAQ");
-
-	# Give them the option of setting up a new password
-	# Creating a login is the same thing
-	$rt .= FAQ::OMatic::button(FAQ::OMatic::makeAref('changePass',
-			{'_pass_pass' => '',
-			 '_pass_id' => '' }, '', 'saveTransients'), "Set a New Password");
-	$rt .= FAQ::OMatic::button(FAQ::OMatic::makeAref('changePass',
-			{'_pass_pass' => '',
-			 '_pass_id' => '' }, '', 'saveTransients'), "Create a New Login");
-	$rt .= "<p>\n"; # make the links stand out
 
 	$rt .= FAQ::OMatic::pageFooter();
 

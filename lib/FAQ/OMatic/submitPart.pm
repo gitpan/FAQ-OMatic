@@ -48,6 +48,13 @@ sub main {
 		# have to check the s_ case, because we don't extract the s_-encoded
 		# parameters until later. (Any reason not to do them here?)
 
+	if (not $insertpart) {
+		# if inserting a part, we don't have to check -- inserts can
+		# come out of order and it's not too bad.
+		$item->checkSequence($params);
+	}
+	$item->incrementSequence();
+
 	my $partnum = $params->{'partnum'};
 	my $part;
 	if ($partnum >= 0) {
@@ -218,8 +225,10 @@ sub main {
 		$item->notifyModerator($cgi, 'edited a part', $partnum);
 	}
 
-	$url = FAQ::OMatic::makeAref('faq',
-		{'partnum'=>''}, 'url');
+	$url = FAQ::OMatic::makeAref('-command'=>'faq',
+				'-params'=>$params,
+				'-changedParams'=>{'partnum'=>'', 'checkSequenceNumber'=>''},
+				'-refType'=>'url');
 		# eliminate things that were in our input form that weren't
 		# automatically transient (_ prefix)
 	print $cgi->redirect(FAQ::OMatic::urlBase($cgi).$url);

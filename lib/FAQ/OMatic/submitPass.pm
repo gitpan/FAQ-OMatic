@@ -50,8 +50,8 @@ sub main {
 		}
 		my $pass = $params->{'_pass'};
 		if (not ($pass =~ m/^\S*$/)) {
-			FAQ::OMatic::gripe('error', "Your password may not contain spaces or"
-				."carriage returns.");
+			FAQ::OMatic::gripe('error', "Your password may not contain spaces "
+				."or carriage returns.");
 		}
 
 		# Only create a secret if user is coming straight from changePass.

@@ -38,11 +38,14 @@ package FAQ::OMatic::Appearance;
 # title string). Please leave the string in the footer that identifies
 # the author and the homepage of Faq-O-Matic.
 sub cPageHeader {
+	my $params = shift;
+	my $suppressType = shift || '';
 	# this is a func because FAQ::OMatic::fomTitle() isn't well-defined at
 	# global initialization time.
-	return "Content-type: text/html\n\n"
+	my $type = ($suppressType) ? '' : "Content-type: text/html\n\n";
+	return $type
 			."<html><head><title>".FAQ::OMatic::fomTitle()
-			.FAQ::OMatic::pageDesc()."</title></head>\n"
+			.FAQ::OMatic::pageDesc($params)."</title></head>\n"
 			."<body bgcolor=\"$FAQ::OMatic::Config::backgroundColor\" "
 			."text=$FAQ::OMatic::Config::textColor "
 			."link=$FAQ::OMatic::Config::linkColor "
@@ -55,25 +58,51 @@ sub cPageFooter {
 
 	my $page= "\n"
 			.partStart({})
-			."<table width=\"100%\"><tr><td width=\"50%\" align=left>\n"
-			."The <a href=\"http://www.dartmouth.edu/cgi-bin/cgiwrap/jonh/faq.pl\">Faq-O-Matic</a> is by <a href=\"http://www.cs.dartmouth.edu/~jonh\">Jon Howell</a>.\n"
+			."<table width=\"100%\"><tr><td width=\"34%\" align=left>\n"
+			."The <a href=\"http://www.dartmouth.edu/cgi-bin/cgiwrap/jonh/faq.pl\">Faq-O-Matic</a> is by <a href=\"http://www.cs.dartmouth.edu/~jonh\">Jon&nbsp;Howell</a>.\n"
 			."</td>";
 	if ($showLinks) {
-		$page.="<td width=\"16%\" align=center>"
-			.FAQ::OMatic::makeAref('searchForm', {}, '')
-			."Search</a>"
-			."</td><td width=\"17%\" align=center>"
-			.FAQ::OMatic::makeAref('appearanceForm', {}, '')
-			."Appearance"
-			."</td><td width=\"17%\" align=center>";
-		if ($params->{'showEditCmds'}) {
-			$page.=FAQ::OMatic::makeAref('faq', {'showEditCmds'=>''}, '')
-				."Hide Edit Cmds";
+		#my $boxColor = "bgcolor=\"$FAQ::OMatic::Config::backgroundColor\"";
+		my $boxColor = '';
+
+		my $filename = $params->{'file'} || '1';
+		my $recurse = $params->{'_recurse'} || '';
+		my $item = new FAQ::OMatic::Item($filename);
+		if ($item->isCategory() and (not $recurse)) {
+			$page.="<td width=\"16%\" align=center $boxColor>"
+				.FAQ::OMatic::makeAref('-command'=>'faq',
+					'-params'=>$params,
+					'-changedParams'=>{'_recurse'=>1})
+				."Show This <em>Entire</em> Category</a>"
+				."</td>\n";
 		} else {
-			$page.=FAQ::OMatic::makeAref('faq', {'showEditCmds'=>'1'}, '')
-				."Show Edit Cmds";
+			$page.="<td width=\"16%\" align=center></td>\n";
+		}
+		$page.="<td width=\"16%\" align=center $boxColor>"
+			.FAQ::OMatic::makeAref('-command'=>'searchForm',
+				'-params'=>$params)
+			."Search</a>"
+			."</td>";
+		$page.="<td width=\"17%\" align=center $boxColor>"
+			.FAQ::OMatic::makeAref('-command'=>'appearanceForm',
+				'-params'=>$params)
+			."Appearance"
+			."</td>";
+		$page.="<td width=\"17%\" align=center $boxColor>";
+		if ($params->{'showEditCmds'}) {
+			$page.=FAQ::OMatic::makeAref('-command'=>'faq',
+				'-params'=>$params,
+				'-changedParams'=>{'showEditCmds'=>''})
+				."Hide Edit Commands";
+		} else {
+			$page.=FAQ::OMatic::makeAref('-command'=>'faq',
+				'-params'=>$params,
+				'-changedParams'=>{'showEditCmds'=>'1'})
+				."Show Edit Commands";
 		}
 		$page.="</td>";
+	} else {
+		$page.="<td width=\"66%\"></td>\n";
 	}
 	$page .= "</tr></table>"
 			.partEnd({})
@@ -84,11 +113,11 @@ sub cPageFooter {
 # This is called before every item is printed. (There are multiple
 # items in the "[Show All Items Below Here]" display and the search
 # output.)
-my $alreadyStart=0;
 sub itemStart {
 	my $params = shift;
+	my $alreadyStart = $params->{'_as'} || '';	# info hidden away in $params
 	if (not $alreadyStart) {
-		$alreadyStart = 1;
+		$params->{'_as'} = 1;
 		if (not $params->{'simple'}) {
 			return
 				"<table width=100%><tr><td bgcolor=$FAQ::OMatic::Config::itemBarColor>"
@@ -122,7 +151,7 @@ sub partStart {
 	my $part = shift;	# can examine the part to see if it's a directory
 
 	if (not $params->{'simple'}) {
-		if ($part->{'Type'} eq 'directory') {
+		if (($part->{'Type'} || '') eq 'directory') {
 			return "<table bgcolor=$FAQ::OMatic::Config::directoryPartColor "
 				."width=\"100%\"><tr><td>\n";
 		} else {
@@ -150,7 +179,8 @@ $editStart = "<font size=-1>";
 $editEnd = "</font>";
 
 # These surround words in the document that were in a search query.
-$highlightStart = "<font color=$FAQ::OMatic::Config::highlightColor><b>";
+$highlightColor	= $FAQ::OMatic::Config::highlightColor || "#a01010";
+$highlightStart = "<font color=$highlightColor><b>";
 $highlightEnd	= "</b></font>";
 
 $graphHistory	= 60;	# default graphs show data going back two months

@@ -37,7 +37,7 @@ sub main {
 	
 	FAQ::OMatic::getParams($cgi);
 	
-	my $rt = FAQ::OMatic::pageHeader(0);
+	my $rt = FAQ::OMatic::pageHeader();
 	
 	$item = new FAQ::OMatic::Item($FAQ::OMatic::theParams{'file'});
 	if ($item->isBroken()) {
@@ -53,7 +53,7 @@ sub main {
 	my %itemSet = ();
 	my $clickable;
 
-	my $filei, $itemi;
+	my ($filei, $itemi);
 	foreach $filei (FAQ::OMatic::getAllItemNames()) {
 		# I can't be my own parent
 		next if ($filei eq $item->{'filename'});

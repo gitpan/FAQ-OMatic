@@ -38,31 +38,25 @@ sub main {
 	# supply some default parameters where necessary
 	$params->{'file'} = 1 if (not $params->{'file'});
 
-#### -- now defunct code that once was how we did appearance changes (from
-#### -- popup menus)
-# 	if ($params->{'appearance'}) {
-# 		my ($paramName,$newValue) = split('EQUALS', $params->{'theChange'});
-# 		my $url = FAQ::OMatic::makeAref('faq',
-# 			{$paramName=>$newValue,
-# 				'appearance'=>'',
-# 				'theChange'=>''},
-# 			'url');
-# 		#print "Content-type: text/plain\n\n";
-# 		#print "url: $url\n";
-# 		print $cgi->redirect(FAQ::OMatic::urlBase($cgi).$url);
-# 		exit(0);
-# 	}
-
+	my $html = '';
+	$html .= FAQ::OMatic::pageHeader($params);
+	
 	# strip out null params from params array
 	if ($params->{'_fromAppearance'}) {
 		my $key;
 		foreach $key (keys %{$params}) {
 			delete $params->{$key} if ($params->{$key} eq '');
 		}
+		delete $params->{'_fromAppearance'};
 	}
 
-	print FAQ::OMatic::pageHeader(1);
-	
+	my $cacheUrl = FAQ::OMatic::getCacheUrl($params);
+	if ($cacheUrl) {
+		# Hey! We could just send this guy to the cached site!
+		print $cgi->redirect($cacheUrl);
+		exit(0);
+	}
+
 	$item = new FAQ::OMatic::Item($params->{'file'});
 	if ($item->isBroken()) {
 		FAQ::OMatic::gripe('error', "The file (".
@@ -70,22 +64,16 @@ sub main {
 	}
 
 	if ($params->{'debug'}) {
-		print $item->display();
+		$html .= $item->display();
 	}
-	print $item->displayHTML($params);
+	$html .= $item->displayHTML($params);
 
 	## print the url for people to reference
-	# distill out all the fluffy parameters, keep only the important ones
-	my %killParams = %{$params};
-	delete $killParams{'file'};
-	delete $killParams{'recurse'} if ($params->{'recurse'});
-	my $i; foreach $i (keys %killParams) { $killParams{$i} = ''; }
-
-	my $url = FAQ::OMatic::urlBase($cgi)
-			 .FAQ::OMatic::makeAref('', \%killParams, 'url');
-	print "This document is: <i>$url</i><br>\n";
+	$html .= FAQ::OMatic::Item::basicURL($params);
 	
-	print FAQ::OMatic::pageFooter($params, 'links');
+	$html .= FAQ::OMatic::pageFooter($params, 'links');
+
+	print $html;
 }
 
 1;

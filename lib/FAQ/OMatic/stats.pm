@@ -36,13 +36,14 @@ sub main {
 	my $cgi = $FAQ::OMatic::dispatch::cgi;
 	my $rt = '';
 	
-	FAQ::OMatic::getParams($cgi);
-	my $params = \%FAQ::OMatic::theParams;
+	my $params = FAQ::OMatic::getParams($cgi);
+
+	$params->{'duration'} = '' if (not defined($params->{'duration'}));
 
 	my $simpleHTML = $params->{'simpleHTML'};
 
 	# make sure today is summarized in a .smry file
-	FAQ::OMatic::Log::summarizeDay($today);
+	FAQ::OMatic::Log::summarizeDay(FAQ::OMatic::Log::numericToday());
 	
 	# check history now that today is summarized (so there's at least 1 .smry)
 	if ($params->{'duration'} eq 'history') {
@@ -52,8 +53,9 @@ sub main {
 	}
 
 	# get today's stats for the text part of the display
-	my $today = $params->{'today'};
-	$today =~ s#/##g;	# sanitize user input before treating it as a path
+	my $today = $params->{'today'} || '';
+	$today =~ m/([\d-]*)/;	# sanitize user input before treating it as a path
+	$today = $1;
 	if (not -e "$FAQ::OMatic::Config::metaDir/$today.smry") {
 		$today = FAQ::OMatic::Log::numericToday();
 	}
@@ -74,7 +76,7 @@ sub main {
 	push @props, ('Operation-submitPart',	'CumOperation-submitPart');
 	push @titles, ('Submissions Per Day', 'Cumulative Submissions');
 
-	$rt.= FAQ::OMatic::pageHeader(0);
+	$rt.= FAQ::OMatic::pageHeader();
 	$rt.= "Please be patient ... the image files are generated dynamically, "
 		."and can take from 20 to 50 seconds to create.\n";
 	$rt.="<table>" if (!$simpleHTML);
@@ -139,7 +141,7 @@ sub main {
 }
 
 sub niceValue {
-	my $value = shift;
+	my $value = shift || '';
 
 	$value = 0 if ($value eq '');
 

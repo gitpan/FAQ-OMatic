@@ -40,7 +40,7 @@ use FAQ::OMatic::Log;
 use FAQ::OMatic::Appearance;
 use FAQ::OMatic::Intl;
 
-$VERSION = '2.506';
+$VERSION = '2.602';
 
 # This is never used to automatically send mail to (that's authorEmail),
 # but when we need to report the author's address, we use this constant:
@@ -49,10 +49,9 @@ $authorAddress = 'jonh@cs.dartmouth.edu';
 my $seenHeader = 0;
 
 sub pageHeader {
-	my $printingNow = shift;
-	$seenHeader = 1 if $printingNow;
-		# so gripe() only displays header if not sent yet.
-	return FAQ::OMatic::Appearance::cPageHeader();
+	my $params = shift || \%theParams;
+	my $suppressType = shift;
+	return FAQ::OMatic::Appearance::cPageHeader($params, $suppressType);
 }
 
 sub pageFooter {
@@ -78,19 +77,21 @@ sub fomTitle {
 
 # a description of the page we're on right now
 sub pageDesc {
-	my $cmd = commandName();
+	my $params = shift;
+	my $cmd = commandName($params);
 	my $rt;
 
 	$cmd = 'insertItem'
-		if (($cmd eq 'editItem') and ($theParams{'_insert'}));
+		if (($cmd eq 'editItem') and ($params->{'_insert'}));
 	$cmd = 'insertPart'
-		if (($cmd eq 'editPart') and ($theParams{'_insertpart'}));
+		if (($cmd eq 'editPart') and ($params->{'_insertpart'}));
 
-	$rt = $FAQ::OMatic::Intl::pageDesc{$cmd};
+	$rt = $FAQ::OMatic::Intl::pageDesc{$cmd} || "$cmd page";
 
 	if ($rt eq 'FAQ') {
-		if ($theParams{'file'} ne 1) {
-			my $item = new FAQ::OMatic::Item($theParams{'file'});
+		my $file = $params->{'file'} || '';
+		if ($file ne 1) {
+			my $item = new FAQ::OMatic::Item($params->{'file'});
 			$rt = $item->getTitle();
 		} else {
 			$rt = "";
@@ -107,7 +108,8 @@ sub keyValue {
 
 # returns the name of the currently executing command module (was CGI)
 sub commandName {
-	return ($theParams{'cmd'} || 'faq');
+	my $params = shift || \%theParams;
+	return ($params->{'cmd'} || 'faq');
 }
 
 # returns the end of the URL (the CGI name)
@@ -143,10 +145,10 @@ sub gripe {
 	# 'abort': mails msg to $faqAdmin, appends to log, tells user, aborts CGI
 	# 'panic': mails trouble to $faqAdmin, $faqAuthor, appends to log,
 	# 	tells user, and aborts the CGI
-	my $severity = shift;
-	my $msg = shift;
+	my $severity = shift || 'problem';
+	my $msg = shift || '[gripe with no msg]';
 	my $mailguys = '';
-	my $id = $FAQ::OMatic::Auth::trustedID || $theParams{'id'};
+	my $id = $FAQ::OMatic::Auth::trustedID || $theParams{'id'} || '(noID)';
 
 	# mail someone
 	if ($severity eq 'panic') {
@@ -191,7 +193,10 @@ sub gripe {
 
 sub lockFile {
 	my $filename = shift;
-	my $lockname = "$FAQ::OMatic::Config::metaDir/$filename.lck";
+	my $lockname = $filename;
+	$lockname =~ s#/#-#gs;
+	$lockname =~ m#^(.*)$#;
+	$lockname = "$FAQ::OMatic::Config::metaDir/$1.lck";
 	if (-e $lockname) {
 		sleep 10;
 		if (-e $lockname) {
@@ -219,29 +224,48 @@ sub unlockFile {
 
 # turns faqomatic:file references into HTML links with pleasant titles.
 sub faqomaticReference {
+	my $params = shift;
 	my $filename = shift;
 
 	my $item = new FAQ::OMatic::Item($filename);
 	my $title = $item->getTitle();
 
 	# we should cause the link to inherit the appropriate user parameters!
-	return makeAref('faq', {"file"=>$filename})."$title</a>";
+	return makeAref('-command'=>'faq',
+					'-params'=>$params,
+					'-changedParams'=>{"file"=>$filename})
+			."$title</a>";
+}
+
+sub relativeReference {
+	my $params = shift;
+	my $url = shift;
+
+	# absolute on this server -- doesn't need to be rewritten.
+	return $url if ($url =~ m#^/#);
+
+	# viewed from the CGI -- relative to current directory is okay.
+	return $url if (not $params->{'_fullUrls'});
+
+	# relative -- needs to be made absolute if fullUrls is in effect
+	return FAQ::OMatic::urlBase($cgi).$url;
 }
 
 # turns link-looking things into actual HTML links, but also turns
 # <, > and & into entities to prevent them getting interpreted as HTML.
 sub insertLinks {
+	my $params = shift;
 	my $arg = shift;
 	$arg = entify($arg);
 	$arg =~ s#(http://[^\s"]*[^\s.,)\?!])#<a href=\"$1\">$1</a>#sg;
 														# absolute URL
-	$arg =~ s#http:((?!//)[^\s"]*[^\s.,)\?!])#<a href=\"$1\">$1</a>#sg;
+	$arg =~ s#http:((?!//)[^\s"]*[^\s.,)\?!])#"<a href=\"".relativeReference($params,$1)."\">$1</a>"#sge;
 														# relative URL
 	$arg =~ s#(ftp://[^\s"]*[^\s.,)\?!])#<a href=\"$1\">$1</a>#sg;
 	$arg =~ s#(gopher://[^\s"]*[^\s.,)\?!])#<a href=\"$1\">$1</a>#sg;
 	$arg =~ s#(telnet://[^\s"]*[^\s.,)\?!])#<a href=\"$1\">$1</a>#sg;
 	$arg =~ s#(mailto:\S+@\S*[^\s.,)\?!])#<a href=\"$1\">$1</a>#sg;
-	$arg =~ s#faqomatic:(\S*[^\s.,)\?!])#faqomaticReference($1)#sge;
+	$arg =~ s#faqomatic:(\S*[^\s.,)\?!])#faqomaticReference($params,$1)#sge;
 
 	return $arg;
 }
@@ -290,29 +314,72 @@ sub getParams {
 	# grep log for "Perl" to see if this is happening.
 	# We only do this in getParams so that command-line utils
 	# don't get confused.
-	$SIG{__DIE__} = sub { gripe('panic', "Perl died: ".$_[0]); };
 	$SIG{__WARN__} = sub { gripe('note', "Perl warning: ".$_[0]); };
+	# so it turns out SIGs are the wrong way to catch die()s. Evals
+	# are the right way.
+	# $SIG{__DIE__} = sub { gripe('panic', "Perl died: ".$_[0]); };
 
 	return \%theParams;
 }
 
 sub makeAref {
-	my $command = shift;
-	my $changedParams = shift;	# hash ref to new params
-	my $reftype = shift;		# '' => <a href="...">
+	my $command = 'faq';
+	my $changedParams = {};
+	my $refType = '';
+	my $saveTransients = '';
+	my $blastAll = '';
+	my $params = \%theParams;	# default to global params (not preferred, tho)
+	my $fullUrls = '';
+
+	if ($_[0] =~ m/^\-/) {
+		# named-parameter style
+		while (scalar(@_)>=2) {
+			my ($argName, $argVal) = splice(@_,0,2);
+			if ($argName =~ m/\-command$/i) {
+				$command = $argVal;
+			} elsif ($argName =~ m/\-changedParams$/i) {
+				$changedParams = $argVal;
+			} elsif ($argName =~ m/\-refType$/i) {
+				$refType = $argVal;
+			} elsif ($argName =~ m/\-saveTransients$/i) {
+				$saveTransients = $argVal;
+			} elsif ($argName =~ m/\-blastAll$/i) {
+				$blastAll = $argVal;
+			} elsif ($argName =~ m/\-params$/i) {
+				$params = $argVal;
+			} elsif ($argName =~ m/\-fullUrls$/i) {
+				$fullUrls = $argVal;
+			}
+		}
+		if (scalar(@_)) {
+			gripe('problem', "Odd number of args to makeAref()");
+		}
+	} else {
+		$command = shift;
+		$changedParams = shift || {};
+								# hash ref to new params
+		$refType = shift || '';
+								# '' => <a href="...">
 								# 'POST' => <form method='POST' ...
 								# 'GET' => <form method='GET' ...
 								# 'url' => just the GET url
-	my $saveTransients = shift;	# true => don't zap the _params, since
+		$saveTransients = shift || '';
+								# true => don't zap the _params, since
 								# they're only passing through an interposing
 								# script (authentication script, for example)
-	my $blastAll = shift;		# true => zap all params, then use
+		$blastAll = shift || '';
+								# true => zap all params, then use
 								# changedParams as only new ones.
+		$params = shift if (defined($_[0]));
+								# given params instead of using icky global
+								# ones.
+	}
+
 	my %newParams;
 	if ($blastAll) {
-		%newParams = ();
+		%newParams = ();			# blast all existing params
 	} else {
-		%newParams = %theParams;
+		%newParams = %{$params};
 	}
 	my $rt = "";
 
@@ -327,17 +394,14 @@ sub makeAref {
 
 	# change the requested parameters
 	foreach $i (keys %{ $changedParams }) {
-		if ($changedParams->{$i} eq '') {
+		if (not defined($changedParams->{$i})
+			or ($changedParams->{$i} eq '')) {
 			delete $newParams{$i};
 		} else {
 			$newParams{$i} = $changedParams->{$i};
 		}
 	}
 
-	# Old system used a different CGI for each command; hence the
-	# separate parameter to this subroutine. New organization (fom2.4+)
-	# uses a single dispatcher CGI, so we embed the command as a
-	# parameter.
 	# Also, we strip the useless .pl suffix from commands now, if
 	# some lame client passes it in.
 	if ($command =~ m/\.pl$/) {
@@ -352,24 +416,52 @@ sub makeAref {
 		$newParams{'cmd'}=$command;
 	}
 
+	# If we're generating a page that'll get stored and served statically
+	# straight from a file, we need URLs back to the CGI side to be
+	# 'absolute'.
+	my $cgiName='';
+	$fullUrls = 1 if ($params->{'_fullUrls'});
+	if ($fullUrls) {
+		$cgiName = FAQ::OMatic::urlBase($cgi);
+	}
+	$cgiName .= cgiName();
+
 	foreach $i (sort keys %newParams) {
-		if ($reftype eq 'POST' or $reftype eq 'GET') {
+		if ($refType eq 'POST' or $refType eq 'GET') {
 			$rt .= "<input type=hidden name=\"$i\" value=\""
 				.$newParams{$i}."\">\n";
 		} else {	# regular GET
 			$rt.="&".CGI::escape($i)."=".CGI::escape($newParams{$i});
 		}
 	}
-	if (($reftype eq 'POST') or ($reftype eq 'GET')) {
-		return "<form action=\"".cgiName()."\" "
-				."method=\"$reftype\">\n$rt";
-	} elsif ($reftype eq 'url') {
+	if (($refType eq 'POST') or ($refType eq 'GET')) {
+		return "<form action=\"".$cgiName."\" "
+				."method=\"$refType\">\n$rt";
+	} elsif ($refType eq 'url') {
 		$rt =~ s/^\&/\?/;	# turn initial & into ?
-		return cgiName().$rt;
+		return $cgiName.$rt;
 	} else {
+		my $cacheUrl = getCacheUrl(\%newParams);
+		return "<a href=\"$cacheUrl\">" if ($cacheUrl);
+
 		$rt =~ s/^\&/\?/;	# turn initial & into ?
-		return "<a href=\"".cgiName()."$rt\">";
+		return "<a href=\"$cgiName$rt\">";
 	}
+}
+
+# This function examines $params and if they refer to a page that's
+# statically cached, returns a ready-to-eat URL to that page.
+# Otherwise it returns ''.
+sub getCacheUrl {
+	my $params = shift;
+	if ($FAQ::OMatic::Config::cacheDir
+		and (not grep {not m/^file$/} keys(%{$params}))
+		and (-f $FAQ::OMatic::Config::cacheDir."/".$params->{'file'}.".html")) {
+		return $FAQ::OMatic::Config::cacheURL
+				.$params->{'file'}
+				.".html";
+	}
+	return '';
 }
 
 # takes an a href and a button label, and makes a button.
@@ -385,7 +477,7 @@ sub getAllItemNames {
 
 	opendir DATADIR, $FAQ::OMatic::Config::itemDir or
 		FAQ::OMatic::gripe('problem', "Can't open data directory.");
-	while ($_ = readdir DATADIR) {
+	while (defined($_ = readdir DATADIR)) {
 		next if (m/^\./);
 		next if (not -f $FAQ::OMatic::Config::itemDir."/".$_);
 		push @allfiles, $_;
@@ -481,10 +573,11 @@ sub binpath {
 }
 
 sub validEmail {
-	# returns true if the argument looks like an email address
+	# returns true (and the untainted address)
+	# if the argument looks like an email address
 	my $arg = shift;
 	my $cnt = ($arg =~ /^([\w-.+]+\@[\w-.+]+)$/);
-	return ($cnt == 1);
+	return ($cnt == 1) ? $1 : undef;
 }
 
 # sends email; returns true if there was a problem.
@@ -493,7 +586,12 @@ sub sendEmail {
 	my $subj = shift;
 	my $mesg = shift;
 
-	$to = join(" ", @{$to}) if (ref $to);
+	# untaint $to address
+	if (ref $to) {
+		$to = join(" ", map {validEmail($_)} @{$to});
+	} else {
+		$to = validEmail($to);
+	}
 
 	if ($FAQ::OMatic::Config::mailCommand =~ m/sendmail/) {
 		my $to2 = $to;
@@ -515,6 +613,41 @@ sub sendEmail {
 		close MAILX;
 	}
 	return 0;	# no problem
+}
+
+# this is a taint-safe glob. It's not as "flexible" as the real glob,
+# but safer and probably anything flexible would be not as portable, since
+# it would depend on csh idiosyncracies.
+sub safeGlob {
+	my $dir = shift;
+	my $match = shift;		# perl regexp
+	my @filelist = ();
+
+	return () if (not opendir(GLOBDIR, $dir));
+
+	@filelist = map { "$dir/$_" } (grep { m/$match/ } readdir(GLOBDIR));
+	closedir GLOBDIR;
+
+	return @filelist;
+}
+
+# for debugging -T
+sub isTainted {
+	my $x;
+	not eval {
+		$x = join("",@_), kill 0;
+		1;
+	};
+}
+
+# the crummy "require 'flush.pl';" is not acting reliably for me.
+# this is the same routine, but copied into this package. Grr.
+sub flush {
+	local($old) = select(shift);
+    $| = 1;
+	print "";
+	$| = 0;
+	select($old);
 }
 
 'true';

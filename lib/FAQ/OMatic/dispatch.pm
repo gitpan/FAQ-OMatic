@@ -39,6 +39,11 @@ sub main {
 	$meta = shift;	# The single adjustable parameter in the actual CGI
 	my $haveMeta=0;
 
+	# it's not so important what this path is (though a good selection
+	# will help the install cmd make better suggestions for the mail and
+	# RCS commands), but that we set it so it's not tainted.
+	$ENV{'PATH'} = '/bin:/usr/bin:/usr/sbin:/usr/local/bin';
+
 	if (-f "$meta/config") {
 		require "$meta/config";
 		if ($meta eq $FAQ::OMatic::Config::metaDir) {
@@ -56,15 +61,18 @@ sub main {
 	# to test membership. This is the set of modules we know (prevents
 	# the user from making up some other module and getting it into
 	# our eval()).
-	%knownModules = map {$_=>1} (
-		'faq', 'search', 'recent', 'stats', 'statgraph',
-		'appearanceForm',	'searchForm',
-		'editPart', 'submitPart', 'delPart',
-		'addItem', 'editItem', 'submitItem', 'moveItem', 'submitMove',
-		'authenticate', 'changePass', 'submitPass',
-		'install', 'maintenance',
-		'pickerImage', 'checkedImage', 'uncheckedImage', 'spaceImage',
-		'editGroups', 'submitGroup'
+	%knownModules = map { $_ => $_ } (
+		'faq', 			'appearanceForm',
+		'search',		'searchForm',		'recent',
+		'stats', 		'statgraph',
+		'authenticate',	'changePass',		'submitPass',
+		'editPart',		'submitPart',		'delPart',
+		'addItem',		'editItem',			'submitItem',
+		'moveItem',		'submitMove',
+		'install',		'maintenance',
+		'editGroups',	'submitGroup',
+		'pickerImage',	'checkedImage',		'uncheckedImage',
+		'spaceImage'
 	);
 	
 	use CGI;
@@ -75,10 +83,17 @@ sub main {
 				: 'install';
 
 	my $problem = '';
-	
-	if ($knownModules{$cmd}) {
-		my $dispatch = "use FAQ::OMatic::$cmd; FAQ::OMatic::".$cmd."::main();";
-		eval($dispatch);
+	my $func;
+
+	# notice we take the value of the hash lookup, rather than just
+	# testing it -- that handily untaints $func.
+	if ($func = $knownModules{$cmd}) {
+		# Require means we don't load the module until we need it.
+		# (But mod_perl will accumulate modules, and only load them
+		# if they haven't been loaded before, of course.)
+		require "FAQ/OMatic/$func.pm";
+		# This invocation will call the $func module's main()
+		eval { &{"FAQ::OMatic::".$func."::main"}(); };
 		$problem = $@;
 	} else {
 		$problem = "Unknown command: $cmd";

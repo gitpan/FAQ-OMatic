@@ -45,14 +45,11 @@ sub main {
 	if (scalar(@{$matchset})==0) {
 		$rt.="No items were modified in the last ".$params->{'_duration'}
 			." days.\n<br>\n";
-		$rt.=FAQ::OMatic::button(
-				FAQ::OMatic::makeAref('faq', {}),
-				'Return to FAQ');
 	} else {
 		$rt.="Items modified in the last ".$params->{'_duration'}
 			." days:\n<p>\n";
 
-		my $file, $item;
+		my ($file, $item);
 		foreach $file (@{$matchset}) {
 			$item = new FAQ::OMatic::Item($file);
 			$rt .= FAQ::OMatic::Appearance::itemStart($params);	# goes before & between
@@ -65,6 +62,10 @@ sub main {
 		$rt .= FAQ::OMatic::Appearance::itemEnd($params);		# goes after items
 	}
 	
+	$rt.=FAQ::OMatic::button(
+		FAQ::OMatic::makeAref('faq', {}),
+		'Return to FAQ');
+
 	$rt .= FAQ::OMatic::pageFooter();
 
 	print $rt;

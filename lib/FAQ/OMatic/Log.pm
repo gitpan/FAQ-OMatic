@@ -91,11 +91,11 @@ sub numericDate {
 
 sub logEvent {
 	my $date = numericDate();
-	my $host = $ENV{'REMOTE_HOST'};
+	my $host = $ENV{'REMOTE_HOST'} || 'unknown-host';
 	$host = '-' if ($host eq '');
 	my $prog = FAQ::OMatic::commandName();
 	my $args = $FAQ::OMatic::theParams{'file'} || '';
-	my $browser = $ENV{'HTTP_USER_AGENT'};
+	my $browser = $ENV{'HTTP_USER_AGENT'} || 'unknown-agent';
 	$browser =~ s/\s//g;
 
 	$args .= "/".$FAQ::OMatic::theParams{'partnum'}
@@ -112,22 +112,33 @@ sub logEvent {
 sub summarizeDay {
 	my $date = shift;
 	$date = numericToday() if (not $date);	# summarize today
-	$prevdate = adddays($date, -1);
+	my $prevdate = adddays($date, -1);
+	my %uniquehosts;
 
+	$date =~ m/([\d-]*)/;		# untaint $date
+	$date = $1;
+
+	#$ENV{'IFS'} = '';
+	#$ENV{'PATH'} = '';
 	# First, copy the unique hosts database from the previous day to today
 	if ($FAQ::OMatic::Config::statUniqueHosts) {
-		foreach $dbfile
-			(split('\s', `echo $FAQ::OMatic::Config::metaDir/$prevdate.uhdb*`)) {
+		foreach $dbfile (FAQ::OMatic::safeGlob($FAQ::OMatic::Config::metaDir,
+					"^$prevdate.uhdb")) {
 			my $newname = $dbfile;
 			$newname =~ s#/$prevdate#/$date#;
-			if (system("cp $dbfile $newname 2>/dev/null")) {
+			if (system("cp $dbfile $newname")) {
 				FAQ::OMatic::gripe('note',
-					"FAQ::OMatic::Log::summarizeDay: cp $dbfile $newname failed.");
+			"FAQ::OMatic::Log::summarizeDay: cp $dbfile $newname failed. ($!)");
 				# assume yesterday is just plain broken, and start fresh
-				system("rm $FAQ::OMatic::Config::metaDir/$date.uhdb* 2>/dev/null");
+				foreach $file (FAQ::OMatic::safeGlob(
+								$FAQ::OMatic::Config::metaDir,
+								"^$date.uhdb")) {
+					unlink $file;
+				}
+
 				# touch the dbm files so we'll see them later
 				if (not dbmopen(%uniquehosts,
-						"$FAQ::OMatic::Config::metaDir/$date.uhdb", 400)) {
+						"$FAQ::OMatic::Config::metaDir/$date.uhdb", 600)) {
 					FAQ::OMatic::gripe('abort',
 		"FAQ::OMatic::Log::summarizeDay: Can't create $FAQ::OMatic::Config::metaDir/$date.uhdb");
 				}
@@ -140,8 +151,10 @@ sub summarizeDay {
 	# now open $date's dbfile and insert the new hosts as we compute the
 	# other statistics for the day.
 	if ($FAQ::OMatic::Config::statUniqueHosts) {
-		if (not dbmopen (%uniquehosts, "$FAQ::OMatic::Config::metaDir/$date.uhdb", 400)) {
-			FAQ::OMatic::gripe('abort', "FAQ::OMatic::Log::summarizeDay: Couldn't open "
+		if (not dbmopen(%uniquehosts,
+				"$FAQ::OMatic::Config::metaDir/$date.uhdb", 400)) {
+			FAQ::OMatic::gripe('abort',
+				"FAQ::OMatic::Log::summarizeDay: Couldn't open "
 				."dbm file $FAQ::OMatic::Config::metaDir/$date.uhdb.");
 		}
 	}
@@ -156,9 +169,14 @@ sub summarizeDay {
 		while (<LOG>) {
 			chomp;
 			my ($date,$host,$op,$arg) = split(' ');
+			$host = '' if (not defined $host);
 			#$op =~ s/\.pl$//;	# '.pl' suffix is ugly, 'pl' is worse
 			$op =~ s/\W//g;		# prevent bogus property keys
-			$uniquehosts{$host} = 1 if ($FAQ::OMatic::Config::statUniqueHosts);
+			if ($FAQ::OMatic::Config::statUniqueHosts) {
+				# TODO: still not sure how to keep this from producing
+				# bogus warnings.
+				$uniquehosts{$host} = 1;
+			}
 			$item->{"Operation-$op"}++;
 			$item->{'Hits'}++;
 		}
@@ -167,23 +185,25 @@ sub summarizeDay {
 
 	# store unique hosts stats
 	if ($FAQ::OMatic::Config::statUniqueHosts) {
+		my $oldCum = $oldItem->{'CumUniqueHosts'} || 0;
 		$item->{'CumUniqueHosts'} = scalar(keys %uniquehosts);
-		$item->{'UniqueHosts'} =
-					$item->{'CumUniqueHosts'} - $oldItem->{'CumUniqueHosts'};
+		$item->{'UniqueHosts'} = $item->{'CumUniqueHosts'} - $oldCum;
 	}
 
 	# compute cumulative stats for Operations and Hits
 	my %opnames=('Hits'=>1);
 	foreach $key (keys %{$oldItem}) {
 		$opnames{$key}=1 if ($key =~ m/^Oper/);
-		$key = s/^Cum//;
+		$key =~ s/^Cum//;
 		$opnames{$key}=1 if ($key =~ m/^Oper/);
 	}
 	foreach $key (keys %{$item}) {
 		$opnames{$key}=1 if ($key =~ m/^Oper/);
 	}
 	foreach $key (keys %opnames) {
-		$item->{"Cum$key"} = $item->{$key} + $oldItem->{"Cum$key"};
+		my $newv = $item->{$key} || 0;
+		my $oldc = $oldItem->{"Cum$key"} || 0;
+		$item->{"Cum$key"} = $newv + $oldc;
 		$item->{$key} = 0 if (not defined $item->{$key});
 	}
 
@@ -194,8 +214,13 @@ sub summarizeDay {
 		$item->{'HitsPerHost'} = 0;
 	}
 
+	$date =~ m/^([\d-]*)$/;
+	$date = $1;
 	$item->saveToFile("$date.smry", $FAQ::OMatic::Config::metaDir);
-	dbmclose %uniquehosts if ($FAQ::OMatic::Config::statUniqueHosts);
+	if ($FAQ::OMatic::Config::statUniqueHosts) {
+		dbmclose(%uniquehosts);
+		#dbmclose %uniquehosts
+	}
 }
 
 # return the 'YYYY-MM-DD' of the earliest .smry file in metaDir.
@@ -216,9 +241,9 @@ sub earliestSmry {
 		(not -f "$FAQ::OMatic::Config::metaDir/$earliest.smry")) {
 
 		# rediscover the earliest .smry
-		$earliest = 'Z';	# should sort after anything
+		$earliest = 'Z';	# should sort before anything
 		opendir META, $FAQ::OMatic::Config::metaDir;
-		while ($direntry = readdir META) {
+		while (defined($direntry = readdir META)) {
 			next if (not $direntry =~ m/\.smry$/);
 			$direntry =~ s/\.smry$//;
 			$earliest = $direntry if ($direntry lt $earliest);
@@ -234,6 +259,23 @@ sub earliestSmry {
 	}
 
 	return $earliest;
+}
+
+sub rebuildAllSummaries {
+	# TODO:
+	# notice we start at earliestSmry -- not the earliest rawlog. If
+	# we weren't lame, we'd figure out the earliest rawlog and work from
+	# there.
+	my $earliest = earliestSmry();
+	my $today = numericToday();
+	my $dayi;
+
+	for ($dayi=$earliest; $dayi lt $today; $dayi = adddays($dayi, 1)) {
+		summarizeDay($dayi);
+
+		my $twoDaysAgo = adddays($dayi, -2);
+		# delete those uhdbs
+	}
 }
 
 1;

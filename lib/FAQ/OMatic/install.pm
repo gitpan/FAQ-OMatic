@@ -41,6 +41,7 @@ use FAQ::OMatic::Part;
 
 sub main {
 	$cgi = $FAQ::OMatic::dispatch::cgi;
+	my $needauth=0;
 
 	if ($FAQ::OMatic::Config::secureInstall) {
 		require FAQ::OMatic::Auth;
@@ -48,25 +49,27 @@ sub main {
 		$params = FAQ::OMatic::getParams($cgi, 'dontlog');
 		my ($id,$aq) = FAQ::OMatic::Auth::getID();
 		if (($id ne $FAQ::OMatic::Config::adminAuth) or ($aq<5)) {
-			#print $cgi->header("text/plain");
-			#print "got id $id, $FAQ::OMatic::Config::adminAuth\n";
-			my $url = FAQ::OMatic::makeAref('authenticate',
-				{'_restart' => 'install', '_reason'=>'9' },
-				'url', 'saveTransients');
-			print $cgi->redirect(FAQ::OMatic::urlBase($cgi).$url);
+			$needauth = 1;
 		}
 	}
 
-	print $cgi->header("text/html");
-	print $cgi->start_html('-title'=>"Faq-O-Matic Installer",
-							'-bgcolor'=>"#ffffff");
+	if ($needauth) {
+		my $url = FAQ::OMatic::makeAref('authenticate',
+			{'_restart' => 'install', '_reason'=>'9' },
+			'url', 'saveTransients');
+		print $cgi->redirect(FAQ::OMatic::urlBase($cgi).$url);
+	} else {
+		print $cgi->header("text/html");
+		print $cgi->start_html('-title'=>"Faq-O-Matic Installer",
+								'-bgcolor'=>"#ffffff");
+	
+		doStep($cgi->param('step'));
 
-	doStep($cgi->param('step'));
-
-	print $cgi->end_html();
+		print $cgi->end_html();
+	}
 }
 
-my %knownSteps = map {$_=>1} qw(
+my %knownSteps = map {$_=>$_} qw(
 	default			askMeta			configMeta		initConfig
 	mainMenu		askItem			configItem		askConfig
 	firstItem		initMetaFiles					setConfig
@@ -75,10 +78,11 @@ my %knownSteps = map {$_=>1} qw(
 	);
 
 sub doStep {
-	my $step = shift;
+	my $step = shift || '';
 
 	if ($knownSteps{$step}) {
 		# look up subroutine dynamically.
+		$step = $knownSteps{$step};		# untaint input
 		my $expr = $step."Step()";
 		eval($expr);
 		if ($@) {
@@ -107,14 +111,15 @@ sub defaultStep {
 		exit 0;
 	}
 
-	if (-f "$FAQ::OMatic::Config::metaDir/config") {
+	my $meta = $FAQ::OMatic::Config::metaDir || './';
+	if (-f "$meta/config") {
 		# There's a config file in the directory pointed to by the
 		# CGI stub. We're can run the main menu and do everything else
 		# from there now.
 		doStep('mainMenu');
 	} else {
 		# Can't see a config file. Offer to create it for admin.
-		displayMessage("(Can't find <b>config</b> in '$FAQ::OMatic::Config::metaDir' -- assuming this is a new installation.)");
+		displayMessage("(Can't find <b>config</b> in '$meta' -- assuming this is a new installation.)");
 		doStep('askMeta');
 	}
 }
@@ -223,7 +228,9 @@ sub initConfigStep {
 			'$textColor'		=> "'#000000'",
 			'$linkColor'		=> "'#3030c0'",
 			'$vlinkColor'		=> "'#3030c0'",
-			'$version'			=> "'$FAQ::OMatic::VERSION'"
+			'$version'			=> "'$FAQ::OMatic::VERSION'",
+			'$cacheDir'			=> "''",
+			'$cacheURL'			=> "''"
 		};
 	
 		writeConfig($map);
@@ -262,7 +269,9 @@ sub rereadConfig {
 		open IN, "$FAQ::OMatic::dispatch::meta/config";
 		my @cfg = <IN>;
 		close IN;
-		eval(join('', @cfg));
+		my $cfg = join('', @cfg);
+		$cfg =~ m/^(.*)$/s;
+		eval($1);
 	}
 }
 
@@ -271,24 +280,33 @@ sub mainMenuStep {
 
 	rereadConfig();
 
+	my $maintenanceSecret = $FAQ::OMatic::Config::maintenanceSecret || '';
+
 	$rt.="<h3>Configuration Main Menu (install module)</h3>\n";
-	$rt.="<ol>\n";
+	$rt.="<ol>Perform these tasks in order to prepare a new FAQ-O-Matic:\n";
 	$rt.="<li><a href=\"".installUrl('askItem')."\">"
 			.checkBoxFor('askItem')
 			."Define item directory.</a>\n";
 	$rt.="<li><a href=\"".installUrl('askConfig')."\">"
 			.checkBoxFor('askConfig')
-			."Define other configuration parameters.</a>\n";
+			."Define configuration parameters.</a>\n";
 	$rt.="<li><a href=\"".installUrl('firstItem')."\">"
 			.checkBoxFor('firstItem')
 			."Create an initial category and a trash can.</a>\n";
 	$rt.="<li><a href=\"".installUrl('maintenance')."\">"
 			.checkBoxFor('maintenance')
 			."Set up the maintenance cron job</a>\n";
-	$rt.="<li><a href=\"".installUrl('', 'url', 'maintenance')
-			."&secret=$FAQ::OMatic::Config::maintenanceSecret\">"
-			.checkBoxFor('manualMaintenance')
-			."Run maintenance script manually now.</a>\n";
+	if ($maintenanceSecret) {
+		$rt.="<li><a href=\"".installUrl('', 'url', 'maintenance')
+				."&secret=$maintenanceSecret\">"
+				.checkBoxFor('manualMaintenance')
+				."Run maintenance script manually now.</a>\n";
+	} else {
+			$rt.="<li>"
+				.checkBoxFor('manualMaintenance')
+				."Run maintenance script manually now (Need to set up "
+				."the maintenance cron job first).\n";
+	}
 	if (not $FAQ::OMatic::Config::secureInstall) {
 		if ($FAQ::OMatic::Config::mailCommand and $FAQ::OMatic::Config::adminAuth) {
 			$rt.="<li><a href=\"".installUrl('makeSecure')."\">"
@@ -326,6 +344,13 @@ sub mainMenuStep {
 			."Go to the Faq-O-Matic (need to turn on installer security)";
 	}
 	$rt.="</ol>\n";
+	$rt.="<ul>Other tasks:\n";
+	$rt.="<li>".checkBoxFor('nothing')
+		."<a href=\"".installUrl('', 'url', 'maintenance')
+		."&secret=$maintenanceSecret&tasks=verifyCache\">"
+		."Run the verifyCache maintenance task right now "
+		."(if you suspect the cache has become inconsistent.)</a>\n";
+	$rt.="</ul>\n";
 
 	$rt.="The Faq-O-Matic modules are version $FAQ::OMatic::VERSION.\n";
 	#$rt.="The config file is at version $FAQ::OMatic::Config::version.\n";
@@ -411,12 +436,12 @@ $configInfo = {
 		'RCS ci command',
 		[], 1, 'isCommand' ],
 	'RCSuser' =>	[ 'y-r3',
-		'User to use for RCS ci command (default is probably fine)',
+		'User to use for RCS ci command (default is process UID)',
 		['getpwuid($<)'], 1 ],
 	'adminAuth' =>	[ 'a-a1',
 		'Identity of local FAQ-O-Matic administrator (an email address)',
 		[], 1 ],
-	'adminEmail' =>	[ 'n-a2',
+	'adminEmail' =>	[ 'n-e2',
 		'Where FAQ-O-Matic should send email when it wants to alert the administrator'
 		.' (usually same as $adminAuth)',
 		[ '$adminAuth' ], 1 ],
@@ -430,8 +455,8 @@ $configInfo = {
 	'itemDir' =>	[ 'hide' ],
 	'authorEmail' =>[ 'hide' ],
 	'mailCommand'=>	[ 'a-m1',
-		'A command FAQ-O-Matic can use to send mail. It must understand the -s '
-		.'(Subject) switch.',
+		'A command FAQ-O-Matic can use to send mail. It must either be '
+		.'sendmail, or it must understand the -s (Subject) switch.',
 		[], 1, 'isCommand' ],
 	'maintSendErrors'=>[ 'n-m2',
 		'If true, FAQ-O-Matic will mail the log file to the administrator whenever'
@@ -449,16 +474,43 @@ $configInfo = {
 	'vlinkColor'=>['hide'],
 	'secureInstall'=>[ 'hide' ],
 	'version'=>[ 'hide' ],
-	'maintenanceSecret'=>[ 'hide' ]
+	'maintenanceSecret'=>[ 'hide' ],
+	'cacheDir' =>	[ 'c-c1',
+		'Filesystem directory where FAQ-O-Matic should keep a cache '
+		.'of read-only pages (empty means don\'t cache)',
+		[], 1 ],
+	'cacheURL' =>	[ 'c-c2',
+		'A URL prefix that gives users web access to that cache. '
+		.'It should be relative to the root of the server (begins with /); '
+		.'but omit the http://hostname:port/ part. It should end with a /.',
+		[], 1 ],
 };
+
+sub getPotentialConfig {
+	# gets the current config, plus empty strings for any expected but
+	# nonexistant keys (probably because the modules have been upgraded to
+	# a new version)
+	my $map = readConfig();
+
+	# Provide defaults for any new options not present in config file
+	my $ckey;
+	foreach $ckey (sort keys %{$configInfo}) {
+		next if defined($map->{'$'.$ckey});
+		$map->{'$'.$ckey} = "''";		# provide a nulll default
+	}
+
+	return $map;
+}
 
 sub askConfigStep {
 	my $rt = '';
-	my $map = readConfig();
 	my ($left, $right);
 
 	$rt.="<table>\n";
 	$rt.=installUrl('setConfig', 'GET');
+
+	# Read current configuration
+	my $map = getPotentialConfig();
 
 	my $widgets = {};	# collect widgets here for sorting later
 	foreach $left (sort keys %{$map}) {
@@ -516,7 +568,10 @@ sub askConfigStep {
 	$widgets->{'a--separator'} = "<tr><td colspan=2>"
 			."<hr>Mandatory configurations... these must be correct<hr>"
 			."</td></tr>\n";
-	$widgets->{'b-separator'} = "<tr><td colspan=2>"
+	$widgets->{'c--separator'} = "<tr><td colspan=2>"
+			."<hr>Cache Configuration<hr>"
+			."</td></tr>\n";
+	$widgets->{'e--separator'} = "<tr><td colspan=2>"
 			."<hr>Optional configurations... defaults are pretty good.<hr>"
 			."</td></tr>\n";
 
@@ -532,11 +587,12 @@ sub askConfigStep {
 
 sub setConfigStep {
 	my $warnings = '';
+	my $notices = '';	#nonproblems
 	my ($left, $right);
-	my $map = readConfig();
+	my $map = getPotentialConfig();
 	foreach $left (sort keys %{$map}) {
 		$right = $map->{$left};
-		my $selected = $cgi->param($left."-select");
+		my $selected = $cgi->param($left."-select") || '';
 		if ($selected eq 'free') {
 			$map->{$left} = "'".$cgi->param($left."-free")."'";
 		} elsif ($selected ne '') {
@@ -548,15 +604,25 @@ sub setConfigStep {
 			$map->{$left} =~ s#[^\w/'-]##gs;	# be very restrictive
 		}
 		my $warn = checkConfig($left, $map->{$left});
-		$warnings .= "<li>$warn" if ($warn);
+		my $noproblem='';
+		($warn,$noproblem) = @{$warn} if (ref($warn));
+		if ($noproblem) {
+			$notices .= "<li>$warn";
+		} elsif ($warn) {
+			$warnings .= "<li>$warn";
+		}
 	}
 	writeConfig($map);
-	$warnings = "<p><b>Warnings: <ul>$warnings</ul>"
+	if ($notices) {
+		$notices = "<ul>$notices</ul>\n";
+	}
+	if ($warnings) {
+		$warnings = "<p><b>Warnings: <ul>$warnings</ul>"
 				."You should "
 				."<a href=\"".installUrl('askConfig')."\">go back</a>"
-				." and fix these configurations.</b>"
-			if ($warnings);
-	displayMessage("Rewrote configuration file.\n$warnings");
+				." and fix these configurations.</b>";
+	}
+	displayMessage("Rewrote configuration file.\n$notices\n$warnings");
 	doStep('mainMenu');
 }
 
@@ -585,6 +651,17 @@ sub checkConfig {
 	if ($left eq '$RCSci') {
 		if (not -x $aright) {
 			return "$left ($right) isn't executable.";
+		}
+		return '';
+	}
+	if ($left eq '$cacheDir') {
+		if ($aright and (not -d $aright)) {
+			if (not mkdir($aright, 0755)) {
+				return "$left ($right) can't be created.";
+			} else {
+				chmod(0755,$aright);
+				return ["$left: Created directory $right.", 1];
+			}
 		}
 		return '';
 	}
@@ -754,7 +831,7 @@ sub makeSecureStep {
 	$map->{'$secureInstall'} = "'true'";
 	writeConfig($map);
 	displayMessage("Installer now requires authentication. You will need "
-		."to log in to continue.", 'default');
+		."to [Set A New Password] and then log in to continue.", 'default');
 }
 
 sub colorSamplerStep {

@@ -35,7 +35,7 @@ use FAQ::OMatic::Auth;
 sub main {
 	my $cgi = $FAQ::OMatic::dispatch::cgi;
 	
-	FAQ::OMatic::getParams($cgi);
+	my $params = FAQ::OMatic::getParams($cgi);
 
 	$item = new FAQ::OMatic::Item($FAQ::OMatic::theParams{'file'});
 	if ($item->isBroken()) {
@@ -46,6 +46,9 @@ sub main {
 	my $rd = FAQ::OMatic::Auth::ensurePerm($item, 'PermEditPart',
 		FAQ::OMatic::commandName(), $cgi, 0);
 	if ($rd) { print $rd; exit 0; }
+
+	$item->checkSequence($params);
+	$item->incrementSequence();
 	
 	my $partnum = $FAQ::OMatic::theParams{'partnum'};
 	my $part = $item->getPart($partnum);
@@ -70,8 +73,11 @@ sub main {
 	$item->notifyModerator($cgi,
 		"deleted a part, which used to say:\n\n$oldtext\n");
 
-	$url = FAQ::OMatic::makeAref('faq', {'partnum' => ''}, 'url');
-		# swing user right on over to the page to edit the new part
+	# send user to item page to see the results of the delete
+	$url = FAQ::OMatic::makeAref('-command'=>'faq',
+				'-params'=>$params,
+				'-changedParams'=>{'partnum' => '', 'checkSequenceNumber'=>''},
+				'-refType'=>'url');
 	print $cgi->redirect(FAQ::OMatic::urlBase($cgi).$url);
 }
 

@@ -43,7 +43,6 @@ package FAQ::OMatic::maintenance;
 
 use CGI;
 use Socket;
-require 'flush.pl';
 
 use FAQ::OMatic;
 use FAQ::OMatic::Log;
@@ -52,11 +51,67 @@ use FAQ::OMatic::buildSearchDB;
 
 $metaDir = $FAQ::OMatic::Config::metaDir;
 
+# global
+my $html = '';
+
+my %taskUntaint = map {$_=>$_}
+	( 'writeMaintenanceHint', 'trimUHDB', 'trimSubmitTmps',
+	 'buildSearchDB', 'trim', 'cookies', 'errors', 'logSummary',
+	 'rebuildAllSummaries', 'verifyCache' );
+
+sub main {
+	my $cgi = $FAQ::OMatic::dispatch::cgi;
+
+	## Demand a secret key from the caller, so that we don't have
+	## Joe Q. Random firing up umpteen copies of the mainenance script
+	## and slowing things down. With the hints that keep it from doing
+	## much very often, this probably doesn't matter, but anyway.
+	if ($cgi->param('secret') ne $FAQ::OMatic::Config::maintenanceSecret) {
+		print $cgi->header("-type"=>"text/plain");
+		print "Bad maintenance key.\n";
+		return;
+	}
+
+	my %schedules = ('month'=>1,'week'=>1,'day'=>1,'hour'=>1);
+	my @tasks = split(',', ($cgi->param('tasks')||''));
+	if ((@tasks == 0) or ((@tasks == 1) and $schedules{$tasks[0]})) {
+		@tasks = periodicTasks($tasks[0] || '');
+	}
+
+	print $cgi->header("-type"=>"text/html");
+	print "<title>FAQ-O-Matic Maintenance</title>\n";
+	FAQ::OMatic::flush('STDOUT');	# just in case some other junk sneaks out on the fd
+
+	foreach $i (sort @tasks) {
+		$i =~ s/\d+ //;
+		if (defined $taskUntaint{$i}) {
+			$i = $taskUntaint{$i};
+			$html.= "--- $i()\n";
+			if (not eval "$i(); return 1;") {
+				$html.= "*** Task $i failed\n    Error: $@\n";
+			}
+		} else {
+			$html.="*** Task $i undefined\n";
+		}
+	}
+
+	# output results
+	print "<pre>\n".$html."\n</pre>\n";
+
+	# provide a link to the install page, just for kicks
+	FAQ::OMatic::getParams($cgi);
+	print FAQ::OMatic::button(
+			FAQ::OMatic::makeAref('install', {}, ''),
+			"Go To Install/Configuration Page");
+
+}
+
 sub periodicTasks {
-	my $arg = shift;
+	my $arg = shift || '';
 	my $lastMaintenance;
 	if (open LMHINT, "$metaDir/lastMaintenance") {
-		$lastMaintenance = int(<LMHINT>);
+		<LMHINT> =~ m/^(\d+)/;
+		$lastMaintenance = int($1);
 		close LMHINT;
 	} else {
 		$lastMaintenance = 0;
@@ -66,8 +121,12 @@ sub periodicTasks {
 	my @nowTime = localtime($^T);
 
 	my $newYear =	($thenTime[5] != $nowTime[5])?1:0;
-	my $newMonth =	(($thenTime[4] != $nowTime[4]) or $newYear
-					or ($arg eq 'month'))?1:0;
+	my $newMonth =	(!defined($thenTime[4])
+					or !defined($nowTime[4])
+					or ($thenTime[4] != $nowTime[4])
+					or $newYear
+					or ($arg eq 'month'))
+						?1:0;
 
 	# a tricky case:
 	my $newWeek = 	(($thenTime[6] > $nowTime[6])
@@ -88,6 +147,7 @@ sub periodicTasks {
 		'10 buildSearchDB'
 		) if $newHour;
 	push @tasks, (
+		'40 verifyCache',
 		'50 cookies',
 		'60 logSummary',
 		'80 trimUHDB',		# turns on a flag so trim() will trim uhdbs
@@ -109,54 +169,6 @@ sub periodicTasks {
 	return keys %tasks;
 }
 
-sub writeMaintenanceHint {
-	if (open LMHINT, ">$metaDir/lastMaintenance") {
-		print LMHINT $^T."  ".scalar localtime($^T)."\n";
-		close LMHINT;
-	}
-}
-
-# global
-$html = '';
-
-sub main {
-	my $cgi = $FAQ::OMatic::dispatch::cgi;
-
-	## Demand a secret key from the caller, so that we don't have
-	## Joe Q. Random firing up umpteen copies of the mainenance script
-	## and slowing things down. With the hints that keep it from doing
-	## much very often, this probably doesn't matter, but anyway.
-	if ($cgi->param('secret') ne $FAQ::OMatic::Config::maintenanceSecret) {
-		print $cgi->header("-type"=>"text/plain");
-		print "Bad maintenance key.\n";
-		return;
-	}
-
-	my %schedules = ('month'=>1,'week'=>1,'day'=>1,'hour'=>1);
-	my @tasks = @ARGV;
-	if ((@tasks == 0) or ((@tasks == 1) and $schedules{$tasks[0]})) {
-		@tasks = periodicTasks();
-	}
-
-	foreach $i (sort @tasks) {
-		$i =~ s/\d+ //;
-		$html.= "--- $i()\n";
-		if (not eval "$i(); return 1;") {
-			$html.= "*** Task $i failed\n    Error: $@\n";
-		}
-	}
-
-	print $cgi->header("-type"=>"text/html");
-	print "<pre>\n".$html."\n</pre>\n";
-
-	# provide a link to the install page, just for kicks
-	FAQ::OMatic::getParams($cgi);
-	print FAQ::OMatic::button(
-			FAQ::OMatic::makeAref('install', {}, ''),
-			"Go To Install/Configuration Page");
-
-}
-
 # sub runScript {
 # 	my $script = shift;
 # 	$html.= "    Executing $script...\n";
@@ -171,6 +183,13 @@ sub main {
 ############################################################################
 ########  Task definitions  ################################################
 ############################################################################
+
+sub writeMaintenanceHint {
+	if (open LMHINT, ">$metaDir/lastMaintenance") {
+		print LMHINT $^T."  ".scalar localtime($^T)."\n";
+		close LMHINT;
+	}
+}
 
 sub trimUHDB {
 	$trimset{'uhdb'} = 1;
@@ -189,6 +208,10 @@ sub buildSearchDB {
 	}
 }
 
+sub rebuildAllSummaries {
+	FAQ::OMatic::Log::rebuildAllSummaries();
+}
+
 sub trim {
 	if (not opendir NEWLOGDIR, $metaDir) {
 		$html.= "*** Couldn't scan $metaDir.";
@@ -198,7 +221,7 @@ sub trim {
 	$html.= "trimming: ".join(' ', sort keys %trimset)."\n";
 
 	my $daybefore = FAQ::OMatic::Log::adddays(FAQ::OMatic::Log::numericToday(), -2);
-	while ($file = readdir NEWLOGDIR) {
+	while (defined($file = readdir(NEWLOGDIR))) {
 		# uhdb's (unique host databases, part of the access log)
 		if ($trimset{'uhdb'} and ($file =~ m/^[\d-]+.uhdb./)) {
 			my @dates = ($file =~ m/^([\d-]+)/);
@@ -265,8 +288,8 @@ sub errors {
 		return;
 	}
 
-	my $size = -s "$metaDir/errors";
-	if ((not defined $size) or ($size == 0)) {
+	my $size = (-s "$metaDir/errors") || 0;
+	if ($size == 0) {
 		$html.="    No ($size) errors to mail.\n";
 		return;
 	}
@@ -308,7 +331,7 @@ sub invoke {
 		die "bang, $!, $@!\n"
 	}
 	print HTTPSOCK "GET $url HTTP/1.0\n\n";
-	flush(HTTPSOCK);
+	FAQ::OMatic::flush('HTTPSOCK');
 
 	my @reply = <HTTPSOCK>;
 	close HTTPSOCK;
@@ -316,6 +339,32 @@ sub invoke {
 	if ($verbose) {
 		print join('', @reply);
 	}
+}
+
+sub verifyCache {
+	return if ((not defined $FAQ::OMatic::Config::cacheDir)
+				or ($FAQ::OMatic::Config::cacheDir eq ''));
+	
+	my $itemName;
+	my $configFileTime = mtime("$FAQ::OMatic::Config::metaDir/config");
+
+	foreach $itemName (FAQ::OMatic::getAllItemNames()) {
+		my $itemFileTime = mtime("$FAQ::OMatic::Config::itemDir/$itemName");
+		my $cacheFileTime =
+						mtime("$FAQ::OMatic::Config::cacheDir/$itemName.html");
+		if ($cacheFileTime < $itemFileTime
+			or $cacheFileTime < $configFileTime) {
+			$html.="Updating $itemName "
+				."(item $itemFileTime, cache $cacheFileTime)\n";
+			my $item = new FAQ::OMatic::Item($itemName);
+			$item->saveToFile();
+		}
+	}
+}
+
+sub mtime {
+	my $filename = shift;
+	return (stat($filename))[9] || 0;
 }
 
 1;
