@@ -1,5 +1,10 @@
+use lib 'lib/'; #for next use line:
+use FAQ::OMatic::Entropy;
+
 use Config;
 $perl = $Config{'perlpath'};
+
+use Digest::MD5 qw(md5_hex);
 
 # we would like to get INSTALLSITELIB the same way, but
 # it depends on how Makefile.PL was invoked. If users use PREFIX=...,
@@ -10,11 +15,10 @@ $perl = $Config{'perlpath'};
 $inc = (grep {m/^INSTALLSITELIB=/} @ARGV)[0] || '';
 $inc =~ s/^INSTALLSITELIB=// or die "fom.PL: INSTALLSITELIB= argument missing.\n";
 
-# generate a temporary password
-srand(time() ^ ($$ + ($$ << 15)) ); # camel book, 2 ed, p 223
-my $temppass = sprintf("%04x%04x", rand(1<<16), rand(1<<16));
-my $salt = sprintf("%02x", rand(1<<8));
-my $cryptpass = crypt($temppass, $salt);
+my $temppass = FAQ::OMatic::Entropy::gatherRandomString();
+
+# now use md5 as a 128-bit version of the 56-bit crypt() we used to use.
+my $cryptpass = md5_hex($temppass);
 
 # why bother crypt()ing the password in the fom.pl CGI stub if it's
 # flying around the net in the clear? Because if the CGI is somehow

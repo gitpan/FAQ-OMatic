@@ -56,7 +56,7 @@ use vars	# these are mod_perl-safe
 	# variables that get reset on every invocation
 	qw($theParams $theLocals);
 
-$VERSION = '2.715';
+$VERSION = '2.716';
 
 # can't figure out how to get file-scoped variables in mod_perl, so
 # we ensure that they're all file scoped by reseting them in dispatch.
@@ -1024,10 +1024,13 @@ sub makeAref {
 	# forms, or key=value pairs for URLs.
 	my $rt = "";
 	foreach $i (sort keys %newParams) {
+		my $value = $newParams{$i};
+		if (not defined($value)) { $value = ''; }
+
 		if ($refType eq 'POST' or $refType eq 'GET') {
 			# GET or POST form. stash args in hidden fields.
 			$rt .= "<input type=hidden name=\"$i\" value=\""
-				.entify($newParams{$i})."\">\n";
+				.entify($value)."\">\n";
 			# wow, when that entify (analogous to the CGI::escape in the
 			# regular GET case below) was missing, it made for awfully
 			# subtle bugs! If one of the old params has a " in it (such as
@@ -1037,7 +1040,7 @@ sub makeAref {
 			# value into the config file. Ouch!
 		} else {
 			# regular GET, not <form> GET. URL-style key=val&key=val
-			$rt.="&".CGI::escape($i)."=".CGI::escape(($newParams{$i}||''));
+			$rt.="&".CGI::escape($i)."=".CGI::escape($value);
 		}
 	}
 	if (($refType eq 'POST') or ($refType eq 'GET')) {
@@ -1635,19 +1638,6 @@ sub nonce {
 	return time().'p'.$$;
 }
 
-# only seed once per invocation, to avoid resetting to the
-# same not-very-random seed location. (i.e. let the pseudo
-# random number generator do some of the work.)
-sub seedRand {
-	# camel book, 2 ed, p 223
-	# TODO: this random seeder isn't very tricky -- in mod_perl,
-	# $$ doesn't change except among some limited number of httpd children. :v(
-	if (not getLocal('seeded')) {
-		srand(time() ^ ($$ + ($$ << 15)) );
-		setLocal('seeded', 1);
-	}
-}
-
 sub stripnph {
 	my $hdr = shift;
 
@@ -1759,7 +1749,7 @@ sub usedbm {
 }
 
 sub checkLoadAverage {
-	if (1) {
+	if (0) {
 		# this cobbled feature has no install-page hook; turn it off for now.
 		return;
 	}

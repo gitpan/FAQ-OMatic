@@ -46,6 +46,8 @@ use FAQ::OMatic::Item;
 use FAQ::OMatic::AuthLocal;
 use FAQ::OMatic::Groups;
 use FAQ::OMatic::I18N;
+use FAQ::OMatic::Entropy;
+use Digest::MD5 qw(md5_hex);
 
 # a global constant (accessible outside using my namespace)
 use vars qw($cookieExtra);	# constant, visible to maintenance.pm
@@ -266,7 +268,7 @@ sub newCookie {
 	($cookie,$cid,$ctime) = findCookie($id,'id');
 	return $cookie if (defined $cookie);
 
-	$cookie = "ck".getRandomHex();
+	$cookie = "ck".FAQ::OMatic::Entropy::gatherRandomString();
 
 	my $cookiesFile = "$FAQ::OMatic::Config::metaDir/cookies";
 	open COOKIEFILE, ">>$cookiesFile";
@@ -277,11 +279,6 @@ sub newCookie {
 	}
 
 	return $cookie;
-}
-
-sub getRandomHex {
-	FAQ::OMatic::seedRand();
-	return sprintf "%04x%04x%04x", rand(1<<16), rand(1<<16), rand(1<<16);
 }
 
 sub findCookie {
@@ -411,20 +408,31 @@ sub readIDfile {
 
 sub checkCryptPass {
 	my ($cleartext, $crypted) = @_;
-	#my $salt = substr($crypted, 0, 2);
-	# specific fix from Evan Torrie <torrie@pi.pair.com>: most crypt()s
-	# don't care of there's excess salt, and those with MD5 crypts use
-	# more than the first two bytes as salt.
-	my $salt = $crypted;
-	return (crypt($cleartext, $salt) eq $crypted);
+	if ($crypted =~ m/md5\((\S+),(\S+)\)/) {
+		# if this record was encoded with the new md5 encoding, then
+		# it'll contain a big salt and then the result:
+		my $salt = $1;
+		my $cryptedResult = $2;
+		my $attemptedCrypt = md5_hex($salt, $cleartext);
+		return ($attemptedCrypt eq $cryptedResult);
+	} else {
+		# compatibility mode: use crypt()
+		# We no longer generate passwords with crypt, but we
+		# allow checking against crypt()ed passwords to avoid
+		# annoying users with a password-reset demand.
+		#my $salt = substr($crypted, 0, 2);
+		# specific fix from Evan Torrie <torrie@pi.pair.com>: most crypt()s
+		# don't care of there's excess salt, and those with MD5 crypts use
+		# more than the first two bytes as salt.
+		my $salt = $crypted;
+		return (crypt($cleartext, $salt) eq $crypted);
+	}
 }
 
 sub cryptPass {
 	my $pass = shift;
-	FAQ::OMatic::seedRand();
-	my $salt = pack('cc', 65+rand(16), 65+rand(16));
-	#FAQ::OMatic::gripe('note', "crypt($pass,$salt) = ".crypt($pass,$salt));
-	return crypt($pass,$salt);
+	my $salt = FAQ::OMatic::Entropy::gatherRandomString();
+	return "md5(".$salt.",".md5_hex($salt.$pass).")";
 }
 
 sub authenticate {

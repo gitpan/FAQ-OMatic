@@ -63,7 +63,7 @@ sub main {
 		# Don't create ANOTHER secret if this is just the user
 		# looping back around after entering a bad secret.
 		if ($params->{'_fromChangePass'}) {
-			my $secret = FAQ::OMatic::Auth::getRandomHex();
+			my $secret = FAQ::OMatic::Entropy::gatherRandomString();
 			my $restart = $params->{'_restart'} ||
 				FAQ::OMatic::makeAref('faq', {}, 'url', 0, 'blastAll');
 			# keep passwords out of the GET request fired up
@@ -148,7 +148,7 @@ __EOF__
 					'POST', 0, 'blastAll');
 		#$rt.="<form action=\"submitPass\" method=POST>\n";
 		$rt.= gettext("Secret:")." \n";
-		$rt.= "<input type=text name=\"_secret\" value=\"\" size=14>\n";
+		$rt.= "<input type=text name=\"_secret\" value=\"\" size=36>\n";
 		$rt.= "<p><input type=submit name=\"_submit\" value=\"".gettext("Validate")."\">\n";
 		$rt.= "</form>\n";
 

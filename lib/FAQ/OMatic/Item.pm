@@ -605,7 +605,7 @@ sub updateAllChildren {
 
 	my $filei;
 	foreach $filei ($self->getChildren()) {
-		FAQ::OMatic::gripe('debug', "Updating child $filei of ".$self->{'filename'});
+		#FAQ::OMatic::gripe('debug', "Updating child $filei of ".$self->{'filename'});
 		my $itemi = new FAQ::OMatic::Item($filei);
 		if (not $itemi->isBroken()) {
 	#		$itemi->writeCacheCopy();

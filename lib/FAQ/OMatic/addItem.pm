@@ -80,7 +80,7 @@ sub main {
 			
 		# THANKS to <dgatwood@mklinux.org> for the following patch:
 		# BZZT.  That sucks.  Set it explicitly if relax is set.     
-	if ($item->getProperty('RelaxChildPerms') eq 'relax') {
+	if (($item->getProperty('RelaxChildPerms')||'') eq 'relax') {
 		my ($id,$aq) = FAQ::OMatic::Auth::getID();
 		if ($id) { 
 			$newitem->setProperty('Moderator', $id);

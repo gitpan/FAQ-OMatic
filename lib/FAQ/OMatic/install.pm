@@ -45,6 +45,7 @@ package FAQ::OMatic::install;
 
 use Config;
 use CGI;
+use Digest::MD5 qw(md5_hex);
 use FAQ::OMatic;
 use FAQ::OMatic::Item;
 use FAQ::OMatic::Part;
@@ -78,7 +79,7 @@ sub main {
 		# present.
 		my $tcp = $main::temporaryCryptedPassword;
 		my $temppass = cgi()->param('temppass') || '';
-		my $crtemppass = crypt($temppass, $tcp);
+		my $crtemppass = md5_hex($temppass);
 		if ($crtemppass ne $tcp) {
 			tempPassPage();
 			FAQ::OMatic::myExit(0);
@@ -1698,7 +1699,7 @@ sub tempPassPage {
 		."to have a new one assigned.";
 	$rt .= installUrl('', 'GET', 'install', '', '');
 		# last '' prevents an old, incorrect temppass from sticking around
-	$rt .= "Temporary password: <input type=password size=10 name=temppass>\n";
+	$rt .= "Temporary password: <input type=password size=36 name=temppass>\n";
 	# Null submit button is a workaround for a bug in Lynx that
 	# prevents you from submitting a page with only a password field.
 	# THANKS Boyd Lynn Gerber <gerberb@zenez.com> for complaining about this
