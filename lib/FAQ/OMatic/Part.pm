@@ -36,6 +36,7 @@ package FAQ::OMatic::Part;
 use FAQ::OMatic;
 use FAQ::OMatic::Item;
 use FAQ::OMatic::Appearance;
+use FAQ::OMatic::Set;
 use Text::Tabs;
 
 sub new {
@@ -47,9 +48,7 @@ sub new {
 									# valid type.
 	$part->{'Text'} = '';			# might as well define the text, since
 									# that's the point of a part.
-	$part->{'AuthorHash'} = {};		# start with empty author hash and list
-	$part->{'Author'} = [];			# hash keeps us from mentioning an author
-									# twice; list keeps them in order.
+	$part->{'Author-Set'} = new FAQ::OMatic::Set('keepOrdered');
 
 	return $part;
 }
@@ -67,17 +66,23 @@ sub loadFromFile {
 	while (<$fileHandle>) {
 		chomp;
 		my ($key,$value) = FAQ::OMatic::keyValue($_);
+		if ($key eq 'Author') {
+			# convert old-style 'Author' keys to 'Author-Set' keys
+			# transparently. Eventually all such items will get written
+			# out with updated header keys.
+			$key = 'Author-Set';
+		}
 		if ($key eq 'Lines') {
 			# Lines header is always last before the text content of a Part
 			$lines = $value;
 			last;
-		} elsif ($key eq 'Author') {
-			# Authors are special-case -- the header can appear multiple
-			# times, but each author only once.
-			if (not $self->{'AuthorHash'}->{$value}) {
-				$self->{'AuthorHash'}->{$value} = 1;
-				push @{$self->{'Author'}}, $value;
+		} elsif ($key =~ m/-Set$/) {
+			# header key ends in '-Set' -- that means it may appear multiple
+			# times.
+			if (not defined($self->{$key})) {
+				$self->{$key} = new FAQ::OMatic::Set;
 			}
+			$self->{$key}->insert($value);
 		} elsif ($key ne '') {
 			$self->{$key} = $value;
 			if (($key eq 'Type') and ($value eq 'directory')) {
@@ -112,13 +117,14 @@ sub displayAsFile {
 	my $rt = "";
 
 	foreach $key (sort keys %{$self}) {
-		if (($key =~ m/^[a-z]/) or ($key eq 'AuthorHash')
+		if (($key =~ m/^[a-z]/)
 			or ($key eq 'Text')) {
 			next;
 			# these keys get ignored or written out later (Text)
-		} elsif ($key eq 'Author') {
-			foreach $a (@{$self->{'Author'}}) {
-				$rt .= "Author: $a\n";
+		} elsif ($key =~ m/-Set$/) {
+			my $a;
+			foreach $a ($self->getSet($key)->getList()) {
+				$rt .= "$key: $a\n";
 			}
 		} else {
 			$rt .= "$key: ".$self->{$key}."\n";
@@ -167,13 +173,20 @@ sub displayHTML {
 
 	$rt .= FAQ::OMatic::Appearance::partStart($params,$self);
 
-	my $tmp = FAQ::OMatic::insertLinks($params, $self->{'Text'});
+	my $tmp = FAQ::OMatic::insertLinks($params, $self->{'Text'},
+					   $self->{'Type'} eq 'html');
 	$tmp = FAQ::OMatic::highlightWords($tmp, $params);
 	$type = $self->{'Type'} || '';
 	if ($type eq 'monospaced'){
 		## monospaced text
 		$tmp =~ s/\n$//;
 		$tmp = "<pre>\n".$tmp."</pre>";
+	} elsif ($type eq 'html') {
+		## HTML text.  Just add a <br> at the end, and a comment that
+	        ## it's untranslated.
+	        $tmp = "<!-- This text is untranslated from the original;\n" .
+		    "any errors are in the original text. -->\n" . $tmp .
+			"\n<br>\n";
 	} else {
 		## standard format: double-CRs become <p>'s (whitespace between
 		## paragraphs), and lines that start with whitespace get a <br>
@@ -210,8 +223,11 @@ sub displayHTML {
 		if ($self->{'DateOfPart'} and $params->{'showLastModified'}) {
 		        $date_string = $self->{'DateOfPart'} . "  ";
 		}
-		$rt .= "<i>". $date_string .join(", ",
-			map { "<a href=\"mailto:$_\">$_</a>" } @{$self->{'Author'}}
+		$rt .= "<i>"
+			.$date_string
+			.join(", ",
+				map { "<a href=\"mailto:$_\">$_</a>" }
+					$self->{'Author-Set'}->getList()
 				)."</i>";
 	}
 
@@ -290,12 +306,13 @@ sub displayPartEditor {
 	$text =~ s/&/&amp;/gs;		# all browsers I've met correctly
 	$text =~ s/</&lt;/gs;		# convert textarea entities into the real thing
 	$text =~ s/>/&gt;/gs;
+
 	$text = FAQ::OMatic::addTitleToFaqomaticReferences($text);
 	$rt .= $text."</textarea>\n";
 
 	# HideAttributions
 	$rt .= "<br><input type=checkbox name=\"_HideAttributions\"";
-	$rt .= "CHECKED" if $self->{'HideAttributions'};
+	$rt .= " CHECKED" if $self->{'HideAttributions'};
 	$rt .= "> Hide Attributions\n";
 
 	# Type
@@ -306,14 +323,29 @@ sub displayPartEditor {
 				."item into an answer item) if text box above is empty.\n";
 		}
 		$rt .= "<br><input type=radio name=\"_Type\" value=\"directory\""
-			." CHECKED> Directory\n";
+			."  CHECKED> Directory\n";
 	} else {
 		$rt .= "<br><input type=radio name=\"_Type\" value=\"\"";
-		$rt .= "CHECKED" if ($self->{'Type'} eq '');
+		$rt .= " CHECKED" if ($self->{'Type'} eq '');
 		$rt .= "> Natural text\n";
+
 		$rt .= "<br><input type=radio name=\"_Type\" value=\"monospaced\"";
-		$rt .= "CHECKED" if ($self->{'Type'} eq 'monospaced');
+		$rt .= " CHECKED" if ($self->{'Type'} eq 'monospaced');
 		$rt .= "> Monospaced text (code, tables)\n";
+
+		# THANKS: John Goerzen supplied the patches to introduce
+		# THANKS: 'html'-type parts.
+		my $rd = FAQ::OMatic::Auth::ensurePerm($item, 'PermUseHTML',
+			 FAQ::OMatic::commandName(), 
+			 $FAQ::OMatic::dispatch::cgi, 0, 'useHTML');
+		if ($rd) {
+			# TODO: exit is ugly and wrong.
+			print $rd; exit 0;
+		} else {
+	    	$rt .= "<br><input type=radio name=\"_Type\" value=\"html\"";
+	    	$rt .= " CHECKED" if ($self->{'Type'} eq 'html');
+	    	$rt .= "> Untranslated HTML\n";
+		}
 	}
 
 	# Submit
@@ -365,6 +397,14 @@ sub getChildren {
 	if ($self->{'Type'} ne 'directory') {
 		return ();
 	}
+
+	return $self->getLinks();
+}
+
+# returns a list of all faqomatic: links in this part
+sub getLinks {
+	my $self = shift;
+	
 	my $text = $self->{'Text'};
 	my @dirlist = ($text =~ m/faqomatic:(\S+)/gs);
 	return @dirlist;
@@ -417,11 +457,7 @@ sub addAuthor {
 	my $self = shift;
 	my $author = shift;
 
-	# Are they already in our list?
-	return if ($self->{'AuthorHash'}->{$author});
-
-	$self->{'AuthorHash'}->{$author} = 1;
-	push @{$self->{'Author'}}, $author;
+	$self->{'Author-Set'}->insert($author);
 }
 
 sub clone {
@@ -433,8 +469,9 @@ sub clone {
 	# copy all of prototype's attributes
 	my $key;
 	foreach $key (keys %{$self}) {
-		next if ($key eq 'Author' or $key eq 'AuthorHash');
-		if (ref $self->{$key}) {
+		if ($key =~ m/-Set$/) {
+			$newpart->{$key} = $self->{$key}->clone();
+		} elsif (ref $self->{$key}) {
 			# guarantee this is a deep copy -- if we missed
 			# a ref, complain.
 			FAQ::OMatic::gripe('error', "FAQ::OMatic::Part::clone: prototype has "
@@ -443,15 +480,17 @@ sub clone {
 		$newpart->{$key} = $self->{$key};
 	}
 
-	# copy the array and the hash by expanding them and then taking
-	# a reference. Is that really a copy?
-	$newpart->{'Author'}		= [ @{$self->{'Author'}}		];
-	$newpart->{'AuthorHash'}	= { %{$self->{'AuthorHash'}}	};
-
 	# don't let rogue directories escape and mess up the item structure
 	$newpart->{'Type'} = '' if ($newpart->{'Type'} eq 'directory');
 
 	return $newpart;
+}
+
+sub getSet {
+	my $self = shift;
+	my $setName = shift;
+
+	return $self->{$setName} || new FAQ::OMatic::Set;
 }
 
 1;

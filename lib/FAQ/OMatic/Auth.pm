@@ -136,6 +136,7 @@ sub getInheritedProperty {
 			return 'nobody';
 		} elsif ($property eq 'PermEditItem'
 				or $property eq 'PermEditPart'
+				or $property eq 'PermUseHTML'
 				or $property eq 'PermAddPart') {
 			# default: require proven authentication
 			return 5;

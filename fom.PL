@@ -1,7 +1,14 @@
-$perl = $ARGV[0];
-$perl =~ s/^PERL=// or die "fom.PL: Unexpected argument list.\n";
-$inc = $ARGV[1];
-$inc =~ s/^INSTALLSITELIB=// or die "fom.PL: Unexpected argument list.\n";
+use Config;
+$perl = $Config{'perlpath'};
+
+# we would like to get INSTALLSITELIB the same way, but
+# it depends on how Makefile.PL was invoked. If users use PREFIX=...,
+# that value gets encoded in INSTALLSITELIB, but %Config doesn't see it.
+# Hence the tricky mess of passing the value from Makefile.PL into the
+# Makefile to here.
+# $inc = $Config{'installsitelib'};
+$inc = (grep {m/^INSTALLSITELIB=/} @ARGV)[0] || '';
+$inc =~ s/^INSTALLSITELIB=// or die "fom.PL: INSTALLSITELIB= argument missing.\n";
 
 open THECGI, ">fom" or die "Writing \"fom\": $!";
 print THECGI "#!$perl\n";

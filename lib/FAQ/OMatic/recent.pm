@@ -52,8 +52,8 @@ sub main {
 		my ($file, $item);
 		foreach $file (@{$matchset}) {
 			$item = new FAQ::OMatic::Item($file);
-			$rt .= FAQ::OMatic::Appearance::itemStart($params);	# goes before & between
-			# display item's title
+			$rt .= FAQ::OMatic::Appearance::itemStart($params, $item);
+				# goes before & between display item's title
 			$rt .= FAQ::OMatic::makeAref("faq",
 					{ 'file'	=>	$item->{'filename'} })
 					.$item->getTitle()."</a>";

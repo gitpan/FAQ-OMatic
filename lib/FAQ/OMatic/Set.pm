@@ -25,72 +25,95 @@
 #                                                                            #
 ##############################################################################
 
-package FAQ::OMatic::search;
+###
+### A FAQ::OMatic::Set keeps track of a nonrepeating list of strings,
+### such as authors of a part. It can keep the strings in order of insertion,
+### if desired.
+###
 
-use CGI;
-use FAQ::OMatic::Item;
+package FAQ::OMatic::Set;
+
 use FAQ::OMatic;
-use FAQ::OMatic::Search;
-use FAQ::OMatic::Appearance;
 
-sub main {
-	my $cgi = $FAQ::OMatic::dispatch::cgi;
-	
-	FAQ::OMatic::getParams($cgi);
-	my $params = \%FAQ::OMatic::theParams;
+sub new {
+	my ($class) = shift;
+	my $keepOrdered = shift() || 0;
 
-	# Convert user input into a set of searchable words
-	FAQ::OMatic::Search::convertSearchParams($params);
-
-	if (scalar(@{$params->{_searchArray}})==0) {
-		my $url = FAQ::OMatic::makeAref('faq', {}, 'url');
-		$cgi->redirect(FAQ::OMatic::urlBase($cgi).$url);
+	my $set = {};
+	bless $set;
+	$set->{'Hash'} = {};
+	$set->{'keepOrdered'} = $keepOrdered;
+	if ($keepOrdered) {
+		$part->{'List'} = [];
 	}
 
-	# Get the names of the matching files
-	my $matchset = FAQ::OMatic::Search::getMatchesForSet($params);
-	
-	my $rt = FAQ::OMatic::pageHeader();
-	if (scalar(@{$matchset})==0) {
-		$rt.="No items matched "
-			.$params->{'_minMatches'}." of these words: <i>"
-			.join(", ", @{$params->{'_searchArray'}})
-			."</i>.\n<br>\n";
-	} else {
-		$rt.="Search results for "
-			.($params->{'_minMatches'} eq 'all' ?
-				'all' : "at least ".$params->{'_minMatches'})
-			." of these words: <i>"
-			.join(", ", @{$params->{'_searchArray'}})
-			."</i>:<p>\n";
+	return $set;
+}
 
-		my ($file, $item);
-		foreach $file (@{$matchset}) {
-			$item = new FAQ::OMatic::Item($file);
-			$rt .= FAQ::OMatic::Appearance::itemStart($params, $item);
-			$rt .= $item->displaySearchContext($params);
+# insert members of list into this set
+sub insert {
+	my $self = shift;
+
+	while (scalar(@_) > 0) {
+		my $arg = shift;
+
+		if (not $self->{'Hash'}->{$arg}) {	# arg not in set yet
+			$self->{'Hash'}->{$arg} = 1;
+			if ($self->{'keepOrdered'}) {
+				push @{$self->{'List'}}, $arg;
+			}
 		}
-		$rt .= FAQ::OMatic::Appearance::itemEnd($params);
+	}
+}
+
+sub remove {
+	my $self = shift;
+
+	while (scalar(@_) > 0) {
+		my $arg = shift;
+
+		if ($self->{'Hash'}->{$arg}) {
+			delete $self->{'Hash'}->{$arg};
+			if ($self->{'keepOrdered'}) {
+				my @newList = grep {$_ ne $arg} @{$self->{'List'}};
+				$self->{'List'} = \@newList;
+			}
+		}
+	}
+}
+
+sub getList {
+	my $self = shift;
+
+	if ($self->{'keepOrdered'}) {
+		return @{$self->{'List'}};
+	} else {
+		return sort keys %{$self->{'Hash'}};
+	}
+}
+
+# return "deep copy" of myself
+sub clone {
+	my $self = shift;
+
+	my $newself = new FAQ::OMatic::Set($self->{'keepOrdered'});
+
+	$newself->{'Hash'} = { %{$self->{'Hash'}}	};
+
+	if ($self->{'keepOrdered'}) {
+		$newself->{'List'} = [ @{$self->{'List'}}	];
 	}
 
-	if (not -f "$FAQ::OMatic::Config::metaDir/freshSearchDBHint") {
-		$rt .= "<br>Results may be incomplete, because the search "
-			."index has not been refreshed since the most recent change "
-			."to the database.<p>\n";
-	}
+	return $newself;
+}
 
-	$rt.=FAQ::OMatic::Help::helpFor($params,
-		'Search Tips', "<br>");
+sub subtract {
+	my $self = shift;
+	my $subtrahend = shift; 		# (set whose items we remove)
 
-#	$rt.=FAQ::OMatic::button(
-#		FAQ::OMatic::makeAref('faq', {'_minMatches'=>'','search'=>''}),
-#		'Return to FAQ');
-	
-	$rt .= FAQ::OMatic::pageFooter($params, ['search', 'faq']);
-
-	print $rt;
-
-	FAQ::OMatic::Search::closeWordDB();
+	my $difference = $self->clone;
+	$difference->remove($subtrahend->getList());
+	return $difference;
 }
 
 1;

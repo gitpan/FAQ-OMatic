@@ -46,7 +46,7 @@ sub new {
 	my ($class) = shift;
 	my ($arg) = shift;	# what file the item data lives in
 	my ($dir) = shift;	# what dir we should look in for the item data
-						# (default $FAQ::OMatic::Config::metaDir)
+						# (default $FAQ::OMatic::Config::itemDir)
 	$item = {};
 	bless $item;
 
@@ -64,7 +64,7 @@ sub new {
 			$itemCache{$item->{'filename'}} = $item;
 		}
 	} else {
-		$item->{'Title'} = "New Item";
+		$item->setProperty('Title', 'New Item');
 	}
 
 	$item->{'SequenceNumber'} = 0 if (not defined($item->{'SequenceNumber'}));
@@ -79,8 +79,16 @@ sub loadFromFile {
 
 	# untaint user input (so they can't express
 	# a file of ../../../../../../etc/passwd)
-	$filename =~ m/([\w-.]*)/;
-	$filename = $1;
+	if (not $filename =~ m/^([\w-.]*)$/) {
+		# if taint check fails, just return a bad item, rather
+		# than implying that there really is an item with the funny name
+		# supplied.
+		
+		delete $self->{'Title'};
+		return;
+	} else {
+		$filename = $1;
+	}
 
 	$dir = $FAQ::OMatic::Config::itemDir if (not $dir);
 
@@ -114,8 +122,13 @@ sub loadFromFile {
 			$newPart->loadFromFile(\*FILE, $filename, $self,
 					scalar @{$self->{'Parts'}});	# partnum
 			push @{$self->{'Parts'}}, $newPart;
+		} elsif ($key =~ m/-Set$/) {
+			if (not defined($self->{$key})) {
+				$self->{$key} = new FAQ::OMatic::Set;
+			}
+			$self->{$key}->insert($value);
 		} elsif ($key ne '') {
-			$self->{$key} = $value;
+			$self->setProperty($key, $value);
 		} else {
 			FAQ::OMatic::gripe('problem',
 				"FAQ::OMatic::Item::loadFromFile was confused by this header in file $filename: \"$_\"");
@@ -125,6 +138,12 @@ sub loadFromFile {
 			return;
 		}
 	}
+
+	# We just loaded this item from a file; the title hasn't really
+	# changed. So we unset that property (that was set when we read
+	# the 'Title:' header), so that we can detect when an item's title
+	# actually does change.
+	$self->setProperty('titleChanged', '');
 
 	return $self;
 }
@@ -166,6 +185,8 @@ sub saveToFile {
 	my $filename = shift || '';
 	my $dir = shift || '';			# optional -- almost always itemDir
 	my $lastModified = shift || '';	# optional -- normally today
+	my $updateAllDependencies = shift || '';	# optional. only specified
+						# by maintenance when regenerating all dependencies.
 
 	$dir = $FAQ::OMatic::Config::itemDir if (not $dir);
 
@@ -183,6 +204,28 @@ sub saveToFile {
 		$self->{'filename'} = $filename;
 	}
 
+	if ($dir eq $FAQ::OMatic::Config::itemDir) {
+		# compute new IDependOn-Set -- the items whose titles we depend
+		# on.
+		# copy old list first, so we have something to compare new list to
+		$self->{'oldIDependOn-Set'} =
+			$self->getSet('IDependOn-Set')->clone();
+		my $newSet = new FAQ::OMatic::Set;
+		# I depend on any item I link to, which includes any explicit
+		# (faqomatic:...) links in the text, ...
+		my $parti;
+		for ($parti=0; $parti<$self->numParts(); $parti++) {
+			my $part = $self->getPart($parti);
+			$newSet->insert($part->getLinks());
+		}
+		# ...and any implicit links to my ancestors or to siblings
+		my ($parentTitles,$parentNames) = $self->getParentChain();
+		$newSet->insert(@{$parentNames});
+		$newSet->insert(grep {defined($_)} $self->getSiblings());
+		$self->{'IDependOn-Set'} = $newSet;
+	}
+
+	# note last modified date in item itself
 	$self->{'LastModified'} = compactDate($lastModified);
 
 	my $lock = FAQ::OMatic::lockFile("$filename");
@@ -200,6 +243,11 @@ sub saveToFile {
 			# some keys don't get explicitly written out.
 			# These include lowercase keys (e.g. class, filename),
 			# and the Parts key, which we write explicitly later.
+		} elsif ($key =~ m/-Set$/) {
+			my $a;
+			foreach $a ($self->getSet($key)->getList()) {
+				print FILE "$key: $a\n";
+			}
 		} else {
 			my $value = $self->{$key};
 			$value =~ s/[\n\r]/ /g;	# don't allow CRs in a single-line field,
@@ -254,25 +302,144 @@ sub saveToFile {
 	if ($dir eq $FAQ::OMatic::Config::itemDir) {
 		unlink("$FAQ::OMatic::Config::metaDir/freshSearchDBHint");
 
-		if (defined($FAQ::OMatic::Config::cacheDir)
-			&& (-w $FAQ::OMatic::Config::cacheDir)) {
-			my $staticFilename =
-				"$FAQ::OMatic::Config::cacheDir/$filename.html";
-			my $params = {'file'=>$self->{'filename'},
-						'_fullUrls'=>1};	# static pages need rooted urls
-											# to get back to the CGI side
-			my $staticHtml = FAQ::OMatic::pageHeader($params, 'suppressType')
-							.$self->displayHTML($params)
-							.basicURL($params)
-							.FAQ::OMatic::pageFooter($params, 'all');
-			if (not open(CACHEFILE, ">$staticFilename")) {
-				FAQ::OMatic::gripe('problem',
-					"Can't write $staticFilename: $!");
-			} else {
-				print CACHEFILE $staticHtml;
-				close CACHEFILE;
-				chmod(0644, $staticFilename);
+		$self->writeCacheCopy();
+		if ($self->{'titleChanged'}) {
+			# this item's title has changed:
+			# update the cache for any items that refer to this one (and
+			# thus have this one's title in their cached HTML)
+			foreach $dependent ($self->getDependencies()) {
+				my $dependentItem = new FAQ::OMatic::Item($dependent);
+				$dependentItem->writeCacheCopy();
 			}
+		}
+
+		# rewrite .dep files (items that contain HeDependsMe-Sets)
+		my $oidos = $self->getSet('oldIDependOn-Set');
+		my $nidos = $self->getSet('IDependOn-Set');
+		my @removeList = ($oidos->subtract($nidos))->getList();
+		my @addList;
+		if ($updateAllDependencies) {
+			@addList = $nidos->getList();
+		} else {
+			@addList = ($nidos->subtract($oidos))->getList();
+		}
+		my $itemName;
+		foreach $itemName (@removeList) {
+			adjustDependencies('remove', $itemName, $self->{'filename'});
+		}
+		foreach $itemName (@addList) {
+			adjustDependencies('insert', $itemName, $self->{'filename'});
+		}
+	}
+}
+
+sub getDependencies {
+	my $self = shift;
+	my $depItem = loadDepItem($self->{'filename'});
+	return $depItem->getSet('HeDependsOnMe-Set')->getList();
+}
+
+sub loadDepItem {
+	my $itemName = shift;
+
+	my $depFile = "$itemName.dep";
+	my $depItem = new FAQ::OMatic::Item($depFile,
+			$FAQ::OMatic::Config::cacheDir);
+	$depItem->setProperty('Title', 'Dependency List');
+			# in case $depItem was new
+	return $depItem;
+}
+
+sub adjustDependencies {
+	my $what = shift;		# 'insert' or 'remove'
+	my $itemName = shift;
+	my $targetName = shift;
+
+	my $depFile = "$itemName.dep";
+	my $depItem = loadDepItem($itemName);
+	my $hdos = $depItem->getSet('HeDependsOnMe-Set');
+	if ($what eq 'insert') {
+		$hdos->insert($targetName);
+	} else {
+		$hdos->remove($targetName);
+	}
+	$depItem->setProperty('HeDependsOnMe-Set', $hdos);
+			# in case $hdos was new
+	$depItem->saveToFile($depFile,
+			$FAQ::OMatic::Config::cacheDir);
+}
+
+# For explicit faqomatic: links, the dependency mechanism is automatic:
+# the link can't change without the item itself changing, so when the
+# item gets written out, the cache and dependencies for it are up-to-date.
+#
+# For parent links, the dependency mechanism still works -- if a parent
+# moves or changes its name (or this item moves, which is an operation on
+# its parent), the old parent had to get written, and this item knew it
+# was dependent on that parent, so this item gets rewritten, too, and has
+# its dependencies updated, at which point it detects any new parent.
+#
+# But for sibling links, this item has no way of discovering (via
+# dependencies) when those links change. Whenever a category changes its
+# directory part list, it has also changed the sibling links for some
+# of its children. In any case like that, it's the parent's responsibility
+# to rewrite all of its children, so their dependencies and caches
+# can be recomputed.
+sub updateAllChildren {
+	my $self = shift;
+
+	foreach $filei ($self->getChildren()) {
+		$itemi = new FAQ::OMatic::Item($filei);
+		$itemi->saveToFile();
+	}
+}
+
+sub getChildren {
+	my $self = shift;
+
+	my $dirPart = $self->getDirPart();
+	if (defined($dirPart)) {
+		return $dirPart->getChildren();
+	}
+	return ();
+}
+
+# Currently meaningful -Sets that can be in an Item:
+# HeDependsOnMe-Set: list of items that depend on this item's Title property
+# IDependOn-Set: list of items whose titles this item depends upon.
+#	it's useful so we can revoke our membership in that item's
+#	HeDependsOnMe-Set when we no longer refer to it.
+
+sub getSet {
+	my $self = shift;
+	my $setName = shift;
+
+	return $self->{$setName} || new FAQ::OMatic::Set;
+}
+
+sub writeCacheCopy {
+	my $self = shift;
+
+	my $filename = $self->{'filename'};
+
+	if (defined($FAQ::OMatic::Config::cacheDir)
+		&& (-w $FAQ::OMatic::Config::cacheDir)) {
+		my $staticFilename =
+			"$FAQ::OMatic::Config::cacheDir/$filename.html";
+		my $params = {'file'=>$self->{'filename'},
+					'_fullUrls'=>1};	# static pages need rooted urls
+										# to get back to the CGI side
+		my $staticHtml = FAQ::OMatic::pageHeader($params, 'suppressType')
+						.$self->displayHTML($params)
+						.basicURL($params)
+						.FAQ::OMatic::pageFooter($params, 'all', 'isCached');
+		if (not open(CACHEFILE, ">$staticFilename")) {
+			FAQ::OMatic::gripe('problem',
+				"Can't write $staticFilename: $!");
+			} else {
+			print CACHEFILE $staticHtml;
+			close CACHEFILE;
+			chmod(0644, $staticFilename);
 		}
 	}
 }
@@ -323,6 +490,12 @@ sub getParent {
 	return new FAQ::OMatic::Item($self->{'Parent'});
 }
 
+# returns two lists, the filenames and titles of this item's parent items.
+# The list is slightly falsified in that if the topmost ancestor isn't
+# '1' (such as 'trash' and 'help000'), we insert '1' as an ancestor.
+# That way 'trash' and 'help000's displayed parent chains include links
+# to the top of the FAQ, but are not moveable (since they still have no
+# real parent, which is how moveItem.pm can tell.)
 sub getParentChain {
 	my $self = shift;
 	my @titles = ();
@@ -339,6 +512,13 @@ sub getParentChain {
 		$nextitem = $nextitem->getParent();
 	} while ((defined $nextitem) and (defined $nextfile)
 		and ($nextfile ne $thisfile));
+
+	if ($nextfile ne '1') {
+		# insert '1' as extra 'bogus' parent
+		my $item1 = new FAQ::OMatic::Item('1');
+		push @titles, $item1->getTitle();
+		push @filenames, $item1->{'filename'};	# I can guess what this is :v)
+	}
 
 	return (\@titles, \@filenames);
 }
@@ -413,20 +593,24 @@ sub displayCoreHTML {
 	$rt .= FAQ::OMatic::Appearance::itemStart($params, $self);
 
 	my $titlebox = '';
+
 	# prefix item title with a path back to the root, so that user
 	# can find his way back up. (This replaces the old "Up to:" line.)
 	my ($titles,$filenames) = $self->getParentChain();
-	if ((@{$filenames} <= 1)
-		and ($self->{'filename'} eq 'trash')) {
-		# When we're in the trash, provide a way to get back to the
-		# top. (There should be some less-hackish way to do this.)
-		# TODO: such as whenever 1 isn't the rootmost item, make it appear so
-		# here.
-		my $topitem = new FAQ::OMatic::Item('1');
-		my $toptitle = $topitem->getTitle();
-		push @{$titles}, $toptitle;
-		push @{$filenames}, '1';
-	}
+#	if ((@{$filenames} <= 1)
+#		and ($self->{'filename'} eq 'trash')) {
+#		# TODO
+#		# TODO: When we're in the trash, provide a way to get back to the
+#		# TODO: top. (There should be some less-hackish way to do this.)
+#		# TODO: such as whenever 1 isn't the rootmost item, make it appear so
+#		# TODO: here.
+#		my $topitem = new FAQ::OMatic::Item('1');
+#		my $toptitle = $topitem->getTitle();
+#		push @{$titles}, $toptitle;
+#		push @{$filenames}, '1';
+#	}
+#	TODO fix: ensure in getParentChain that every item ultimately
+#	finds its root at 1.
 	my ($thisTitle) = shift @{$titles};
 	my ($thisFilename) = shift @{$filenames};
 	my (@parentTitles) = reverse @{$titles};
@@ -476,8 +660,7 @@ sub displayCoreHTML {
 				$dupTitle)."\n";
 
 		# Move it (if not at the top)
-		if (($self->{'Parent'} ne $self->{'filename'})
-			and ($self->{'filename'} ne '1')) {
+		if ($self->{'Parent'} ne $self->{'filename'}) {
 			$rt .= FAQ::OMatic::button(
 					FAQ::OMatic::makeAref('-command'=>'moveItem',
 						'-params'=>$params,
@@ -563,12 +746,10 @@ sub displayCoreHTML {
 	}
 
 	## recurse on children
-	my $dirPart = $self->getDirPart();
-	if (($params->{'recurse'} or $params->{'_recurse'})
-		and defined($dirPart)) {
+	if ($params->{'recurse'} or $params->{'_recurse'}) {
 		my $filei;
 		my $itemi;
-		foreach $filei ($dirPart->getChildren()) {
+		foreach $filei ($self->getChildren()) {
 			$itemi = new FAQ::OMatic::Item($filei);
 			$rt .= $itemi->displayCoreHTML($params);
 		}
@@ -758,6 +939,10 @@ sub displayItemEditor {
 		$rt .= "<br>";
 		$rt .= $self->permissionBox('PermAddPart');
 		$rt .= " may add new text parts to this page.\n";
+
+		$rt .= "<br>";
+		$rt .= $self->permissionBox('PermUseHTML');
+		$rt .= " may use HTML in my parts.\n";
 	
 		$rt .= "<br>";
 		$rt .= $self->permissionBox('PermEditPart');
@@ -814,6 +999,13 @@ sub setProperty {
 
 	if ($value) {
 		$self->{$property} = $value;
+		if ($property eq 'Title') {
+			# keep track if title changes after file is loaded;
+			# used to update items whose cached representations
+			# depend on this item's title (because those items have
+			# embedded faqomatic: references to this one).
+			$self->{'titleChanged'} = 1;
+		}
 	} else {
 		delete $self->{$property};
 	}
@@ -860,6 +1052,12 @@ sub addSubItem {
 	}
 
 	$self->makeDirectory()->mergeDirectory($subfilename);
+
+	# all the children in the list may now have different siblings,
+	# which means we need to recompute their dependencies and
+	# regenerate their cached html.
+	$self->updateAllChildren();
+
 	$self->incrementSequence();
 }
 
@@ -876,6 +1074,11 @@ sub removeSubItem {
 	}
 	if ($subfilename) {
 		$dirPart->unmergeDirectory($subfilename);
+
+		# all the children in the list may now have different siblings,
+		# which means we need to recompute their dependencies and
+		# regenerate their cached html.
+		$self->updateAllChildren();
 	}
 	if ($dirPart->{'Text'} =~ m/^\s*$/s) {
 		splice @{$self->{'Parts'}}, $self->{'directoryHint'}, 1;
@@ -1063,9 +1266,7 @@ sub getSiblings {
 
 	my $parent = $self->getParent();
 	return (undef,undef) if (not $parent);
-	my $pdpart = $parent->getDirPart();
-	return (undef,undef) if (not $pdpart);
-	my @siblings = $pdpart->getChildren();
+	my @siblings = $parent->getChildren();
 	my $i;
 	for ($i=0; $i<@siblings; $i++) {
 		if ($siblings[$i] eq $self->{'filename'}) {
@@ -1112,7 +1313,9 @@ sub clone {
 	my $key;
 	foreach $key (keys %{$self}) {
 		next if ($key eq 'Parts');
-		if (ref $self->{$key}) {
+		if ($key =~ m/-Set$/) {
+			$newitem->{$key} = $self->{$key}->clone();
+		} elsif (ref $self->{$key}) {
 			# guarantee this is a deep copy -- if we missed
 			# a ref, complain.
 			FAQ::OMatic::gripe('error', "clone: prototype has key '$key' "

@@ -41,7 +41,7 @@ sub main {
 	my $params = \%FAQ::OMatic::theParams;
 
 	my $what = $params->{'_restart'};
-	my $why = FAQ::OMatic::Auth::authError($params->{'_reason'});
+	my $whoIsAllowed = FAQ::OMatic::Auth::authError($params->{'_reason'});
 
 	# Give them the option of setting up a new password
 	# Creating a login is the same thing
@@ -72,38 +72,44 @@ sub main {
 		# no better.
 	} else {
 		if ($what eq 'addItem') {
-			$rt.="New items can only be added by $why.";
+			$rt.="New items can only be added by $whoIsAllowed.";
 		} elsif ($what eq 'addPart') {
-			$rt.="New text parts can only be added by $why.";
+			$rt.="New text parts can only be added by $whoIsAllowed.";
 		} elsif ($what eq 'delPart') {
-			$rt.="Text parts can only be removed by $why.";
+			$rt.="Text parts can only be removed by $whoIsAllowed.";
 		} elsif ($what eq 'editPart' or $what eq 'submitPart') {
-			if ($params->{'_insertpart'}) {
-				$rt.="Text parts can only be added by $why.";
+			my $xreason = $params->{'_xreason'} || '';
+			if ($xreason eq 'useHTML') {
+				$rt.="This part contains raw HTML. To avoid pages with ";
+				$rt.="invalid HTML, the moderator has specified that ";
+				$rt.="only $whoIsAllowed can edit HTML parts. If you are $whoIsAllowed, ";
+				$rt.="you may authenticate yourself with this form.";
+			} elsif ($params->{'_insertpart'}) {
+				$rt.="Text parts can only be added by $whoIsAllowed.";
 			} else {
-				$rt.="Text parts can only be edited by $why.";
+				$rt.="Text parts can only be edited by $whoIsAllowed.";
 			}
 		} elsif ($what eq 'editItem' or $what eq 'submitItem') {
 			my $xreason = $params->{'_xreason'} || '';
 
 			if ($xreason eq 'modOptions') {
-				$rt.="The moderator options can only be edited by $why.";
+				$rt.="The moderator options can only be edited by $whoIsAllowed.";
 			} else {
 				$rt.="The title and options for this item can only "
-					."be edited by $why.";
+					."be edited by $whoIsAllowed.";
 			}
 		} elsif ($what eq 'moveItem' or $what eq 'submitMove') {
-			if ($why =~ m/moderator/) {
+			if ($whoIsAllowed =~ m/moderator/) {
 				$rt.="This item can only be moved by someone who can edit both "
 					."the source and destination parent items.";
 			} else {
-				$rt.="This item can only be moved by $why.";
+				$rt.="This item can only be moved by $whoIsAllowed.";
 			}
 		} elsif ($what eq 'install') {
-			$rt.="The FAQ-O-Matic can only be configured by $why.";
+			$rt.="The FAQ-O-Matic can only be configured by $whoIsAllowed.";
 		} else {
 			$rt.="The operation you attempted ($what) can "
-				."only be done by $why.";
+				."only be done by $whoIsAllowed.";
 		}
 	
 		$rt .= "<ul><li>If you have never established a password to use with "

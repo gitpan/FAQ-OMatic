@@ -117,6 +117,9 @@ sub main {
 		if (defined $params->{'_PermAddPart'}) {
 			$item->setProperty('PermAddPart', $params->{'_PermAddPart'});
 		}
+		if (defined $params->{'_PermUseHTML'}) {
+			$item->setProperty('PermUseHTML', $params->{'_PermUseHTML'});
+		}
 		if (defined $params->{'_PermEditPart'}) {
 			$item->setProperty('PermEditPart', $params->{'_PermEditPart'});
 		}
@@ -130,14 +133,15 @@ sub main {
 
 	$item->saveToFile();
 
-	# If title changed, cached copy of parent item will have the wrong
-	# name for the link to this item.
-	# TODO: As will any see-also links,
-	# TODO: but I don't have a solution for that offhand.
-	my $parent = $item->getParent();
-	if ($parent ne $item) {
-		$parent->saveToFile();		# update cached copy of parent
-	}
+#	# If title changed, cached copy of parent item will have the wrong
+#	# name for the link to this item.
+#	# TODO: As will any see-also links,
+#	# TODO: but I don't have a solution for that offhand.
+#	my $parent = $item->getParent();
+#	if ($parent ne $item) {
+#		$parent->saveToFile();		# update cached copy of parent
+#	}
+# fixing TODO: testing by turning off this hack
 
 	$item->notifyModerator($cgi, 'edited the item configuration');
 

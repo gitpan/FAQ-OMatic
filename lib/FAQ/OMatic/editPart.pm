@@ -105,6 +105,14 @@ sub main {
 		my $rd = FAQ::OMatic::Auth::ensurePerm($item, 'PermEditPart',
 			FAQ::OMatic::commandName(), $cgi, 0);
 		if ($rd) { print $rd; exit 0; }
+
+		if ($part->{'Type'} eq 'html') {
+			# discourage unauthorized users from editing HTML parts which
+			# they won't later be able to submit.
+			$rd = FAQ::OMatic::Auth::ensurePerm($item, 'PermUseHTML',
+				FAQ::OMatic::commandName(), $cgi, 0, 'useHTML');
+			if ($rd) { print $rd; exit 0; }
+		}
 	}
 	
 	if ($params->{'_insertpart'}) {

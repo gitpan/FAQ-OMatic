@@ -34,6 +34,7 @@
 
 package FAQ::OMatic::install;
 
+use Config;
 use CGI;
 use FAQ::OMatic;
 use FAQ::OMatic::Item;
@@ -192,7 +193,7 @@ sub configMetaStep {
 	$meta = $FAQ::OMatic::dispatch::meta;
 	if (not -d "$meta/.") {
 		# try mkdir
-		if (not mkdir($meta, 0700)) {
+		if (not mkdir(stripSlash($meta), 0700)) {
 			displayMessage("I couldn't create <b>$meta</b>: $!");
 			doStep('askMeta');
 			return;
@@ -207,7 +208,7 @@ sub configMetaStep {
 	my $rcsDir = FAQ::OMatic::concatDir($meta, "/RCS/");
 	if (not -d $rcsDir) {
 		# try mkdir
-		if (not mkdir($rcsDir, 0700)) {
+		if (not mkdir(stripSlash($rcsDir), 0700)) {
 			displayMessage("I couldn't create <b>$rcsDir</b>: $!");
 			doStep('askMeta');
 			return;
@@ -388,9 +389,8 @@ sub mainMenuStep {
 	$rt.="<ul>Other tasks:\n";
 	$rt.="<li>".checkBoxFor('nothing')
 		."<a href=\"".installUrl('', 'url', 'maintenance')
-		."&secret=$maintenanceSecret&tasks=verifyCache\">"
-		."Run the verifyCache maintenance task right now "
-		."(if you suspect the cache has become inconsistent.)</a>\n";
+		."&secret=$maintenanceSecret&tasks=rebuildCache\">"
+		."Rebuild the cache and dependency files.</a>\n";
 	$rt.="</ul>\n";
 
 	$rt.="The Faq-O-Matic modules are version $FAQ::OMatic::VERSION.\n";
@@ -465,7 +465,7 @@ sub createDir {
 		FAQ::OMatic::concatDir($FAQ::OMatic::Config::serveURL, $dirSuffix);
 
 	if (not -d $dirPath) {
-		if (not mkdir($dirPath, 0700)) {
+		if (not mkdir(stripSlash($dirPath), 0700)) {
 			dirFail("I couldn't create $dirSymbol"."Dir = <b>$dirPath</b>: $!");
 			return;
 		}
@@ -560,6 +560,9 @@ $configInfo = {
 		.'It should also end with a /.',
 		[], 1 ],
 };
+# THANKS: John Goerzen and someone else (sorry I forgot who since I
+# THANKS: fixed it!) pointed out that the serveURL (then the cacheURL) needs
+# THANKS: a leading slash to avoid picking up a prefix like cgi-bin/.
 
 sub getPotentialConfig {
 	# gets the current config, plus empty strings for any expected but
@@ -732,7 +735,7 @@ sub checkConfig {
 	if ($left eq '$serveDir') {
 		$aright = FAQ::OMatic::canonDir($aright);
 		if ($aright and (not -d $aright)) {
-			if (not mkdir($aright, 0755)) {
+			if (not mkdir(stripSlash($aright), 0755)) {
 				return "$left ($right) can't be created.";
 			} else {
 				chmod(0755,$aright);
@@ -837,7 +840,11 @@ sub maintenanceStep {
 		$incOption = "use lib \"$incBase\"";
 	}
 
-	my $cronCmd = "perl -e '$incOption; use FAQ::OMatic::maintenance; "
+	# THANKS: John Goerzen pointed out that I wasn't putting a full path
+	# THANKS: to perl in the cron job, which on some systems picks up the
+	# THANKS: wrong Perl. (Perl 4, for example.)
+	my $perlbin = $Config{'perlpath'};
+	my $cronCmd = "$perlbin -e '$incOption; use FAQ::OMatic::maintenance; "
 		."FAQ::OMatic::maintenance::invoke(\"$host\", "
 		."$port, \"$req\");'";
 	my $cronLine = sprintf("%d * * * * %s\n", (rand(1<<16)%60), $cronCmd);
@@ -1148,6 +1155,19 @@ sub stripQuotes {
 	my $arg = shift;
 	$arg =~ s/^'//;
 	$arg =~ s/'$//;
+	return $arg;
+}
+
+# some mkdir()s don't like to create a dir if the argument path has a
+# trailing slash. (John Goerzen says this is true of BSDI.) So although
+# canonically store directories with trailing slashes (to prevent
+# concatenating together a path and forgetting an intervening slash),
+# we need to strip the slash before calling mkdir().
+# THANKS: John Goerzen
+sub stripSlash {
+	my $arg = shift;
+
+	$arg =~ s#/+$##;
 	return $arg;
 }
 

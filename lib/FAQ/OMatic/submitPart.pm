@@ -102,6 +102,10 @@ sub main {
 	}
 	$authFailed = FAQ::OMatic::Auth::checkPerm($item, $perm);
 
+	if ((!$authFailed) && ($part->{'Type'} eq 'HTML')) {
+	    $authFailed = FAQ::OMatic::Auth::checkPerm($item, 'PermUseHTML');
+	}
+
 	my @rcvFields = ('_HideAttributions', '_Type', '_insertpart');
 	my $fn;
 	if ($authFailed) {
@@ -201,6 +205,11 @@ sub main {
 			$item->removeSubItem();
 			$removed = 1 if (not defined $item->{'directoryHint'});
 		}
+
+		# all the children in the list may now have different siblings,
+		# which means we need to recompute their dependencies and
+		# regenerate their cached html.
+		$item->updateAllChildren();
 	} else {
 		if ($params->{'_Type'} eq 'directory') {
 			FAQ::OMatic::gripe('error', "Can't force Type to directory.");

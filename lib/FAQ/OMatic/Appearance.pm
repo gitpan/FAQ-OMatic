@@ -161,7 +161,7 @@ sub cPageFooter {
 
 	$page.=	"<tr><td colspan=$numCells align=center>\n"
 #			."The <a href=\"http://www.dartmouth.edu/cgi-bin/cgiwrap/jonh/faq.pl\">Faq-O-Matic</a> is by <a href=\"http://www.cs.dartmouth.edu/~jonh\">Jon&nbsp;Howell</a>.\n"
-			."This is a <a href=\"http://www.dartmouth.edu/cgi-bin/cgiwrap/jonh/faq.pl\">Faq-O-Matic</a>.\n"
+			."This is <a href=\"http://www.dartmouth.edu/cgi-bin/cgiwrap/jonh/faq.pl\">Faq-O-Matic</a> $FAQ::OMatic::VERSION.\n"
 			."</td></tr>"
 			."</table>"
 			.partEnd({})

@@ -40,7 +40,7 @@ use FAQ::OMatic::Log;
 use FAQ::OMatic::Appearance;
 use FAQ::OMatic::Intl;
 
-$VERSION = '2.604';
+$VERSION = '2.605';
 
 # This is never used to automatically send mail to (that's authorEmail),
 # but when we need to report the author's address, we use this constant:
@@ -55,11 +55,15 @@ sub pageHeader {
 }
 
 sub pageFooter {
+	my $params = shift;			# arg passed to Apperance::cPageFooter
+	my $showLinks = shift;		# arg passed to Apperance::cPageFooter
+	my $isCached = shift || '';	# don't put gripes in the cached copies
+
 	my $page = '';
-	if ($userGripes ne '') {
+	if (not $isCached and $userGripes ne '') {
 		$page.="<hr><h3>Warnings:</h3>\n".$userGripes."<hr>\n";
 	}
-	$page.=FAQ::OMatic::Appearance::cPageFooter(@_);
+	$page.=FAQ::OMatic::Appearance::cPageFooter($params, $showLinks);
 	return $page;
 }
 
@@ -258,15 +262,20 @@ sub relativeReference {
 sub insertLinks {
 	my $params = shift;
 	my $arg = shift;
-	$arg = entify($arg);
-	$arg =~ s#(http://[^\s"]*[^\s.,)\?!])#<a href=\"$1\">$1</a>#sg;
+	my $ishtml = shift || 0;
+	
+	if (not $ishtml) {
+	    $arg = entify($arg);
+	    $arg =~ s#(http://[^\s"]*[^\s.,)\?!])#<a href=\"$1\">$1</a>#sg;
 														# absolute URL
-	$arg =~ s#http:((?!//)[^\s"]*[^\s.,)\?!])#"<a href=\"".relativeReference($params,$1)."\">$1</a>"#sge;
+	    $arg =~ s#http:((?!//)[^\s"]*[^\s.,)\?!])#"<a href=\"".relativeReference($params,$1)."\">$1</a>"#sge;
 														# relative URL
-	$arg =~ s#(ftp://[^\s"]*[^\s.,)\?!])#<a href=\"$1\">$1</a>#sg;
-	$arg =~ s#(gopher://[^\s"]*[^\s.,)\?!])#<a href=\"$1\">$1</a>#sg;
-	$arg =~ s#(telnet://[^\s"]*[^\s.,)\?!])#<a href=\"$1\">$1</a>#sg;
-	$arg =~ s#(mailto:\S+@\S*[^\s.,)\?!])#<a href=\"$1\">$1</a>#sg;
+	    $arg =~ s#(ftp://[^\s"]*[^\s.,)\?!])#<a href=\"$1\">$1</a>#sg;
+	    $arg =~ s#(gopher://[^\s"]*[^\s.,)\?!])#<a href=\"$1\">$1</a>#sg;
+	    $arg =~ s#(telnet://[^\s"]*[^\s.,)\?!])#<a href=\"$1\">$1</a>#sg;
+	    $arg =~ s#(mailto:\S+@\S*[^\s.,)\?!])#<a href=\"$1\">$1</a>#sg;
+	}
+
 	$arg =~ s#faqomatic:(\S*[^\s.,)\?!])#faqomaticReference($params,$1)#sge;
 
 	return $arg;

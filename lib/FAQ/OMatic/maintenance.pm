@@ -57,7 +57,7 @@ my $html = '';
 my %taskUntaint = map {$_=>$_}
 	( 'writeMaintenanceHint', 'trimUHDB', 'trimSubmitTmps',
 	 'buildSearchDB', 'trim', 'cookies', 'errors', 'logSummary',
-	 'rebuildAllSummaries', 'verifyCache' );
+	 'rebuildAllSummaries', 'rebuildCache' );
 
 sub main {
 	my $cgi = $FAQ::OMatic::dispatch::cgi;
@@ -147,7 +147,6 @@ sub periodicTasks {
 		'10 buildSearchDB'
 		) if $newHour;
 	push @tasks, (
-		'40 verifyCache',
 		'50 cookies',
 		'60 logSummary',
 		'80 trimUHDB',		# turns on a flag so trim() will trim uhdbs
@@ -342,24 +341,25 @@ sub invoke {
 	}
 }
 
-sub verifyCache {
+# We used to have a verifyCache task that rebuilt cached files if
+# they were older than their item file (or the config file).
+# The former condition wasn't very useful, since caches are rewritten
+# whenever items are. The latter shouldn't really have happened
+# automatically, because it can be verrrry slow on a big FAQ.
+# And in neither case could you refresh *every* item in the cache.
+# The new task simply reads and writes every item in the item/ directory,
+# which ensures that its cache and dependencies are up-to-date.
+# (note also the 'updateAllDependencies' flag to saveToFile().)
+#
+sub rebuildCache {
 	return if ((not defined $FAQ::OMatic::Config::cacheDir)
 				or ($FAQ::OMatic::Config::cacheDir eq ''));
 	
 	my $itemName;
-	my $configFileTime = mtime("$FAQ::OMatic::Config::metaDir/config");
-
 	foreach $itemName (FAQ::OMatic::getAllItemNames()) {
-		my $itemFileTime = mtime("$FAQ::OMatic::Config::itemDir/$itemName");
-		my $cacheFileTime =
-						mtime("$FAQ::OMatic::Config::cacheDir/$itemName.html");
-		if ($cacheFileTime < $itemFileTime
-			or $cacheFileTime < $configFileTime) {
-			$html.="Updating $itemName "
-				."(item $itemFileTime, cache $cacheFileTime)\n";
-			my $item = new FAQ::OMatic::Item($itemName);
-			$item->saveToFile();
-		}
+		$html.="<br>Updating $itemName\n";
+		my $item = new FAQ::OMatic::Item($itemName);
+		$item->saveToFile('', '', '', 'updateAllDependencies');
 	}
 }
 
