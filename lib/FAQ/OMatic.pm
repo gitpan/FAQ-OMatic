@@ -47,7 +47,7 @@ use FAQ::OMatic::Bags;
 # fully qualified) without getting a gripe from 'use strict'.
 use vars qw($VERSION $authorAddress %theParams $userGripes);
 
-$VERSION = '2.615';
+$VERSION = '2.619';
 
 $authorAddress = 'jonh@cs.dartmouth.edu';
 	# This is never used to automatically send mail to (that's authorEmail),
@@ -79,8 +79,12 @@ sub fomTitle {
 	my $topitem = new FAQ::OMatic::Item('1');
 	my $title = $topitem->getTitle('undefokay');
 	if (not $title) {
-		FAQ::OMatic::gripe('note', "Your Faq-O-Matic would have a title if "
-			."it had an item 1, which it will when you've run the installer.");
+		if (FAQ::OMatic::Versions::getVersion('Items')) {
+			# (don't gripe if FAQ not installed yet)
+			FAQ::OMatic::gripe('note', "Your Faq-O-Matic would have a title "
+			 ."if it had an item 1, which it will when you've run the "
+			 ."installer.");
+		}
 		$title = "Untitled Faq-O-Matic";
 	}
 	return $title;
@@ -97,17 +101,18 @@ sub pageDesc {
 	$cmd = 'insertPart'
 		if (($cmd eq 'editPart') and ($params->{'_insertpart'}));
 
-	$rt = $FAQ::OMatic::Intl::pageDesc{$cmd} || "$cmd page";
+	my $file = $params->{'file'} || '1';
+	my $item = new FAQ::OMatic::Item($params->{'file'});
+	my $title = $item->getTitle();
+	my $whatAmI = $item->whatAmI();
 
-	if ($rt eq 'FAQ') {
-		my $file = $params->{'file'} || '';
-		if ($file ne 1) {
-			my $item = new FAQ::OMatic::Item($params->{'file'});
-			$rt = $item->getTitle();
-		} else {
-			$rt = "";
-		}
+	my $desc = $FAQ::OMatic::Intl::pageDesc{$cmd};
+	if ($desc) {
+		$rt = eval($desc);
+	} else {
+		$rt = "$cmd page";
 	}
+
 	return $rt ? ": $rt" : "";
 }
 
@@ -160,7 +165,7 @@ sub gripe {
 	# 'panic': mails trouble to $faqAdmin, $faqAuthor, appends to log,
 	# 	tells user, and aborts the CGI
 	my $severity = shift || 'problem';
-	my $msg = shift || '[gripe with no msg]';
+	my $msg = shift || '[gripe with no msg: '.join(':',caller()).']';
 	my $mailguys = '';
 	my $id = $FAQ::OMatic::Auth::trustedID || $theParams{'id'} || '(noID)';
 
@@ -181,7 +186,8 @@ sub gripe {
 		$message.="The message is: \"$msg\".\n";
 		$message.="The process number is: $$\n";
 		$message.="The user had given this ID: <$id>\n";
-		$message.="The browser was: <".$ENV{'HTTP_USER_AGENT'}.">\n";
+		$message.="The browser was: <".($ENV{'HTTP_USER_AGENT'}||'undefined')
+			.">\n";
 		sendEmail($mailguys,
 				"Faq-O-Matic $severity Mail",
 				$message);
@@ -360,6 +366,23 @@ sub relativeReference {
 	return $urlRoot."/".join("/",@urlPath);
 }
 
+# THANKS: to steevATtiredDOTcom for suggesting the ability to mangle
+# or disable attributions to reduce the potential for spam address harvesting.
+sub mailtoReference {
+	my $addr = shift || '';
+
+	$addr = entify($addr);
+	my $how = $FAQ::OMatic::Config::antiSpam || 'off';
+
+	if ($how eq 'cheesy') {
+		$addr =~ s#\@#AT#g;
+		$addr =~ s#\.#DOT#g;
+	} elsif ($how eq 'hide') {
+		$addr = 'address-suppressed';
+	}
+	return "<a href=\"$addr\">$addr</a>";
+}
+
 # turns link-looking things into actual HTML links, but also turns
 # <, > and & into entities to prevent them getting interpreted as HTML.
 sub insertLinks {
@@ -380,7 +403,7 @@ sub insertLinks {
 	    $arg =~ s#(gopher://[^\s"]*[^\s.,)\?!])#<a href=\"$1\">$1</a>#sg;
 	    $arg =~ s#(telnet://[^\s"]*[^\s.,)\?!])#<a href=\"$1\">$1</a>#sg;
 	    $arg =~ s#(news:[^\s"]*[^\s.,)\?!])#<a href=\"$1\">$1</a>#sg;
-	    $arg =~ s#(mailto:\S+@\S*[^\s.,)\?!])#<a href=\"$1\">$1</a>#sg;
+	    $arg =~ s#(mailto:\S+@\S*[^\s.,)\?!])#mailtoReference($1)#sge;
 	}
 	# THANKS: njl25@cam.ac.uk for pointing out the absence of the news: regex
 
@@ -658,7 +681,7 @@ sub getCacheUrl {
 			# to get them to our cache.
 			return ((hostAndPath())[0])
 				.$FAQ::OMatic::Config::cacheURL
-				.$paramsForUrl->{'file'}
+				.($paramsForUrl->{'file'}||'1')
 				.".html";
 		}
 	}
@@ -698,11 +721,12 @@ sub button {
 	my $image = shift || '';
 	my $params = shift || {};	# needed to get correct image refs from cache
 
-	$label =~ s/ /\&nbsp;/g;
-	if ($image ne '') {
-		return "<center>$ahref"
+	#$label =~ s/ /\&nbsp;/g;
+	if ($FAQ::OMatic::Config::showEditIcons
+		and ($image ne '')) {
+		return "$ahref"
 			.FAQ::OMatic::ImageRef::getImageRef($image, 'border=0', $params)
-			."<br>$label</a></center>\n";
+			."<br>$label</a>\n";
 	} else {
 		return "[$ahref$label</a>]";
 	}

@@ -183,13 +183,13 @@ sub displayHTML {
 	my @boxes = ();		# return one table row per @boxes element
 
 	my $rt = '';
-	$rt .= FAQ::OMatic::Appearance::partStart($params,$self);
+	#$rt .= FAQ::OMatic::Appearance::partStart($params,$self);
 
-	my $tmp = FAQ::OMatic::insertLinks($params, $self->{'Text'},
-					   $self->{'Type'} eq 'html',
-					   $self->{'Type'} eq 'directory');
-	$tmp = FAQ::OMatic::highlightWords($tmp, $params);
 	my $type = $self->{'Type'} || '';
+	my $tmp = FAQ::OMatic::insertLinks($params, $self->{'Text'},
+					   $type eq 'html',
+					   $type eq 'directory');
+	$tmp = FAQ::OMatic::highlightWords($tmp, $params);
 	if ($type eq 'monospaced'){
 		## monospaced text
 		$tmp =~ s/\n$//;
@@ -237,45 +237,32 @@ sub displayHTML {
 		$rt .= "<i>"
 			.$date_string
 			.join(", ",
-				map { "<a href=\"mailto:$_\">$_</a>" }
+				map { FAQ::OMatic::mailtoReference($_) }
 					$self->{'Author-Set'}->getList()
 				)."</i>";
 	}
 
-	$rt .= FAQ::OMatic::Appearance::partEnd($params);
-	push @boxes, $rt;	# that's the end of the main part content
+	my $kind = ($type eq 'directory')
+			? 'dirPart'
+			: 'regPart';
+	my $partBox = [ $kind, $rt ];
+	# that's the end of the main part content
 
 	if ($params->{'showEditCmds'} and $item->ordinaryItem()) {
+		my $aoc = $item->isCategory ? 'cat' : 'ans';
 		my $filename = $item->{'filename'};
-		$rt = '';
-		#$rt .= "<br>\n" if ($showAttributions eq 'all');
-		$rt .= $FAQ::OMatic::Appearance::editStart;
-			#."Edit Part: ";
-		$rt .= FAQ::OMatic::button(
-			FAQ::OMatic::makeAref('-command'=>'editPart',
-				'-params'=>$params,
-				'-changedParams'=>{'file'=>$filename,
-							'partnum'=>$partnum,
-							'_insertpart'=>1,
-							'checkSequenceNumber'=>$item->{'SequenceNumber'}}),
-				"Insert Text Here")."\n";
-		$rt .= FAQ::OMatic::button(
-			FAQ::OMatic::makeAref('-command'=>'editPart',
-				'-params'=>$params,
-				'-changedParams'=>{'file'=>$filename,
-							'partnum'=>$partnum,
-							'_insertpart'=>1,
-							'_upload'=>1,
-							'checkSequenceNumber'=>$item->{'SequenceNumber'}}),
-				"Insert Uploaded Text Here")."\n";
-		$rt .= FAQ::OMatic::button(
+		my @rightEdits = ();
+		my @belowEdits = ();
+
+		push @rightEdits, ['edit', FAQ::OMatic::button(
 			FAQ::OMatic::makeAref('-command'=>'editPart',
 				'-params'=>$params,
 				'-changedParams'=>{'file'=>$filename,
 							'partnum'=>$partnum,
 							'checkSequenceNumber'=>$item->{'SequenceNumber'}}),
-			"Edit Above Text")."\n";
-		$rt .= FAQ::OMatic::button(
+			"Edit This Text",
+			"$aoc-edit-part", $params)];
+		push @rightEdits, ['edit', FAQ::OMatic::button(
 			FAQ::OMatic::makeAref('-command'=>'editPart',
 				'-params'=>$params,
 				'-changedParams'=>{'file'=>$filename,
@@ -283,60 +270,83 @@ sub displayHTML {
 							'_insertpart'=>1,
 							'_duplicate'=>1,
 							'checkSequenceNumber'=>$item->{'SequenceNumber'}}),
-			"Duplicate Above Text")."\n";
+			"Duplicate This Text",
+			"$aoc-dup-part", $params)];
 		if ($type ne 'directory') {
-			$rt .= FAQ::OMatic::button(
+			push @rightEdits, ['edit', FAQ::OMatic::button(
 				FAQ::OMatic::makeAref('-command'=>'delPart',
 					'-params'=>$params,
 					'-changedParams'=>{"file"=>$filename,
 						'partnum'=>$partnum,
 						'checkSequenceNumber'=>$item->{'SequenceNumber'}}
 				),
-			"Remove Above Text")."\n";
+			"Remove This Text",
+			"$aoc-del-part", $params)];
 		} elsif (scalar($self->getChildren())==0) {
 			# directory, but has no children -- can just delete directory.
 			# this is a minor variation on Item's Convert to Answer.
-			$rt .= FAQ::OMatic::button(
+			push @rightEdits, ['edit', FAQ::OMatic::button(
 				FAQ::OMatic::makeAref('-command'=>'submitCatToAns',
 					'-params'=>$params,
 					'-changedParams'=>{"file"=>$filename,
 						'_removePart'=>1,
-						'checkSequenceNumber'=>$item->{'SequenceNumber'}}),
-				"Remove Above Text")."\n";
+						'checkSequenceNumber'=>$item->{'SequenceNumber'}}
+				),
+			"Remove This Text",
+			"$aoc-del-part", $params)];
 		}
 
-		# bags.
-		# add a new bag
-		$rt .= FAQ::OMatic::button(
-			FAQ::OMatic::makeAref('-command'=>'editBag',
-				'-params'=>$params,
-				'-changedParams'=>{'file'=>$filename,
-					'partnum'=>$partnum}),
-			"Upload new bag here")."\n";
-
-		# replace an existing bag
 		my @baglist = $self->getBags();
 		if (scalar(@baglist)==1) {
-			$rt .= FAQ::OMatic::button(
+			push @rightEdits, ['edit', FAQ::OMatic::button(
 				FAQ::OMatic::makeAref('-command'=>'editBag',
 					'-params'=>$params,
 					'-changedParams'=>{'file'=>$filename,
 						'_target'=>$baglist[0]}),
-				"Replace $baglist[0] with new upload")."\n";
+				"Replace $baglist[0]<br>with new upload")];
 		} elsif (scalar(@baglist)>1) {
-			$rt .= FAQ::OMatic::button(
+			push @rightEdits, ['edit', FAQ::OMatic::button(
 				FAQ::OMatic::makeAref('-command'=>'selectBag',
 					'-params'=>$params,
 					'-changedParams'=>{'file'=>$filename}),
-				"Select bag to replace with new upload")."\n";
+				"Select bag to replace with new upload")];
 		}
 
-		$rt =~ s/\n$//;
-		$rt .= $FAQ::OMatic::Appearance::editEnd;
-		push @boxes, $rt;	# that's the end of the main part content
+		push @rightEdits, ['edit', FAQ::OMatic::button(
+			FAQ::OMatic::makeAref('-command'=>'editBag',
+				'-params'=>$params,
+				'-changedParams'=>{'file'=>$filename,
+					'partnum'=>$partnum}),
+			"Upload New Bag Here")];
+
+		# separate block of editing commands that don't apply to a specific
+		# part, but their position between parts is relevant
+		push @belowEdits, '';
+		push @belowEdits, ['edit', FAQ::OMatic::button(
+			FAQ::OMatic::makeAref('-command'=>'editPart',
+				'-params'=>$params,
+				'-changedParams'=>{'file'=>$filename,
+							'partnum'=>$partnum,
+							'_insertpart'=>1,
+							'checkSequenceNumber'=>$item->{'SequenceNumber'}}),
+				"Insert Text Here",
+			"$aoc-ins-part", $params)];
+		push @belowEdits, ['edit', FAQ::OMatic::button(
+			FAQ::OMatic::makeAref('-command'=>'editPart',
+				'-params'=>$params,
+				'-changedParams'=>{'file'=>$filename,
+							'partnum'=>$partnum,
+							'_insertpart'=>1,
+							'_upload'=>1,
+							'checkSequenceNumber'=>$item->{'SequenceNumber'}}),
+				"Insert Uploaded Text Here",
+			"$aoc-ins-part", $params)];
+
+		return [ $partBox, \@rightEdits, \@belowEdits ];
 	}
 
-	return @boxes;
+	# no editing boxes
+	return [ [ $partBox ] ];
 }
 
 sub displayPartEditor {
@@ -433,7 +443,8 @@ sub displayPartEditor {
 			 FAQ::OMatic::commandName(), 
 			 $FAQ::OMatic::dispatch::cgi, 0, 'useHTML');
 		if ($rd) {
-			$rt .= "<p><i>Untranslated HTML</i>\n";
+			# $rt .= "<p><i>Untranslated HTML</i>\n";
+			# THANKS: Jim Adler says: why even admit that it exists?
 			# problem: how can a user authenticate if he should be able
 			# to use HTML?
 		} else {

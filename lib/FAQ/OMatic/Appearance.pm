@@ -149,13 +149,13 @@ sub cPageFooter {
 				FAQ::OMatic::makeAref('-command'=>'faq',
 					'-params'=>$params,
 					'-changedParams'=>{'showEditCmds'=>''}),
-				"Hide Edit Commands");
+				"Hide Expert Edit Commands");
 		} else {
 			$editcell.=FAQ::OMatic::button(
 				FAQ::OMatic::makeAref('-command'=>'faq',
 					'-params'=>$params,
 					'-changedParams'=>{'showEditCmds'=>'1'}),
-				"Show Edit Commands");
+				"Show Expert Edit Commands");
 		}
 		$editcell.="</td>\n";
 		push @cells, $editcell;
@@ -273,6 +273,164 @@ sub itemEnd {
 	} else {
 		return "<hr>";
 	}
+}
+
+sub max {
+	my $champ = shift;
+	while (my $contender = shift) {
+		$champ = ($champ > $contender) ? $champ : $contender;
+	}
+	return $champ;
+}
+
+sub decodeCell {
+	my $cell = shift;
+
+	if (ref($cell)) {
+		if ($cell->[0] eq 'edit') {
+			return ("<font size=-1>".$cell->[1]."</font>",
+				" align=center valign=bottom");
+		} elsif ($cell->[0] eq 'regPart') {
+			return ($cell->[1], " align=top valign=left"
+					." bgcolor=$FAQ::OMatic::Config::regularPartColor");
+		} elsif ($cell->[0] eq 'dirPart') {
+			return ($cell->[1], " align=top valign=left"
+					." bgcolor=$FAQ::OMatic::Config::directoryPartColor");
+		}
+		return ($cell->[1],'');
+	}
+	return ($cell,'');
+}
+
+sub itemRender {
+	my $params = shift;
+	#my $item = shift; # TODO NOW: fix
+	my $itemboxes = shift;
+
+	my $maxwidth = 0;
+	my $tablerows = 0;
+	my $tablerowcounts = {};
+	foreach my $itembox (@{$itemboxes}) {
+		my ($item, $rows) = @{$itembox};
+		foreach my $row (@{$rows}) {
+			if (scalar(@{$row})==3) {
+				# a row from Part.pm with edit commands
+				if ($FAQ::OMatic::Config::compactEditCmds || '') {
+					$maxwidth = max($maxwidth, 3, scalar(@{$row->[1]}));
+					$maxwidth = max($maxwidth, 3, scalar(@{$row->[2]}));
+					$tablerows += 3;
+				} else {
+					$maxwidth = max($maxwidth, 3, scalar(@{$row->[2]}));
+					$tablerows += max(2, scalar(@{$row->[1]})+1);
+				}
+			} elsif (ref($row->[0])) {
+				$maxwidth = max($maxwidth, scalar(@{$row->[0]}));
+				$tablerows += 1;
+			} else {
+				$maxwidth = max($maxwidth, 1);
+				$tablerows += 1;
+			}
+		}
+		$tablerowcounts->{$rows} = $tablerows;
+		$tablerows = 0;
+	}
+
+	my $rt = '';
+
+	$rt.= "<table width=100% cellpadding=5 cellspacing=2>\n";
+	foreach my $itembox (@{$itemboxes}) {
+		my ($item, $rows) = @{$itembox};
+		$tablerows = $tablerowcounts->{$rows};
+
+		my ($spacer,$sw) = FAQ::OMatic::ImageRef::getImageRefCA('', '',
+			$item->isCategory(), $params);
+	
+		$rt.="<tr>\n"
+				."<td bgcolor=$FAQ::OMatic::Config::itemBarColor "
+				."valign=top align=center rowspan=$tablerows width=$sw>\n"
+				."$spacer\n</td>\n";
+		my $first = 1;
+			# don't send <tr> on first table row, since we already did
+
+		foreach my $row (@{$rows}) {
+			if ($first) {
+				$first = 0;
+			} else {
+				$rt .= "\n<tr><!-- next Part -->";
+			}
+			if (scalar(@{$row})==3) {
+				$rt.="<!--three-part row-->";
+				if ($FAQ::OMatic::Config::compactEditCmds || '') {
+					# put part on its own line
+					my ($celltxt,$tdopts) = decodeCell($row->[0]);
+					$rt .= "\n<!--Part body--><td colspan="
+							.($maxwidth)
+							." $tdopts>$celltxt</td></tr>\n";
+
+					# cram "right" and "below" cells into a single cell
+					$rt .= "<tr><!--\"right\" and below cells--><td colspan="
+						.($maxwidth)
+						.">\n";
+					foreach my $cell (@{$row->[1]}, "<br>", @{$row->[2]}) {
+						($celltxt,$tdopts) = decodeCell($cell);
+						$rt .= "\n$celltxt\n";
+					}
+					$rt .= "</td></tr>\n";
+				} else {
+					# append a row (spanned by part box) for each right cell
+					# first cell shares a row with part body
+					my @rightcells = @{$row->[1]};
+					my ($celltxt,$tdopts) = decodeCell(shift @rightcells);
+					$rt .= "\n<!--right cell--><td $tdopts>$celltxt</td>\n\n";
+		
+					# a row from Part.pm with edit commands
+					($celltxt,$tdopts) = decodeCell($row->[0]);
+					$rt .= "\n<!--Part body--><td colspan="
+							.($maxwidth-1)
+							." rowspan="
+							.(scalar(@{$row->[1]}))
+							." $tdopts>$celltxt</td></tr>\n";
+					# remaining cells get own rows
+					foreach my $cell (@rightcells) {
+						my ($celltxt,$tdopts) = decodeCell($cell);
+						$rt .= "\n<tr><!--right cell--><td $tdopts>"
+								."$celltxt</td>\n</tr>\n";
+					}
+	
+					# append a row containing the below cells
+					$rt .= "<tr><!--below cells-->\n";
+					foreach my $cell (@{$row->[2]}) {
+						my ($celltxt,$tdopts) = decodeCell($cell);
+						$rt .= "\n<td $tdopts>$celltxt</td>\n";
+					}
+				}
+				$rt .= "</tr>\n";
+			} elsif (ref($row->[0])) {
+				if ($FAQ::OMatic::Config::compactEditCmds || '') {
+					$rt.="<!--multi row--><td colspan=$maxwidth>\n";
+					foreach my $cell (@{$row->[0]}) {
+						my ($celltxt,$tdopts) = decodeCell($cell);
+						$rt .= "\n$celltxt\n";
+					}
+					$rt .= "</td></tr>\n";
+				} else {
+					$rt.="<!--multi row-->";
+					foreach my $cell (@{$row->[0]}) {
+						my ($celltxt,$tdopts) = decodeCell($cell);
+						$rt .= "\n<td $tdopts>$celltxt</td>\n";
+					}
+					$rt .= "</tr>\n";
+				}
+			} else {
+				my ($celltxt,$tdopts) = decodeCell($row->[0]);
+				$rt .= "<!--single row-->"
+					."<td colspan=$maxwidth $tdopts>$celltxt</td></tr>\n";
+			}
+		}
+	}
+	$rt.="\n</table>\n";
+
+	return $rt;
 }
 
 # These are called before and after drawing each part.

@@ -37,6 +37,8 @@ use strict;
 
 package FAQ::OMatic::dispatch;
 
+use FAQ::OMatic;
+
 use vars qw($meta $cgi);
 
 sub main {
@@ -95,7 +97,8 @@ sub main {
 	my %versionSafeFunc = map { $_ => $_ } (
 		'install',			'img',
 		'authenticate',		'maintenance',
-		'displaySlow'
+		'displaySlow',		'changePass',
+		'submitPass'
 	);
 	
 	use CGI;
@@ -122,7 +125,7 @@ sub main {
 		eval {
 			require "FAQ/OMatic/$func.pm";
 
-			if ($FAQ::OMatic::Config::version ne $FAQ::OMatic::VERSION
+			if (($FAQ::OMatic::Config::version || '') ne $FAQ::OMatic::VERSION
 				and not $versionSafeFunc{$func}) {
 				FAQ::OMatic::gripe('abort', "The scripts don't match the "
 					."configured version number. Admin must run "
@@ -140,7 +143,7 @@ sub main {
 		$problem = "Unknown command: $cmd";
 	}
 	
-	if ($problem) {
+	if ($problem ne '') {
 		# something broken happened. Let the admin know,
 		# lest it was a script that failed to compile, or a
 		# 'use strict' message or -w warning.
@@ -148,7 +151,7 @@ sub main {
 		# (unfortunately, text errors don't get mailed to $faqAdmin.)
 		require FAQ::OMatic;
 		eval("require FAQ::OMatic; "
-			."FAQ::OMatic::gripe('abort', \$problem)");
+			."FAQ::OMatic::gripe('abort', 'problem: '.\$problem.length(\$problem))");
 		if ($@) {
 			print $cgi->header('-type'=>"text/html");
 			print "<tt>\n$problem\n</tt>\n";

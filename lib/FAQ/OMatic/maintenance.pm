@@ -532,9 +532,13 @@ sub mirrorClient {
 	$html .= "configs supplied: ".scalar(@configs)."\n";
 	foreach $config (@configs) {
 		my ($left,$right) =
-			($config =~ m/config (\$\S+) = (.*)$/);
-		$map->{$left} = $right;
-		$html.="$left => $right\n";
+			($config =~ m/config (\$\S+) = (.+)$/);
+		if (defined $left and defined $right) {
+			# unless the config line is buggy, as can happen when
+			# the mirrorServer FAQ is running 2.618 :v(, update our config
+			$map->{$left} = $right;
+			$html.="$left => $right\n";
+		}
 	}
 	FAQ::OMatic::install::writeConfig($map);
 	# now make sure that config takes effect for all the cache
@@ -554,7 +558,7 @@ sub mirrorClient {
 		my $item = new FAQ::OMatic::Item($file);
 		my $existingLms = $item->{'LastModifiedSecs'} || -1;
 		if ($lms != $existingLms) {
-			$html .= "<br>Needs update: item $file ".$item->getTitle()."\n";
+			$html .= "<br>$file ".$item->getTitle().": item needs update\n";
 			mirrorItem($host, $port, $itemURL."$file", $file, '');
 			$count++;	# each net access counts 1, whether or not it takes
 		} else {
@@ -595,7 +599,7 @@ sub mirrorClient {
 		my $existingLms = $descItem->{'LastModifiedSecs'} || -1;
 
 		if ($lms != $existingLms) {
-			$html .= "<br>Needs update: bag $file ($lms,$existingLms)\n";
+			$html .= "<br>${file}: bag needs update\n";
 			# transfer bag byte-for-byte to my bags dir
 			mirrorBag($host, $port, $bagsURL."$file", $file);
 			# transfer the .desc file, using same item mirroring code as above
@@ -672,7 +676,8 @@ sub mirrorItem {
 		#	saveToFile only adds those dependencies that are "new" to
 		#	this item -- but we only have the item, not the .dep file,
 		#	so we need to always regenerate all deps.
-	$html.="<br>I think I mirrored $itemFilename successfully.\n";
+	$html.="<br>$itemFilename (".$item->getTitle()."): "
+		."item mirrored successfully\n";
 }
 
 sub mirrorBag {
@@ -735,7 +740,7 @@ sub mirrorBag {
 		return;
 	}
 
-	$html.="<br>I think I mirrored $bagFilename successfully.\n";
+	$html.="<br>${bagFilename}: bag mirrored successfully\n";
 }
 
 sub mtime {

@@ -60,7 +60,7 @@ sub main {
 	if ($partnum =~ m/afterLast/) {
 		# it's possible to come from a mirror, who might be enough
 		# out of date that naming a specific part number would cause
-		# the [Amend This Answer] link to sometimes cause people to
+		# the [Append to This Answer] link to sometimes cause people to
 		# unintentionally insert text before existing text.
 		# The pattern match lets us send something like '9999afterLast',
 		# which will cause older versions (which a newer mirror may

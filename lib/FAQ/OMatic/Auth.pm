@@ -46,6 +46,8 @@ use FAQ::OMatic::Item;
 use FAQ::OMatic::AuthLocal;
 use FAQ::OMatic::Groups;
 
+use vars qw($cookieLife $cookieExtra);
+
 my $trustedID = undef;
 						# Perm values only:
 						# '7','9' -- returned by perm routines to indicate
@@ -59,10 +61,8 @@ my $authQuality = undef;
 						# '3' -- user has merely claimed this ID
 						# '1' -- no ID is offered
 
-# If anyone thinks these should be user-configurable, let me know
-# and I'll move them to FaqConfig.pm in the next release. --jonh
-my $cookieLife = 3600;	# 60 sec * 60 min == 1 hour
-my $cookieExtra = 600;	# 10 extra minutes to submit forms after filling
+$cookieLife = 3600;		# 60 sec * 60 min == 1 hour
+$cookieExtra = 600;		# 10 extra minutes to submit forms after filling
 						# them out so you don't have to worry about
 						# losing your text.
 my $cookieActual = $cookieLife;
@@ -98,20 +98,25 @@ sub checkPerm {
 
 	# if just some low quality of authentication is required, prove
 	# user has provided it:
-	if ($whocan <= 5 and $whocan <= $aq) {
+	$whocan =~ m/^(\d+)/;
+	my $whocanNum = $1 || 0;
+		# THANKS to Mikel Smith <granola@maserith.com>
+		# for pointing out that this code was generating warning messages
+	if ($whocanNum <= 5 and $whocanNum <= $aq) {
 		# users' ID dominates required ID
 		return 0;
 	}
 
 	# prove user belongs to required group:
-	if ($whocan == 6 and FAQ::OMatic::Groups::checkMembership($whocan, $id)) {
+	if ($whocanNum == 6
+		and FAQ::OMatic::Groups::checkMembership($whocan, $id)) {
 		# user belongs to the specified group
 		return 0;
 	}
 
 	getInheritedProperty($item, 'Moderator');
 	# prove user has at least moderator priveleges
-	if ((($whocan==7) and ($aq==5))
+	if ((($whocanNum==7) and ($aq==5))
 		and (($id eq getInheritedProperty($item, 'Moderator'))
 			 or ($id eq $FAQ::OMatic::Config::adminAuth)
 			 or ('anybody' eq getInheritedProperty($item, 'Moderator'))
@@ -361,7 +366,9 @@ sub readIDfile {
 
 	FAQ::OMatic::unlockFile($lockf);
 
-	return ($idf,$passf,@restf) if ($idf eq $id);
+	if (defined($idf) and ($idf eq $id)) {
+		return ($idf,$passf,@restf);
+	}
 
 	return undef;
 }

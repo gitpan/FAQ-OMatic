@@ -77,7 +77,7 @@ sub main {
 	# The next line will make the 'use strict' pragma throw an error
 	# if you're using an old CGI.pm. It has been tested and seen
 	# to work with CGI.pm 2.46 and newer, so upgrade.
-	while (read($formDataHandle, $buf, 4096)) {
+	while (bagread($formDataHandle, \$buf, 4096)) {
 		print BAGFILE $buf;
 		$sizeBytes += length($buf);
 		# TODO: should have admin-configurable length limit here
@@ -143,6 +143,20 @@ sub main {
 				'-changedParams'=>{'partnum'=>'', 'checkSequenceNumber'=>''},
 				'-refType'=>'url');
 	print $cgi->redirect(FAQ::OMatic::urlBase($cgi).$url);
+}
+
+sub bagread {
+	my $formDataHandle = shift;
+	my $buf = shift;
+
+	my $rc;
+	eval { $rc = read($formDataHandle, $$buf, 4096); };
+	if ($@) {
+		die "Error in multipart form code -- probably your version of "
+			."CGI.pm. Message was:<br>\n"
+			.$@;
+	}
+	return $rc;
 }
 
 1;

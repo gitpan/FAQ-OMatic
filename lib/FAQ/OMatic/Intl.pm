@@ -41,17 +41,19 @@ package FAQ::OMatic::Intl;
 use vars qw(%pageDesc);
 
 %pageDesc = (
-	'authenticate' => 'Log In',
-	'changePass' => 'Change Password',
-	'editItem' => 'Edit Item',
-	'insertItem' => 'Insert Item',	# special case -- varies editItem
-	'editPart' => 'Edit Part',
-	'insertPart' => 'Insert Part',	# special case -- varies editPart
-	'faq' => 'FAQ',					# special case -- insert item title
-	'moveItem' => 'Move Item',
-	'search' => 'Search',
-	'stats' => 'Access Statistics',
-	'submitPass' => 'Validate'
+	'authenticate' => '"Log In"',
+	'changePass' => '"Change Password"',
+	'editItem' => '"Edit Title of $whatAmI $title"',
+	'insertItem' => '"New $whatAmI"',	# special case -- varies editItem
+	'editPart' => '"Edit Part in $whatAmI $title"',
+	'insertPart' => '"Insert Part in $whatAmI $title"',
+	'faq' => '"$title"',
+	'moveItem' => '"Move $whatAmI $title"',
+	'search' => '"Search"',
+	'stats' => '"Access Statistics"',
+	'submitPass' => '"Validate"',
+	'editModOptions' => '"$whatAmI Permissions for $title"',
+	'editBag' => '"Upload bag for $whatAmI $title"'
 );
 
 1;

@@ -14,7 +14,7 @@ open THECGI, ">fom" or die "Writing \"fom\": $!";
 print THECGI "#!$perl -wT\n";
 print THECGI "use lib '.';			# for suid installations\n";
 print THECGI "use lib '$inc';\n";
-print THECGI "$ENV{'PATH'} = '';	# for suid installations\n";
+print THECGI "\$ENV{'PATH'} = '';	# for suid installations\n";
 print THECGI "use FAQ::OMatic::dispatch;\n";
 print THECGI "FAQ::OMatic::dispatch::main('fom-meta/');\n";
 close THECGI;

@@ -37,10 +37,9 @@ use FAQ::OMatic::Help;
 
 sub main {
 	my $cgi = $FAQ::OMatic::dispatch::cgi;
+	my $params = FAQ::OMatic::getParams($cgi);
+
 	my $rt = FAQ::OMatic::pageHeader();
-	
-	FAQ::OMatic::getParams($cgi);
-	my $params = \%FAQ::OMatic::theParams;
 
 	my $what = $params->{'_restart'};
 	my $whoIsAllowed = FAQ::OMatic::Auth::authError($params->{'_reason'},

@@ -41,7 +41,8 @@ sub main {
 	$params->{'file'} = 1 if (not $params->{'file'});
 
 	my $html = '';
-	$html .= FAQ::OMatic::pageHeader($params);
+	$html .= $cgi->header('text/html');
+		# pageHeader() supplied by item->getWholePage()
 	
 	# strip out null params from params array
 	if ($params->{'_fromAppearance'}) {

@@ -57,7 +57,7 @@ sub main {
 	foreach $key (sort keys %{$configInfo}) {
 		my $ch = $configInfo->{$key};
 		next if (not $ch->{'-mirror'});
-		my $value = $map->{'$'.$key};
+		my $value = $map->{'$'.$key} || "''";	# undefined => ''
 		$rt.='config $'."$key = $value\n";
 	}
 

@@ -102,9 +102,12 @@ sub logEvent {
 
 	$args .= "/".$FAQ::OMatic::theParams{'partnum'}
 		if (defined $FAQ::OMatic::theParams{'partnum'});
-	if (not open LOG, ">>$FAQ::OMatic::Config::metaDir/".numericToday().".rawlog") {
+
+	my $logfile = $FAQ::OMatic::Config::metaDir."/".numericToday().".rawlog";
+	if (not open LOG, ">>$logfile") {
 		FAQ::OMatic::gripe('problem',
-			"FAQ::OMatic::Log::logEvent: The access logging system is not working.");
+			"FAQ::OMatic::Log::logEvent: The access logging system is "
+			."not working. open failed ($!)");
 		return;
 	}
 	print LOG "$date $host $prog $args $browser\n";

@@ -117,7 +117,8 @@ sub doStep {
 
 sub defaultStep {
 	if ((-f "$FAQ::OMatic::dispatch::meta/config")
-		and ($FAQ::OMatic::dispatch::meta ne $FAQ::OMatic::Config::metaDir)) {
+		and ($FAQ::OMatic::dispatch::meta
+			ne ($FAQ::OMatic::Config::metaDir||''))) {
 		# CGI stub points at a valid config file, but config hasn't
 		# been updated. This happens if admin moves meta dir and
 		# fixes the stub.
@@ -354,7 +355,7 @@ sub mainMenuStep {
 	rereadConfig();
 
 	my $maintenanceSecret = $FAQ::OMatic::Config::maintenanceSecret || '';
-	my $mirror = $FAQ::OMatic::Config::mirrorURL ne '';
+	my $mirror = ($FAQ::OMatic::Config::mirrorURL||'') ne '';
 
 	my $par = "";	# "<p>" for more space between items
 
@@ -712,21 +713,35 @@ $configInfo = {
 	ci('maintSendErrors',	'-sort'=>'n-m2', '-choices'=>[ "'true'", "''" ],
 		'-desc'=> 'If true, FAQ-O-Matic will mail the log file to the '
 		.'administrator whenever it is truncated.'),
-	ci('RCSuser',	'-sort'=>'y-r3', '-free', '-choices'=>['getpwuid($>)'],
+	ci('RCSuser',	'-sort'=>'r-r3', '-free', '-choices'=>['getpwuid($>)'],
 		'-desc'=> 'User to use for RCS ci command (default is process UID)'),
-	ci('useServerRelativeRefs', '-sort'=>'y-s1',
+	ci('useServerRelativeRefs', '-sort'=>'r-s1',
 		'-choices'=>[ "'true'", "''" ], '-desc'=>
 		'Links from cache to CGI are relative to the server root, rather than '
 		.'absolute URLs including hostname:'),
-	ci('showLastModifiedAlways', '-sort'=>'y-s2', '-mirror',
+	ci('showLastModifiedAlways', '-sort'=>'r-s2', '-mirror',
 		'-choices'=>[ "'true'", "''" ], '-desc'=>
 		'Items always display their last-modified dates.'),
-	ci('showEditOnFaq', '-sort'=>'y-s3', '-mirror',
+	ci('antiSpam', '-sort'=>'r-s7', '-mirror',
+		'-choices'=>[ "'off'", "'cheesy'", "'hide'" ], '-desc'=>
+		'mailto: links can be rewritten such as '
+		.'jonhATdartmouthDOTedu (cheesy), '
+		.'or e-mail addresses suppressed entirely (hide).'),
+
+	ci('sep_s', '-sort'=>'s--sep', '-separator', '-desc'=>
+			'These options fine-tune the appearance of editing features.'),
+	ci('showEditOnFaq', '-sort'=>'s-s3', '-mirror',
 		'-choices'=>[ "'true'", "''" ], '-desc'=>
 		'The old [Show Edit Commands] button appears in footer of FAQ pages.'),
-	ci('hideEasyEdits', '-sort'=>'y-s4', '-mirror',
+	ci('hideEasyEdits', '-sort'=>'s-s4', '-mirror',
 		'-choices'=>[ "'true'", "''" ], '-desc'=>
-		'Hide [Amend This Answer] and [Add New Answer in ...] buttons.'),
+		'Hide [Append to This Answer] and [Add New Answer in ...] buttons.'),
+	ci('compactEditCmds', '-sort'=>'s-s5', '-mirror',
+		'-choices'=>[ "'true'", "''" ], '-desc'=>
+		'Expert editing commands appear below rather than beside their parts.'),
+	ci('showEditIcons', '-sort'=>'s-s6', '-mirror',
+		'-choices'=>[ "'true'", "''" ], '-desc'=>
+		'Editing commands appear with neat-o icons rather than [In Brackets].'),
 
 	ci('sep_z', '-sort'=>'z--sep', '-separator', '-desc'=>
 			'Other configurations that you should probably ignore if present.'),
@@ -782,6 +797,7 @@ sub undefinedConfigsExist {
 	foreach $ckey (sort keys %{$configInfo}) {
 		if (not defined($map->{'$'.$ckey})
 			and not $configInfo->{$ckey}->{'-separator'}) {
+			FAQ::OMatic::gripe('debug', "not defined: $ckey");
 			return 1;
 		}
 	}
@@ -806,7 +822,7 @@ sub askConfigStep {
 						((keys %{$map}),
 						(map {'$'.$_} keys %{$configInfo}));
 	foreach $left (sort keys %keylist) {
-		$right = $map->{$left};
+		$right = $map->{$left} || '';
 		my $aleft = $left;
 		$aleft =~ s/^\$//;
 		my $isLegacy = not $right=~m/^'/;	# if value isn't a free input
@@ -830,7 +846,7 @@ sub askConfigStep {
 			"<tr><td colspan=2>\n<hr>$desc<hr>\n</td></tr>\n";
 		} elsif ($sort eq 'hide') {
 			# don't show hidden widgets
-		} elsif (($FAQ::OMatic::Config::mirrorURL ne '') and $mirror) {
+		} elsif ((($FAQ::OMatic::Config::mirrorURL||'') ne '') and $mirror) {
 			# don't show mirrorable widgets if this is a mirror site --
 			# they'll get automatically defined at mirroring time.
 		} else {
@@ -868,7 +884,7 @@ sub askConfigStep {
 			if ($free) {
 				$wd.="<input type=text size=40 name=\"$left-free\" "
 					."value=\""
-					.($selected ? '' : $aright)
+					.($selected ? '' : FAQ::OMatic::entify($aright))
 					."\">\n";
 			}
 			$wd.="</td></tr>\n";
@@ -916,6 +932,7 @@ sub setConfigStep {
 		} elsif ($selected ne '') {
 			$map->{$left} = $selected;
 		}
+		$map->{$left} =~ s/\n//gs;	# don't let weirdo newlines through
 		my $aleft = $left;
 		$aleft =~ s/^\$//;
 		if ($configInfo->{$aleft}->{'-cmd'}) {	# it represents a command...
@@ -983,10 +1000,15 @@ sub checkConfig {
 		}
 		$aright = FAQ::OMatic::canonDir($aright);
 		if (not -d $aright) {
-			if (not mkdir(stripSlash($aright), 0755)) {
+			my $dirname = stripSlash($aright);
+			if (scalar($dirname =~ m#^([/\w\.\-_]+)$#)==0) {
+				FAQ::OMatic::gripe('error', "$dirname has funny characters");
+			}
+			$dirname = $1;
+			if (not mkdir($dirname, 0755)) {
 				return "$left ($right) can't be created.";
 			} else {
-				chmod(0755,$aright);
+				chmod(0755,$dirname);
 				return ["$left: Created directory $right.", 1];
 			}
 		}
@@ -1204,10 +1226,17 @@ sub getCurrentCrontab {
 	my $cmd = "$crontabbin -l";
 	my @systemrc = FAQ::OMatic::mySystem($cmd, 'alwaysWantReply');
 	my @oldTab;
-	if ($systemrc[0]==1 and $systemrc[3]=~m/open.*crontab/i) {
-		# looks like the "error" you get if you don't have a crontab.
-		@oldTab = ();
-	} elsif ($systemrc[0] != 0) {
+	if ($systemrc[0]==1) {
+		if ($systemrc[3]=~m/open.*crontab/i
+			or $systemrc[3]=~m/^no crontab for /i) {
+			# looks like the "error" you get if you don't have a crontab.
+			# THANKS: to Hal Wine <hal@dtor.com> for supplying the
+			# second pattern to match vixie-cron's error message
+			@oldTab = ();
+			$systemrc[0] = 0;
+		}
+	}
+	if ($systemrc[0] != 0) {
 		displayMessage("crontab -l failed: ".join(',', @systemrc),
 			'default', 'abort');
 	} else {
@@ -1442,7 +1471,9 @@ sub readConfig {
 		chomp;
 		next if (not m/=/);
 		my ($left,$right) = m/(\S+)\s*=\s*(\S+.*);$/;
-		$map->{$left} = $right;
+		if (defined $left and defined $right) {
+			$map->{$left} = $right;
+		}
 	}
 	close CONFIG;
 
