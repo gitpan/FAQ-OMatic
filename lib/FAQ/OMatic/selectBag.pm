@@ -25,7 +25,7 @@
 #                                                                            #
 ##############################################################################
 
-package FAQ::OMatic::addItem;
+package FAQ::OMatic::selectBag;
 
 use CGI;
 use FAQ::OMatic::Item;
@@ -34,73 +34,64 @@ use FAQ::OMatic::Auth;
 
 sub main {
 	my $cgi = $FAQ::OMatic::dispatch::cgi;
+	my $rt = '';
 	
 	my $params = FAQ::OMatic::getParams($cgi);
 
-	my $file = $params->{'file'} || '';
-	$item = new FAQ::OMatic::Item($file);
-	if ($item->isBroken()) {
-		FAQ::OMatic::gripe('error', "The file ($file) doesn't exist.");
-	}
-
-	my $rd = FAQ::OMatic::Auth::ensurePerm($item, 'PermEditItem',
-		FAQ::OMatic::commandName(), $cgi, 0);
+	my $rd = FAQ::OMatic::Auth::ensurePerm('', 'PermReplaceBag',
+		FAQ::OMatic::commandName(), $cgi, 0, 'replace');
 	if ($rd) { print $rd; exit 0; }
-
-	my $duplicateFrom = $cgi->param('_duplicate');
-	my $newitem;
-	if ($duplicateFrom) {
-		# duplicate an existing item
-		my $source = new FAQ::OMatic::Item($duplicateFrom);
-		if ($source->isBroken()) {
-			FAQ::OMatic::gripe('error', "The source of the duplicate (file=".
-				$duplicateFrom.") is broken.");
+	
+	$rt = FAQ::OMatic::pageHeader($params);
+	
+	my @bagList = ();	# list to choose from
+	my $file = $params->{'file'};
+	if (defined $file) {
+		my $item = new FAQ::OMatic::Item($file);
+		if ($item->isBroken()) {
+			FAQ::OMatic::gripe('error', "The file ($file) doesn't exist.");
 		}
-		$newitem = $source->clone();
-		$newitem->setProperty('Title', "Copy of ".$newitem->getTitle());
+		@bagList = $item->getBags();
 	} else {
-		# create a new item in destination item file
-		$newitem = new FAQ::OMatic::Item();
-		# inherit parent's properties:
-		$newitem->setProperty('AttributionsTogether',
-			$item->{'AttributionsTogether'});
-	}
-	$newitem->setProperty("Parent", $item->{'filename'});
-		# tell the new kid who his parent is.
-	$newitem->setProperty('Moderator', '');
-		# regardless of what the parent did, we inherit moderator
-		# from parent rather than setting it explicitly.
-
-	# if user was asking for a category, add a directory just to
-	# make him feel better
-	if ($params->{'_insert'} eq 'category') {
-		$newitem->makeDirectory()->
-			setText("Subcategories:\n\nAnswers in this category:\n");
-	}
-	# passing $file as a name ensures that new child will have the
-	# same type of name as its parent. (such as a helpfile)
-	$newitem->saveToFile(FAQ::OMatic::unallocatedItemName($file));
-
-	# add that item to the (proud) parent item's catalog
-	$item->addSubItem($newitem->{'filename'});
-	$item->saveToFile();
-
-	$item->notifyModerator($cgi, 'added a sub-item');
-
-	if ($duplicateFrom) {
-		$url = FAQ::OMatic::makeAref('editItem',
-			{'file'=>$newitem->{'filename'},
-	 		 '_duplicate'=>$params->{'_duplicate'}},
-			'url');
-	} else {
-		# send the user to the edit item page, to supply the title
-		$url = FAQ::OMatic::makeAref('editItem',
-			{'file'=>$newitem->{'filename'},
-		 	 '_insert'=>$params->{'_insert'}},
-			'url');
+		# browse every bag in the system.
+		@bagList = grep { not m/\.desc$/ }
+			FAQ::OMatic::getAllItemNames($FAQ::OMatic::Config::bagsDir);
 	}
 
-	print $cgi->redirect(FAQ::OMatic::urlBase($cgi).$url);
+	# TODO: presumably need a new Perm... for bags
+	#my $rd = FAQ::OMatic::Auth::ensurePerm($item, 'PermEditItem',
+	#	FAQ::OMatic::commandName(), $cgi, 0);
+	#if ($rd) { print $rd; exit 0; }
+
+	$rt .= "<h3>Replace which bag?</h3>\n";
+
+	# display bags in a few columns.
+	my $numcols = 3;
+	my $bagsInCol = int((scalar(@bagList)+$numcols-1)/$numcols);
+
+	$rt .= "<table><tr>\n";
+	my $col;
+	for ($col=0; $col<3; $col++) {
+		my $bagnum;
+		$rt .= "  <td valign=top>\n";
+		for ($bagnum=$col*$bagsInCol;
+			$bagnum<($col+1)*$bagsInCol && $bagnum < scalar(@bagList);
+			$bagnum++) {
+			$rt .= "    <br>"
+				.FAQ::OMatic::button(
+					FAQ::OMatic::makeAref('-command'=>'editBag',
+						'-params'=>$params,
+						'-changedParams'=>{'_target'=>$bagList[$bagnum]}),
+					"$bagList[$bagnum]")
+				."\n";
+		}
+		$rt .= "  </td>\n";
+	}
+	$rt .= "</tr></table>\n";
+
+	$rt .= FAQ::OMatic::pageFooter($params, ['help', 'faq']);
+
+	print $rt;
 }
 
 1;

@@ -25,7 +25,7 @@
 #                                                                            #
 ##############################################################################
 
-package FAQ::OMatic::addItem;
+package FAQ::OMatic::submitModOptions;
 
 use CGI;
 use FAQ::OMatic::Item;
@@ -35,70 +35,71 @@ use FAQ::OMatic::Auth;
 sub main {
 	my $cgi = $FAQ::OMatic::dispatch::cgi;
 	
-	my $params = FAQ::OMatic::getParams($cgi);
+	FAQ::OMatic::getParams($cgi);
+	my $params = \%FAQ::OMatic::theParams;
 
-	my $file = $params->{'file'} || '';
-	$item = new FAQ::OMatic::Item($file);
+	$item = new FAQ::OMatic::Item($params->{'file'});
 	if ($item->isBroken()) {
-		FAQ::OMatic::gripe('error', "The file ($file) doesn't exist.");
+		FAQ::OMatic::gripe('error', "The file (".
+			$params->{'file'}.") doesn't exist.");
 	}
 
-	my $rd = FAQ::OMatic::Auth::ensurePerm($item, 'PermEditItem',
-		FAQ::OMatic::commandName(), $cgi, 0);
+	my $rd = FAQ::OMatic::Auth::ensurePerm($item, 'PermModOptions',
+		'editModOptions', $cgi, 1);
 	if ($rd) { print $rd; exit 0; }
-
-	my $duplicateFrom = $cgi->param('_duplicate');
-	my $newitem;
-	if ($duplicateFrom) {
-		# duplicate an existing item
-		my $source = new FAQ::OMatic::Item($duplicateFrom);
-		if ($source->isBroken()) {
-			FAQ::OMatic::gripe('error', "The source of the duplicate (file=".
-				$duplicateFrom.") is broken.");
-		}
-		$newitem = $source->clone();
-		$newitem->setProperty('Title', "Copy of ".$newitem->getTitle());
-	} else {
-		# create a new item in destination item file
-		$newitem = new FAQ::OMatic::Item();
-		# inherit parent's properties:
-		$newitem->setProperty('AttributionsTogether',
-			$item->{'AttributionsTogether'});
+	
+	# verify that an evil cache hasn't truncated a POST
+	if ($params->{'_zzverify'} ne 'zz') {
+		FAQ::OMatic::gripe('error',
+			"Your browser or WWW cache has truncated your POST.");
 	}
-	$newitem->setProperty("Parent", $item->{'filename'});
-		# tell the new kid who his parent is.
-	$newitem->setProperty('Moderator', '');
-		# regardless of what the parent did, we inherit moderator
-		# from parent rather than setting it explicitly.
 
-	# if user was asking for a category, add a directory just to
-	# make him feel better
-	if ($params->{'_insert'} eq 'category') {
-		$newitem->makeDirectory()->
-			setText("Subcategories:\n\nAnswers in this category:\n");
+	$item->checkSequence($params);
+	$item->incrementSequence();
+
+	$item->setProperty('AttributionsTogether',
+		defined $params->{'_AttributionsTogether'} ? 1 : '');
+
+	if (defined $params->{'_Moderator'}) {
+		$item->setProperty('Moderator', $params->{'_Moderator'});
 	}
-	# passing $file as a name ensures that new child will have the
-	# same type of name as its parent. (such as a helpfile)
-	$newitem->saveToFile(FAQ::OMatic::unallocatedItemName($file));
+	if (defined $params->{'_MailModerator'}) {
+		$item->setProperty('MailModerator', $params->{'_MailModerator'});
+	}
+	if (defined $params->{'_PermAddPart'}) {
+		$item->setProperty('PermAddPart', $params->{'_PermAddPart'});
+	}
+	if (defined $params->{'_PermUseHTML'}) {
+		$item->setProperty('PermUseHTML', $params->{'_PermUseHTML'});
+	}
+	if (defined $params->{'_PermEditPart'}) {
+		$item->setProperty('PermEditPart', $params->{'_PermEditPart'});
+	}
+	if (defined $params->{'_PermEditItem'}) {
+		$item->setProperty('PermEditItem', $params->{'_PermEditItem'});
+	}
+	if (defined $params->{'_PermModOptions'}) {
+		$item->setProperty('PermModOptions', $params->{'_PermModOptions'});
+	}
+	if (defined $params->{'_PermNewBag'}) {
+		$item->setProperty('PermNewBag', $params->{'_PermNewBag'});
+	}
+	if (defined $params->{'_PermReplaceBag'}) {
+		$item->setProperty('PermReplaceBag', $params->{'_PermReplaceBag'});
+	}
+	if (defined $params->{'_PermEditGroups'}) {
+		$item->setProperty('PermEditGroups', $params->{'_PermEditGroups'});
+	}
 
-	# add that item to the (proud) parent item's catalog
-	$item->addSubItem($newitem->{'filename'});
 	$item->saveToFile();
 
-	$item->notifyModerator($cgi, 'added a sub-item');
+	$item->notifyModerator($cgi, 'edited the moderator options');
 
-	if ($duplicateFrom) {
-		$url = FAQ::OMatic::makeAref('editItem',
-			{'file'=>$newitem->{'filename'},
-	 		 '_duplicate'=>$params->{'_duplicate'}},
-			'url');
-	} else {
-		# send the user to the edit item page, to supply the title
-		$url = FAQ::OMatic::makeAref('editItem',
-			{'file'=>$newitem->{'filename'},
-		 	 '_insert'=>$params->{'_insert'}},
-			'url');
-	}
+	my $url = FAQ::OMatic::makeAref(
+		'-command'=>'faq',
+		'-params'=>$params,
+		'-changedParams'=>{'checkSequenceNumber'=>''},
+		'-refType'=>'url');
 
 	print $cgi->redirect(FAQ::OMatic::urlBase($cgi).$url);
 }

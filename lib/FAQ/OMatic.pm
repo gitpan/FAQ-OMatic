@@ -39,8 +39,9 @@ use FAQ::OMatic::Item;
 use FAQ::OMatic::Log;
 use FAQ::OMatic::Appearance;
 use FAQ::OMatic::Intl;
+use FAQ::OMatic::Bags;
 
-$VERSION = '2.605';
+$VERSION = '2.606';
 
 # This is never used to automatically send mail to (that's authorEmail),
 # but when we need to report the author's address, we use this constant:
@@ -126,10 +127,15 @@ sub cgiName {
 
 # returns the URL base (including the final /) of this faqomatic
 sub urlBase {
-	my $cgi = $FAQ::OMatic::dispatch::cgi;
-	my $url = $cgi->url();
-	$url =~ s#/[^/]*$#/#;
-	return $url;
+	return '';
+	# since all makeArefs are now always absolute, we don't want to
+	# insert this before redirects (or before $secreturl in submitPass.pm).
+	# TODO: hack out all code referring to urlBase.
+
+#	my $cgi = $FAQ::OMatic::dispatch::cgi;
+#	my $url = $cgi->url();
+#	$url =~ s#/[^/]*$#/#;
+#	return $url;
 }
 
 sub shortdate {
@@ -230,31 +236,99 @@ sub unlockFile {
 sub faqomaticReference {
 	my $params = shift;
 	my $filename = shift;
+	my $which = shift;		# '-small' (children) or '-also' (see-also links)
 
 	my $item = new FAQ::OMatic::Item($filename);
-	my $title = FAQ::OMatic::ImageRef::getImageRefCA('-small',
-					'border=0', $item->whatAmI())
+	my $title = FAQ::OMatic::ImageRef::getImageRefCA($which,
+					'border=0', $item->isCategory(), $params)
 				.$item->getTitle();
 
-	# we should cause the link to inherit the appropriate user parameters!
 	return makeAref('-command'=>'faq',
 					'-params'=>$params,
 					'-changedParams'=>{"file"=>$filename})
 			."$title</a>";
 }
 
+sub baginlineReference {
+	my $params = shift;
+	my $filename = shift;
+
+	if (not -f $FAQ::OMatic::Config::bagsDir.$filename) {
+		return "[no bag '$filename' on server]";
+	}
+
+	my $sw = FAQ::OMatic::Bags::getBagProperty($filename, SizeWidth, '');
+	$sw = " width=$sw" if ($sw ne '');
+	my $sh = FAQ::OMatic::Bags::getBagProperty($filename, SizeHeight, '');
+	$sh = " height=$sh" if ($sh ne '');
+
+	# should point directly to bags dir
+	# TODO: deal with this correctly when handling all the variations on
+	# TODO: urls.
+	my $bagUrl = makeBagRef($filename, $params);
+	return "<img src=\"$bagUrl\"$sw$sh>";
+}
+
+sub baglinkReference {
+	my $params = shift;
+	my $filename = shift;
+
+	if (not -f $FAQ::OMatic::Config::bagsDir.$filename) {
+		return "[no bag '$filename' on server]";
+	}
+
+	my $bagDesc = new FAQ::OMatic::Item($filename.".desc",
+		$FAQ::OMatic::Config::bagsDir);
+	my $size = $bagDesc->{'SizeBytes'} || '';
+	if ($size ne '') {
+		$size = " ".describeSize($size);
+	}
+
+	# should point directly to bags dir
+	# TODO: deal with this correctly when handling all the variations on
+	# TODO: urls.
+	my $bagUrl = makeBagRef($filename, $params);
+	return "<a href=\"$bagUrl\">"
+		.FAQ::OMatic::ImageRef::getImageRef('baglink', 'border=0', $params)
+		.$filename
+		.$size
+		."</a>";
+}
+
+my @hapCache;
+sub hostAndPath {
+	return @hapCache if (scalar(@hapCache)==2);
+
+	my $cgiUrl = $FAQ::OMatic::dispatch::cgi->url();
+	my ($urlRoot,$urlPath) = $cgiUrl =~ m#^(http://[^/]+)/(.*)$#;
+	if (not defined $urlRoot or not defined $urlPath) {
+		FAQ::OMatic::gripe('problem', "Can't parse my own URL: $cgiUrl");
+	}
+	return @hapCache = ($urlRoot, $urlPath);
+}
+
 sub relativeReference {
 	my $params = shift;
 	my $url = shift;
 
-	# absolute on this server -- doesn't need to be rewritten.
-	return $url if ($url =~ m#^/#);
+	my ($urlRoot,$urlPath) = hostAndPath();
 
-	# viewed from the CGI -- relative to current directory is okay.
-	return $url if (not $params->{'_fullUrls'});
+	if ($url =~ m#^/#) {
+		return $urlRoot.$url;
+	}
 
-	# relative -- needs to be made absolute if fullUrls is in effect
-	return FAQ::OMatic::urlBase($cgi).$url;
+	# Else url is relative to current directory.
+	# Deal with ..'s. We would leave this to the browser, but we
+	# want to return an URL that works everywhere, not just from the
+	# CGI. (So it works from a cached file or a mirrored file.)
+	my @urlPath = split('/', $urlPath);
+	pop @urlPath;							# pop off last element (CGI name)
+	while (($url =~ m#^../(.*)$#) and (scalar(@urlPath)>0)) {
+		$url = $1;		# strip ../ component...
+		pop @urlPath;	# ...and in exchange, explicitly remove path element
+	}
+	push @urlPath, $url;
+	return $urlRoot."/".join("/",@urlPath);
 }
 
 # turns link-looking things into actual HTML links, but also turns
@@ -263,6 +337,9 @@ sub insertLinks {
 	my $params = shift;
 	my $arg = shift;
 	my $ishtml = shift || 0;
+	my $isdirectory = shift || 0;
+
+	my $sa = $isdirectory ? '-small' : '-also';
 	
 	if (not $ishtml) {
 	    $arg = entify($arg);
@@ -276,7 +353,9 @@ sub insertLinks {
 	    $arg =~ s#(mailto:\S+@\S*[^\s.,)\?!])#<a href=\"$1\">$1</a>#sg;
 	}
 
-	$arg =~ s#faqomatic:(\S*[^\s.,)\?!])#faqomaticReference($params,$1)#sge;
+	$arg =~ s#faqomatic:(\S*[^\s.,)\?!])#faqomaticReference($params,$1,$sa)#sge;
+	$arg =~ s#baginline:(\S*[^\s.,)\?!])#baginlineReference($params,$1)#sge;
+	$arg =~ s#baglink:(\S*[^\s.,)\?!])#baglinkReference($params,$1)#sge;
 
 	return $arg;
 }
@@ -294,7 +373,7 @@ sub addTitleToFaqomaticReference {
 
 sub addTitleToFaqomaticReferences {
 	my $arg = shift;
-	$arg =~ s#faqomatic:(\S+)( ?)#addTitleToFaqomaticReference($1).$2#sge;
+	$arg =~ s#faqomatic:(\S*[^\s.,)\?!])#addTitleToFaqomaticReference($1)#sge;
 	return $arg;
 }
 
@@ -340,8 +419,8 @@ sub makeAref {
 	my $saveTransients = '';
 	my $blastAll = '';
 	my $params = \%theParams;	# default to global params (not preferred, tho)
-	my $fullUrls = '';
 	my $target = '';			# <a TARGET=""> tag
+	my $noCache = '';			# prevent conversion to a cache URL
 
 	if ($_[0] =~ m/^\-/) {
 		# named-parameter style
@@ -359,10 +438,10 @@ sub makeAref {
 				$blastAll = $argVal;
 			} elsif ($argName =~ m/\-params$/i) {
 				$params = $argVal;
-			} elsif ($argName =~ m/\-fullUrls$/i) {
-				$fullUrls = $argVal;
 			} elsif ($argName =~ m/\-target$/i) {
 				$target = $argVal;
+			} elsif ($argName =~ m/\-noCache$/i) {
+				$noCache = $argVal;
 			}
 		}
 		if (scalar(@_)) {
@@ -395,7 +474,6 @@ sub makeAref {
 	} else {
 		%newParams = %{$params};
 	}
-	my $rt = "";
 
 	# parameters with a _ prefix are defined to be "transient" -- they
 	# never make it into a new Aref. That way we can introduce new
@@ -430,33 +508,43 @@ sub makeAref {
 		$newParams{'cmd'}=$command;
 	}
 
-	# If we're generating a page that'll get stored and served statically
-	# straight from a file, we need URLs back to the CGI side to be
-	# 'absolute'.
-	my $cgiName='';
-	$fullUrls = 1 if ($params->{'_fullUrls'});
-	if ($fullUrls) {
-		$cgiName = FAQ::OMatic::urlBase($cgi);
-	}
-	$cgiName .= cgiName();
+	# So why ever bother generating local references when
+	# pointing at the CGI? (That's how faqomatic <= 2.605 worked.)
+	# Generating absolute ones means
+	# the same links work in the cache, or when the cache file
+	# is copied for use elsewhere. It also means that pointing
+	# at a mirror version of the CGI should be a minor tweak.
 
+	my $cgiName = $FAQ::OMatic::dispatch::cgi->url();
+
+	# collect args in $rt in appropriate form -- hidden fields for
+	# forms, or key=value pairs for URLs.
+	my $rt = "";
 	foreach $i (sort keys %newParams) {
 		if ($refType eq 'POST' or $refType eq 'GET') {
+			# GET or POST form. stash args in hidden fields.
 			$rt .= "<input type=hidden name=\"$i\" value=\""
 				.$newParams{$i}."\">\n";
-		} else {	# regular GET
+		} else {
+			# regular GET, not <form> GET. URL-style key=val&key=val
 			$rt.="&".CGI::escape($i)."=".CGI::escape($newParams{$i});
 		}
 	}
 	if (($refType eq 'POST') or ($refType eq 'GET')) {
 		return "<form action=\"".$cgiName."\" "
-				."method=\"$refType\">\n$rt";
+				."method=\"$refType\""
+				." ENCTYPE=\"multipart/form-data\""
+				." ENCODING>\n$rt";
 	}
 
 	$rt =~ s/^\&/\?/;	# turn initial & into ?
 	my $url = $cgiName.$rt;
-	if (not $fullUrls) {
-		$url = getCacheUrl(\%newParams) || $url;
+
+	# see if url can be converted to point to local cache instead of CGI.
+	if (not $noCache) {
+		# noCache is a special parameter really meant only to be
+		# used to generate the "This document is:" line.
+		$url = getCacheUrl(\%newParams, $params) || $url;
 	}
 
 	if ($refType eq 'url') {
@@ -471,21 +559,52 @@ sub makeAref {
 # statically cached, returns a ready-to-eat URL to that page.
 # Otherwise it returns ''.
 sub getCacheUrl {
-	my $params = shift;
+	my $paramsForUrl = shift;
+	my $paramsForMe = shift;
+
 	if ($FAQ::OMatic::Config::cacheDir
-		and (not grep {not m/^file$/} keys(%{$params}))
-# The next line is bad when writing the cache files, because as we're writing
-# one file, we won't be able to make reference to the cached versions of
-# those we haven't written yet. So let's "hope" the cache stays current.
-# It would be nice if we could have the web server forward requests for
-# missing files to a script that would regenerate them automatically...
-#		and (-f $FAQ::OMatic::Config::cacheDir."/".$params->{'file'}.".html")
+		and (not grep {not m/^file$/} keys(%{$paramsForUrl}))
 		) {
-		return $FAQ::OMatic::Config::cacheURL
-				.$params->{'file'}
+		if ($paramsForMe->{'_fromCache'}) {
+			# We have a link from the cache to the cache.
+			# If we let it be relative, then the cache files
+			# can be picked up and taken elsewhere, and they still
+			# work, even without a webserver!
+			return $paramsForUrl->{'file'}
 				.".html";
+		} else {
+			# pointer into the cache from elsewhere -- use a full URL
+			# to get them to our cache.
+			return ((hostAndPath())[0])
+				.$FAQ::OMatic::Config::cacheURL
+				.$paramsForUrl->{'file'}
+				.".html";
+		}
 	}
 	return '';
+}
+
+sub makeBagRef {
+	# Not nearly as tricky as makeAref; this only returns a URL.
+
+	my $bagName = shift;
+	my $params = shift;
+
+	if ($params->{'_fromCache'}) {
+		# from cache to bags -- can use a local reference; this
+		# will allow us to transplant the cache and bags directories
+		# from this server to a CD or otherwise portable hierarchy.
+		#
+		# Notice that we rely here on bags/ and cache/ being in the
+		# same parent directory. The presence of separate $bagsURL and
+		# $cacheURL configuration items might seem to imply that they're
+		# independent paths, but they're not.
+		return "../bags/$bagName";
+	} else {
+		return ((hostAndPath())[0])
+			.$FAQ::OMatic::Config::bagsURL
+			.$bagName;
+	}
 }
 
 # takes an a href and a button label, and makes a button.
@@ -497,13 +616,16 @@ sub button {
 }
 
 sub getAllItemNames {
+	my $dir = shift || $FAQ::OMatic::Config::itemDir;
+
 	my @allfiles;
 
-	opendir DATADIR, $FAQ::OMatic::Config::itemDir or
-		FAQ::OMatic::gripe('problem', "Can't open data directory.");
+	opendir DATADIR, $dir or
+		FAQ::OMatic::gripe('problem', "Can't open data directory $dir.");
 	while (defined($_ = readdir DATADIR)) {
 		next if (m/^\./);
-		next if (not -f $FAQ::OMatic::Config::itemDir."/".$_);
+		next if (not -f $dir."/".$_);
+			# not sure what the above test is good for. Avoid subdirectories?
 		push @allfiles, $_;
 	}
 	close DATADIR;
@@ -695,6 +817,26 @@ sub concatDir {
 	my $dir2 = shift;
 
 	return canonDir(canonDir($dir1).canonDir($dir2));
+}
+
+sub cardinal {
+	my $num = shift;
+	my %numsuffix=('0'=>'th', '1'=>'st', '2'=>'nd', '3'=>'rd', '4'=>'th',
+				   '5'=>'th', '6'=>'th', '7'=>'th', '8'=>'th', '9'=>'th');
+	my $suffix = ($num>=11 and $num<=19) ? 'th' : $numsuffix{substr($num,-1,1)};
+	return $num."<sup>".$suffix."</sup>";
+}
+
+sub describeSize {
+	my $num = shift;
+
+	if ($num > 524288) {
+		return sprintf("(%3.1f M)", $num/1048576);	# megabytess
+	} elsif ($num > 512) {
+		return sprintf("(%3.1f K)", $num/1024);		# kilobytes
+	} else {
+		return "($num bytes)";
+	}
 }
 
 'true';

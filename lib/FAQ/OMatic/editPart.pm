@@ -129,7 +129,8 @@ sub main {
 	} else {
 		# little white lie -- user sees 1-based indices, but parts
 		# are stored 0-based. Is this bad?
-		$rt .= "Editing the ".cardinal($partnum+1)." text part in <b>"
+		$rt .= "Editing the "
+			.FAQ::OMatic::cardinal($partnum+1)." text part in <b>"
 			.$item->getTitle()."</b>\n";
 	}
 	$rt .= $part->displayPartEditor($item, $partnum, $params);
@@ -141,14 +142,6 @@ sub main {
 	$rt .= FAQ::OMatic::pageFooter($params, ['help','faq']);
 
 	print $rt;
-}
-
-sub cardinal {
-	my $num = shift;
-	my %numsuffix=('0'=>'th', '1'=>'st', '2'=>'nd', '3'=>'rd', '4'=>'th',
-				   '5'=>'th', '6'=>'th', '7'=>'th', '8'=>'th', '9'=>'th');
-	my $suffix = ($num>=11 and $num<=19) ? 'th' : $numsuffix{substr($num,-1,1)};
-	return $num."<sup>".$suffix."</sup>";
 }
 
 1;

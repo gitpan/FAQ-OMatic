@@ -211,7 +211,8 @@ sub itemStart {
 	my $item = shift;
 	my $alreadyStart = $params->{'_as'} || '';	# info hidden away in $params
 
-	my $spacer = FAQ::OMatic::ImageRef::getImageRefCA('', '', $item->whatAmI());
+	my $spacer = FAQ::OMatic::ImageRef::getImageRefCA('', '',
+		$item->isCategory(), $params);
 
 	if (not $alreadyStart) {
 		$params->{'_as'} = 1;

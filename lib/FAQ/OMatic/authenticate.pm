@@ -41,7 +41,8 @@ sub main {
 	my $params = \%FAQ::OMatic::theParams;
 
 	my $what = $params->{'_restart'};
-	my $whoIsAllowed = FAQ::OMatic::Auth::authError($params->{'_reason'});
+	my $whoIsAllowed = FAQ::OMatic::Auth::authError($params->{'_reason'},
+		$params->{'file'});
 
 	# Give them the option of setting up a new password
 	# Creating a login is the same thing
@@ -90,20 +91,25 @@ sub main {
 				$rt.="Text parts can only be edited by $whoIsAllowed.";
 			}
 		} elsif ($what eq 'editItem' or $what eq 'submitItem') {
-			my $xreason = $params->{'_xreason'} || '';
-
-			if ($xreason eq 'modOptions') {
-				$rt.="The moderator options can only be edited by $whoIsAllowed.";
-			} else {
-				$rt.="The title and options for this item can only "
-					."be edited by $whoIsAllowed.";
-			}
+			$rt.="The title and options for this item can only "
+				."be edited by $whoIsAllowed.";
+		} elsif ($what eq 'editModOptions' or $what eq 'submitModOptions') {
+			$rt.="The moderator options can only be edited by $whoIsAllowed.";
 		} elsif ($what eq 'moveItem' or $what eq 'submitMove') {
 			if ($whoIsAllowed =~ m/moderator/) {
 				$rt.="This item can only be moved by someone who can edit both "
 					."the source and destination parent items.";
 			} else {
 				$rt.="This item can only be moved by $whoIsAllowed.";
+			}
+		} elsif ($what eq 'selectBag'
+			or $what eq 'editBag'
+			or $what eq 'submitBag') {
+			my $xreason = $params->{'_xreason'} || '';
+			if ($xreason eq 'replace') {
+				$rt.="Only $whoIsAllowed can replace existing bags.";
+			} else {
+				$rt.="Only $whoIsAllowed can post bags.";
 			}
 		} elsif ($what eq 'install') {
 			$rt.="The FAQ-O-Matic can only be configured by $whoIsAllowed.";

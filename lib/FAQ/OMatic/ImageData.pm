@@ -41,7 +41,7 @@ package FAQ::OMatic::ImageData;
 %img = ();		# actual image data
 
 # to regenerate:
-#:.,$-2!(cd ../../../img; encodeBin.pl * | grep -v '^$type')
+#:.,$-2!(cd ../../../img; ../dev-bin/encodeBin.pl -data *)
 $img{'ans-also'} = <<__EOF__;
 47494638396115000e00c200000000008888880000dcffffffff00ff00000000
 000000000021f90401000004002c0000000015000e0000034548ba0bfe8fc936
@@ -152,6 +152,13 @@ $img{'ans'} = <<__EOF__;
 3821f404ea1a9cdd157e02aba252491a105d2bfa08125182c2e2cf551cda88c9
 8ccc36e3d5804e8db4a50461a49b6353e4fd2a7757d6385a36a382572353bc86
 8341e9d5b96ea792db7379f70d17e6e743585800003b
+__EOF__
+
+$img{'baglink'} = <<__EOF__;
+47494638396115000e00a100000000000000ddff00ffffffff21f90401000002
+002c0000000015000e00000238947fa0bbe839a21cea393025061666da74d8a7
+75c248524f60a02410c487ec7e708ce36999f7bb6ae8057e4004edc771b04e48
+13e3b92800003b
 __EOF__
 
 $img{'cat-also'} = <<__EOF__;
@@ -432,5 +439,6 @@ $img{'unchecked'} = <<__EOF__;
 002c0000000010001000000220848f69c1edbe9e6471be6a1bce61676f819328
 9117c041684aadaca92ab25100003b
 __EOF__
+
 
 1;

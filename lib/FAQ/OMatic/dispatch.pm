@@ -62,15 +62,18 @@ sub main {
 	# the user from making up some other module and getting it into
 	# our eval()).
 	%knownModules = map { $_ => $_ } (
-		'faq', 			'help',				'appearanceForm',
-		'search',		'searchForm',		'recent',
-		'stats', 		'statgraph',
-		'authenticate',	'changePass',		'submitPass',
-		'editPart',		'submitPart',		'delPart',
-		'addItem',		'editItem',			'submitItem',
-		'moveItem',		'submitMove',
-		'install',		'maintenance',
-		'editGroups',	'submitGroup',
+		'faq', 				'help',				'appearanceForm',
+		'search',			'searchForm',		'recent',
+		'stats', 			'statgraph',
+		'authenticate',		'changePass',		'submitPass',
+		'editPart',			'submitPart',		'delPart',
+		'addItem',			'editItem',			'submitItem',
+		'editModOptions',	'submitModOptions',
+		'submitCatToAns',	'submitAnsToCat',
+		'moveItem',			'submitMove',
+		'selectBag',		'editBag',			'submitBag',
+		'install',			'maintenance',
+		'editGroups',		'submitGroup',
 		'img'
 	);
 	
@@ -90,9 +93,11 @@ sub main {
 		# Require means we don't load the module until we need it.
 		# (But mod_perl will accumulate modules, and only load them
 		# if they haven't been loaded before, of course.)
-		require "FAQ/OMatic/$func.pm";
 		# This invocation will call the $func module's main()
-		eval { &{"FAQ::OMatic::".$func."::main"}(); };
+		eval {
+			require "FAQ/OMatic/$func.pm";
+			&{"FAQ::OMatic::".$func."::main"}();
+		};
 		$problem = $@;
 	} else {
 		$problem = "Unknown command: $cmd";

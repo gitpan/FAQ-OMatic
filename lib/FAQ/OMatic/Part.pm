@@ -174,7 +174,8 @@ sub displayHTML {
 	$rt .= FAQ::OMatic::Appearance::partStart($params,$self);
 
 	my $tmp = FAQ::OMatic::insertLinks($params, $self->{'Text'},
-					   $self->{'Type'} eq 'html');
+					   $self->{'Type'} eq 'html',
+					   $self->{'Type'} eq 'directory');
 	$tmp = FAQ::OMatic::highlightWords($tmp, $params);
 	$type = $self->{'Type'} || '';
 	if ($type eq 'monospaced'){
@@ -271,7 +272,44 @@ sub displayHTML {
 						'checkSequenceNumber'=>$item->{'SequenceNumber'}}
 				),
 			"Remove Above Text")."\n";
+		} elsif (scalar($self->getChildren())==0) {
+			# directory, but has no children -- can just delete directory.
+			# this is a minor variation on Item's Convert to Answer.
+			$rt .= FAQ::OMatic::button(
+				FAQ::OMatic::makeAref('-command'=>'submitCatToAns',
+					'-params'=>$params,
+					'-changedParams'=>{"file"=>$filename,
+						'_removePart'=>1,
+						'checkSequenceNumber'=>$item->{'SequenceNumber'}}),
+				"Remove Above Text")."\n";
 		}
+
+		# bags.
+		# add a new bag
+		$rt .= FAQ::OMatic::button(
+			FAQ::OMatic::makeAref('-command'=>'editBag',
+				'-params'=>$params,
+				'-changedParams'=>{'file'=>$filename,
+					'partnum'=>$partnum}),
+			"Upload new bag here")."\n";
+
+		# replace an existing bag
+		my @baglist = $self->getBags();
+		if (scalar(@baglist)==1) {
+			$rt .= FAQ::OMatic::button(
+				FAQ::OMatic::makeAref('-command'=>'editBag',
+					'-params'=>$params,
+					'-changedParams'=>{'file'=>$filename,
+						'_target'=>$baglist[0]}),
+				"Replace $baglist[0] with new upload")."\n";
+		} elsif (scalar(@baglist)>1) {
+			$rt .= FAQ::OMatic::button(
+				FAQ::OMatic::makeAref('-command'=>'selectBag',
+					'-params'=>$params,
+					'-changedParams'=>{'file'=>$filename}),
+				"Select bag to replace with new upload")."\n";
+		}
+
 		$rt .= $FAQ::OMatic::Appearance::editEnd."<br>\n";
 	}
 
@@ -298,9 +336,11 @@ sub displayPartEditor {
 	$rt .= "<input type=hidden name=\"checkSequenceNumber\" value=\""
 		.$item->{'SequenceNumber'}."\">\n";
 
-	# no text boxes wrap anymore -- it breaks long URLs.
-	# (thanks to Billy Naylor <banjo@actrix.gen.nz> for the fix)
-	$rt .= "<textarea cols=80 rows=$rows name=_newText>";
+	# THANKS: no text boxes wrap anymore -- it breaks long URLs.
+	# THANKS: to Billy Naylor <banjo@actrix.gen.nz> for the fix
+	$rt .= "<input type=radio name=\"_inputType\" value=\"textarea\" CHECKED>\n"
+		." Enter text in this box:";
+	$rt .= "<br><textarea cols=80 rows=$rows name=_newText>";
 
 	my $text = $self->{'Text'};
 	$text =~ s/&/&amp;/gs;		# all browsers I've met correctly
@@ -310,18 +350,29 @@ sub displayPartEditor {
 	$text = FAQ::OMatic::addTitleToFaqomaticReferences($text);
 	$rt .= $text."</textarea>\n";
 
+	# Upload file instead of typing in textarea
+	# THANKS: to John Goerzen
+	$rt .= "<p><input type=radio name=\"_inputType\" value=\"file\">\n"
+		." <i>or</i> replace text with uploaded file: ";
+	$rt .= "<input type=file name=\"_newTextFile\"><br>";
+	if ($self->{'Text'} ne '') {
+		$rt .= "Warning: file contents will <b>replace</b> "
+				."text in box above.\n";
+	}
+
 	# HideAttributions
-	$rt .= "<br><input type=checkbox name=\"_HideAttributions\"";
+	$rt .= "<p><input type=checkbox name=\"_HideAttributions\"";
 	$rt .= " CHECKED" if $self->{'HideAttributions'};
 	$rt .= "> Hide Attributions\n";
 
 	# Type
 	if ($self->{'Type'} eq 'directory') {
-		if (scalar($self->getChildren()) == 0) {
-			$rt .= "<br><input type=checkbox name=\"_removeDirectory\" "
-				."value=\"1\"> Remove directory (turning this category "
-				."item into an answer item) if text box above is empty.\n";
-		}
+# TODO: delete this commented block. superseded by submitCatToAns.
+#		if (scalar($self->getChildren()) == 0) {
+#			$rt .= "<br><input type=checkbox name=\"_removeDirectory\" "
+#				."value=\"1\"> Remove directory (turning this category "
+#				."item into an answer item) if text box above is empty.\n";
+#		}
 		$rt .= "<br><input type=radio name=\"_Type\" value=\"directory\""
 			."  CHECKED> Directory\n";
 	} else {
@@ -406,8 +457,34 @@ sub getLinks {
 	my $self = shift;
 	
 	my $text = $self->{'Text'};
-	my @dirlist = ($text =~ m/faqomatic:(\S+)/gs);
+	my @dirlist = ($text =~ m/faqomatic:(\S*[^\s.,)\?!])/gs);
 	return @dirlist;
+}
+
+# returns list of names of all bags this part references,
+# either as inlines or as baglinks.
+sub getBags() {
+	my $self = shift;
+
+	my $text = $self->{'Text'};
+	my @regexlist = ($text =~
+		m/(baginline:(\S*[^\s.,)\?!]))|(baglink:(\S*[^\s.,)\?!]))/gs);
+	# the above regexp will return 4*number of matches, one entry for
+	# each left parethesis.
+	# We actually want either the second or fourth item from each 4-tuple.
+	my $i;
+	my @baglist = ();
+	for ($i=0; $i<scalar(@regexlist); $i+=4) {
+		if ($regexlist[$i+1] ne '') {
+			push @baglist, $regexlist[$i+1];
+		} else {
+			push @baglist, $regexlist[$i+3];
+		}
+	}
+	# remove duplicates but keep order using a Set
+	my $bagset = new FAQ::OMatic::Set('keepOrdered');
+	$bagset->insert(@baglist);
+	return $bagset->getList();
 }
 
 sub mergeDirectory {

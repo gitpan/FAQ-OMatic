@@ -105,10 +105,8 @@ sub checkPerm {
 		return 0;
 	}
 
-	# prove user has at least moderator priveleges, if this is for
-	# an item:
-	if ($item
-		and (($whocan==7) and ($aq==5))
+	# prove user has at least moderator priveleges
+	if ((($whocan==7) and ($aq==5))
 		and (($id eq getInheritedProperty($item, 'Moderator'))
 			 or ($id eq $FAQ::OMatic::Config::adminAuth)
 			 or ('anybody' eq getInheritedProperty($item, 'Moderator'))
@@ -126,28 +124,57 @@ sub getInheritedProperty {
 	my $property = shift;
 	my $depth = shift || 0;
 
-	return "6 Administrators" if ($property eq 'PermEditGroups');
+	if (isPropertyGlobal($property)) {
+		# save a recursive walk up the tree
+		return getDefaultProperty($property);
+	}
 
-	return $item->{$property} if (defined $item->{$property});
+	return $item->{$property}
+		if (defined($item) and defined $item->{$property});
 
-	if (($item->getParent() eq $item) or ($depth > 80)) {
+	if (not defined($item)
+		or ($item eq '')
+		or ($item->getParent() eq $item)
+		or ($depth > 80)) {
+
 		# no-one defines it, all the way up the chain
-		if ($property eq 'Moderator') {
-			return 'nobody';
-		} elsif ($property eq 'PermEditItem'
-				or $property eq 'PermEditPart'
-				or $property eq 'PermUseHTML'
-				or $property eq 'PermAddPart') {
-			# default: require proven authentication
-			return 5;
-		} elsif ($property eq 'PermModOptions') {
-			return 7;
-		} else {
-			return undef;
-		}
+		return getDefaultProperty($property);
 	} else {
 		return getInheritedProperty($item->getParent(), $property, $depth+1);
 	}
+}
+
+# fields: [ default value, isGlobal ]
+my %defaultProperties = (
+	'Moderator' => 		[ 'nobody', 0 ],
+	'MailModerator' => 	[ 0, 0 ],
+	'PermEditItem' =>	[ 5, 0 ],		# users with proven authentication
+	'PermEditPart' =>	[ 5, 0 ],
+	'PermAddPart' =>	[ 5, 0 ],
+	'PermModOptions' =>	[ 7, 0 ],		# moderator
+	'PermUseHTML' =>	[ 7, 0 ],
+	'PermNewBag' =>		[ 7, 1 ],
+	'PermReplaceBag' =>	[ 7, 1 ],
+	'PermEditGroups' =>	[ "6 Administrators", 1 ],
+);
+
+sub getDefaultProperty {
+	my $property = shift;
+
+	my $result = $defaultProperties{$property};
+	if (not defined $result) {
+		$result = 7;
+		FAQ::OMatic::gripe('panic',
+			"Property $property expected but not defined");	# tell author
+	}
+	return $result->[0];
+}
+
+sub isPropertyGlobal {
+	my $property = shift;
+
+	my $result = $defaultProperties{$property};
+	return $result->[1] || 0;
 }
 
 # ensurePerm()
@@ -393,15 +420,24 @@ sub authenticate {
 
 %staticErrors = (
 	9 => 'the administrator of this Faq-O-Matic',
-	7 => 'the moderator of the item',
 	5 => 'someone who has proven their identification',
 	3 => 'someone who has offered identification',
 	1 => 'anybody' );
 
 sub authError {
 	my $reason = shift;
+	my $file = shift;
 
 	return $staticErrors{$reason} if ($staticErrors{$reason});
+
+	if ($reason == 7) {
+		my $modname = '';
+		if ($file ne '') {
+			my $item = new FAQ::OMatic::Item($file);
+			$modname = " (".getInheritedProperty($item, 'Moderator').")";
+		}
+		return "the moderator of the item".$modname;
+	}
 
 	if ($reason =~ m/^6/) {
 		return FAQ::OMatic::Groups::groupCodeToName($reason)." group members";

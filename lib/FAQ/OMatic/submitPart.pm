@@ -88,6 +88,23 @@ sub main {
 			"Your browser or WWW cache has truncated your POST.");
 	}
 
+	# select source of data: file or textarea
+	if ($params->{'_inputType'} eq 'file') {
+		my $formFileHandle = "FAQ::OMatic::dispatch::"
+			.$cgi->param('_newTextFile');
+		$params->{'_newText'} = '';		# scrap <textarea> text and load file
+		my $sizesum = 0;
+		while (my $line = <$formFileHandle>) {
+			$sizesum += length($line);
+			if ($sizesum > 64*1024) {
+				FAQ::OMatic::gripe('error',
+					"Your file was greater than 64K long.");
+			}
+			$line =~ s/[^ -~\t\r\n]//gs;		# limit to printable characters
+			$params->{'_newText'} .= $line;
+		}
+	}
+
 	# verify permissions
 	my $authFailed = '';
 	my $perm;
@@ -200,11 +217,12 @@ sub main {
 		# the new directory passes the test
 		$part->setText($params->{'_newText'});
 
-		# delete the directory if user asked to and it's empty
-		if ($params->{'_removeDirectory'}) {
-			$item->removeSubItem();
-			$removed = 1 if (not defined $item->{'directoryHint'});
-		}
+# TODO: delete this block. superseded by submitCatToAns
+#		# delete the directory if user asked to and it's empty
+#		if ($params->{'_removeDirectory'}) {
+#			$item->removeSubItem();
+#			$removed = 1 if (not defined $item->{'directoryHint'});
+#		}
 
 		# all the children in the list may now have different siblings,
 		# which means we need to recompute their dependencies and

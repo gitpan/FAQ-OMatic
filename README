@@ -1,3 +1,17 @@
+====================
+What is FAQ-O-Matic?
+====================
+
+The Faq-O-Matic is a CGI-based system that automates the process of
+maintaining a FAQ (or Frequently Asked Questions list). It allows
+visitors to your FAQ to take part in keeping it up-to-date. A
+permission system also makes it useful as a help-desk application,
+bug-tracking database, or documentation system.
+
+This documentation itself is, naturally, maintained with Faq-O-Matic:
+
+  http://www.dartmouth.edu/cgi-bin/cgiwrap/jonh/faq.pl
+
 ===============
 Latest Version:
 ===============
@@ -92,5 +106,6 @@ Themes and Variations:
 Author Info:
 ============
 
+	Jon Howell
 	jonh@cs.dartmouth.edu
 	http://www.cs.dartmouth.edu/~jonh

@@ -374,9 +374,6 @@ sub mainMenuStep {
 	$rt.="<p><li>".checkBoxFor('nothing')
 			."<a href=\"".installUrl('mainMenu')."\">"
 			."Bookmark this link to be able to return to this menu.</a>\n";
-	$rt.="<p><li>".checkBoxFor('nothing')
-			."<a href=\"".installUrl('','url','stats')."\">"
-			."Bookmark this link to the statistics page.</a>\n";
 	if ($FAQ::OMatic::Config::secureInstall) {
 		$rt.="<p><li>".checkBoxFor('nothing')
 				."<a href=\"".installUrl('', 'url', 'faq')."\">"
@@ -386,11 +383,25 @@ sub mainMenuStep {
 			."Go to the Faq-O-Matic (need to turn on installer security)";
 	}
 	$rt.="</ol>\n";
-	$rt.="<ul>Other tasks:\n";
-	$rt.="<li>".checkBoxFor('nothing')
+	$rt.="<ul><u>Other available tasks:</u>\n";
+	$rt.="<li>"
 		."<a href=\"".installUrl('', 'url', 'maintenance')
 		."&secret=$maintenanceSecret&tasks=rebuildCache\">"
 		."Rebuild the cache and dependency files.</a>\n";
+	$rt.="<li>"
+		."<a href=\"".installUrl('', 'url', 'maintenance')
+		."&secret=$maintenanceSecret&tasks=expireBags\">"
+		."Check for unreferenced bags (not linked by any FAQ item).</a>\n";
+	$rt.="<li>"
+			."<a href=\"".installUrl('','url','stats')."\">"
+			."See access statistics.</a>\n";
+	$rt.="<li>"
+			."<a href=\"".installUrl('','url','selectBag')."\">"
+			."Examine all uploaded bags.</a>\n";
+	$rt.="<li>"
+		."<a href=\"".installUrl('', 'url', 'maintenance')
+		."&secret=$maintenanceSecret&tasks=bagAllImages\">"
+		."Install system images and icons.</a>\n";
 	$rt.="</ul>\n";
 
 	$rt.="The Faq-O-Matic modules are version $FAQ::OMatic::VERSION.\n";

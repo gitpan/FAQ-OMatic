@@ -25,7 +25,7 @@
 #                                                                            #
 ##############################################################################
 
-package FAQ::OMatic::addItem;
+package FAQ::OMatic::submitCatToAns;
 
 use CGI;
 use FAQ::OMatic::Item;
@@ -34,72 +34,65 @@ use FAQ::OMatic::Auth;
 
 sub main {
 	my $cgi = $FAQ::OMatic::dispatch::cgi;
+	my $removed = 0;
 	
-	my $params = FAQ::OMatic::getParams($cgi);
+	$params = FAQ::OMatic::getParams($cgi);
 
-	my $file = $params->{'file'} || '';
-	$item = new FAQ::OMatic::Item($file);
+	$item = new FAQ::OMatic::Item($params->{'file'});
 	if ($item->isBroken()) {
-		FAQ::OMatic::gripe('error', "The file ($file) doesn't exist.");
+		FAQ::OMatic::gripe('error', "The file (".
+			$params->{'file'}.") doesn't exist.");
 	}
+	
+	$item->checkSequence($params);
+	$item->incrementSequence();
 
-	my $rd = FAQ::OMatic::Auth::ensurePerm($item, 'PermEditItem',
+	FAQ::OMatic::Auth::ensurePerm($item, 'PermEditPart',
 		FAQ::OMatic::commandName(), $cgi, 0);
-	if ($rd) { print $rd; exit 0; }
 
-	my $duplicateFrom = $cgi->param('_duplicate');
-	my $newitem;
-	if ($duplicateFrom) {
-		# duplicate an existing item
-		my $source = new FAQ::OMatic::Item($duplicateFrom);
-		if ($source->isBroken()) {
-			FAQ::OMatic::gripe('error', "The source of the duplicate (file=".
-				$duplicateFrom.") is broken.");
-		}
-		$newitem = $source->clone();
-		$newitem->setProperty('Title', "Copy of ".$newitem->getTitle());
+	# users would rarely see these messages; they'd have to forge the URL.
+	if (not $item->isCategory()) {
+		FAQ::OMatic::gripe('error', "This isn't a category.");
+	}
+
+	if (scalar($item->getChildren())>0) {
+		FAQ::OMatic::gripe('error', "This category still has children. "
+			."Move them to another category before trying to convert this "
+			."category into an answer.");
+	}
+
+	if ($params->{'_removePart'}) {
+		# just delete the entire part outright
+		$item->removeSubItem();
 	} else {
-		# create a new item in destination item file
-		$newitem = new FAQ::OMatic::Item();
-		# inherit parent's properties:
-		$newitem->setProperty('AttributionsTogether',
-			$item->{'AttributionsTogether'});
+		# the directory part has no faqomatic: links, so it won't hurt to
+		# turn it into a regular text part.
+		my $part = $item->getDirPart();
+		$part->setProperty('Type', '');
+		$part->setProperty('DateOfPart', FAQ::OMatic::Item::compactDate());
+		delete $item->{'directoryHint'};	# probably doesn't matter, but
+					# if any code beyond this point were to try to test
+					# the $item for being a category, we'd want it to test
+					# correctly.
 	}
-	$newitem->setProperty("Parent", $item->{'filename'});
-		# tell the new kid who his parent is.
-	$newitem->setProperty('Moderator', '');
-		# regardless of what the parent did, we inherit moderator
-		# from parent rather than setting it explicitly.
 
-	# if user was asking for a category, add a directory just to
-	# make him feel better
-	if ($params->{'_insert'} eq 'category') {
-		$newitem->makeDirectory()->
-			setText("Subcategories:\n\nAnswers in this category:\n");
-	}
-	# passing $file as a name ensures that new child will have the
-	# same type of name as its parent. (such as a helpfile)
-	$newitem->saveToFile(FAQ::OMatic::unallocatedItemName($file));
+	# parent and any see-also linkers have changed, since their icons will
+	# be wrong. This is just like changing the title, although it doesn't
+	# affect siblings, but who cares; we'll just use
+	# the usual dependency-update routine.)
+	# TODO: maybe siblings should have icons! So should the parent chain!
+	$item->setProperty('titleChanged', 1);
 
-	# add that item to the (proud) parent item's catalog
-	$item->addSubItem($newitem->{'filename'});
 	$item->saveToFile();
 
-	$item->notifyModerator($cgi, 'added a sub-item');
+	$item->notifyModerator($cgi, "made a category into an answer.");
 
-	if ($duplicateFrom) {
-		$url = FAQ::OMatic::makeAref('editItem',
-			{'file'=>$newitem->{'filename'},
-	 		 '_duplicate'=>$params->{'_duplicate'}},
-			'url');
-	} else {
-		# send the user to the edit item page, to supply the title
-		$url = FAQ::OMatic::makeAref('editItem',
-			{'file'=>$newitem->{'filename'},
-		 	 '_insert'=>$params->{'_insert'}},
-			'url');
-	}
-
+	$url = FAQ::OMatic::makeAref('-command'=>'faq',
+				'-params'=>$params,
+				'-changedParams'=>{'checkSequenceNumber'=>''},
+				'-refType'=>'url');
+		# eliminate things that were in our input form that weren't
+		# automatically transient (_ prefix)
 	print $cgi->redirect(FAQ::OMatic::urlBase($cgi).$url);
 }
 

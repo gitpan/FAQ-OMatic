@@ -34,13 +34,18 @@
 ###
 
 package FAQ::OMatic::ImageRef;
-use FAQ::OMatic::ImageData;
+
+use FAQ::OMatic::Bags;
 
 %type = ();     # type of each image
 
 sub getImage {
 	my $name = shift;
 
+	require FAQ::OMatic::ImageData;	# put off loading this file unless someone
+							# actually requests data (meaning we're running
+							# img.pm). No reason any other invocation should
+							# have to load all that image data up.
 	my $data = $FAQ::OMatic::ImageData::img{$name};
 	return '' if (not defined $data);
 
@@ -48,10 +53,16 @@ sub getImage {
 	return pack("H".length($data), $data);
 }
 
+sub validImage {
+	my $name = shift;
+
+	return defined($img_type{$name});
+}
+
 sub getType {
 	my $name = shift;
 
-	my $typek = $type{$name};
+	my $typek = $img_type{$name};
 	return '' if (not defined $typek);
 
 	return "jpeg"	if ($typek eq 'jpg');
@@ -59,19 +70,29 @@ sub getType {
 	return "beats-me";
 }
 
+sub getBagForImage {
+	my $name = shift;
+	my $typek = $img_type{$name};
+	return "$name.$typek";
+}
+
 sub getImageUrl {
 	my $name = shift;
-	my $type = getType($name);
-	return '' if (not $type);
+	my $params = shift;
+	my $forceBagWrite = shift || '';
 
-	my $cachedCopy = $FAQ::OMatic::Config::bagsDir."$name.$type";
-	if (-f $cachedCopy) {
-		return $FAQ::OMatic::Config::bagsURL."$name.$type";
+	my $bagName = getBagForImage($name);
+
+	my $bagUrl = FAQ::OMatic::makeBagRef($bagName, $params);
+
+	my $bagPath = $FAQ::OMatic::Config::bagsDir.$bagName;
+	if (-f $bagPath and not $forceBagWrite) {
+		return $bagUrl;
 	}
-	# attempt to cache this image file
-	if (not open(CACHEIMAGE, ">$cachedCopy")) {
+	# attempt to cache this image file in $bagsDir
+	if (not open(CACHEIMAGE, ">$bagPath")) {
 		FAQ::OMatic::gripe('problem',
-			"write to $cachedCopy failed: $!");
+			"write to $bagPath failed: $!");
 		# TODO: write to cache failed. Notify admin?
 		# in the meantime, supply user with dynamically-generated image file
 		return FAQ::OMatic::makeAref('-command'=>'img',
@@ -79,67 +100,265 @@ sub getImageUrl {
 			'-changedParams'=>{'name'=>$name},
 			'-refType'=>'url');
 	}
+
+	# bag is saved, now write a .desc file
+	my $bagDesc = FAQ::OMatic::Bags::getBagDesc($bagName);
+
+	$bagDesc->setProperty('SizeWidth', $img_prop{$name}{'SizeWidth'});
+	$bagDesc->setProperty('SizeHeight', $img_prop{$name}{'SizeHeight'});
+	$bagDesc->setProperty('SizeBytes', $img_prop{$name}{'SizeBytes'});
+	FAQ::OMatic::Bags::saveBagDesc($bagDesc);
+
 	print CACHEIMAGE getImage($name);
 	close CACHEIMAGE;
-	return $FAQ::OMatic::Config::bagsURL."$name.$type";
+	return $bagUrl;
 }
 
 sub getImageRef {
 	my $name = shift;
 	my $imgargs = shift;
+	my $params = shift;
 
 	return '&nbsp;' if (defined($FAQ::OMatic::Config::noImages));
-	
 
-	my $url = getImageUrl($name);
+	my $url = getImageUrl($name, $params);
 	return "[bad image $name]" if (not $url);
-	## TODO: add size info!
-	return "<img src=\"$url\" $imgargs>";
+
+	# look up size information to append to img tag
+	my $bagName = getBagForImage($name);
+	my $sw = FAQ::OMatic::Bags::getBagProperty($bagName, SizeWidth, '');
+	$sw = " width=$sw" if ($sw ne '');
+	my $sh = FAQ::OMatic::Bags::getBagProperty($bagName, SizeHeight, '');
+	$sh = " height=$sh" if ($sh ne '');
+
+	return "<img src=\"$url\" $imgargs$sw$sh>";
 }
 
 sub getImageRefCA {
 	my $name = shift;
 	my $imgargs = shift;
 	my $ca = shift;	 # Category or Answer
+	my $params = shift;
 
-	$name = ($ca eq 'Category' ? 'cat' : 'ans').$name;
+	$name = ($ca ? 'cat' : 'ans').$name;
 
-	return getImageRef($name, $imgargs);
+	return getImageRef($name, $imgargs, $params);
+}
+
+sub bagAllImages {
+	# writes every image in ImageData to the bags dir
+	my $imgname;
+	foreach $imgname (sort keys %img_type) {
+		print "<br>bagging ".getBagForImage($imgname)."\n";
+		getImageUrl($imgname, {}, 'forceBagWrite');
+	}
 }
 
 # to regenerate:
-#:.,$-2!(cd ../../../img; encodeBin.pl * | grep '^$type')
+#:.,$-2!(cd ../../../img; ../dev-bin/encodeBin.pl -desc *)
+$img_type{'ans-also'} = 'gif';
 
-$type{'ans-also'} = 'gif';
-$type{'ans-del-part'} = 'gif';
-$type{'ans-dup-ans'} = 'gif';
-$type{'ans-dup-part'} = 'gif';
-$type{'ans-edit-part'} = 'gif';
-$type{'ans-ins-part'} = 'gif';
-$type{'ans-opts'} = 'gif';
-$type{'ans-reorder'} = 'gif';
-$type{'ans-small'} = 'gif';
-$type{'ans-title'} = 'gif';
-$type{'ans-to-cat'} = 'gif';
-$type{'ans'} = 'gif';
-$type{'cat-also'} = 'gif';
-$type{'cat-del-part'} = 'gif';
-$type{'cat-dup-ans'} = 'gif';
-$type{'cat-dup-part'} = 'gif';
-$type{'cat-edit-part'} = 'gif';
-$type{'cat-ins-part'} = 'gif';
-$type{'cat-new-ans'} = 'gif';
-$type{'cat-new-cat'} = 'gif';
-$type{'cat-opts'} = 'gif';
-$type{'cat-reorder'} = 'gif';
-$type{'cat-small'} = 'gif';
-$type{'cat-title'} = 'gif';
-$type{'cat'} = 'gif';
-$type{'checked'} = 'gif';
-$type{'help-small'} = 'gif';
-$type{'help'} = 'gif';
-$type{'picker'} = 'jpg';
-$type{'space'} = 'gif';
-$type{'unchecked'} = 'gif';
+$img_prop{'ans-also'}{'SizeWidth'} = '21';
+$img_prop{'ans-also'}{'SizeHeight'} = '14';
+$img_prop{'ans-also'}{'SizeBytes'} = '128';
+
+$img_type{'ans-del-part'} = 'gif';
+
+$img_prop{'ans-del-part'}{'SizeWidth'} = '23';
+$img_prop{'ans-del-part'}{'SizeHeight'} = '28';
+$img_prop{'ans-del-part'}{'SizeBytes'} = '183';
+
+$img_type{'ans-dup-ans'} = 'gif';
+
+$img_prop{'ans-dup-ans'}{'SizeWidth'} = '24';
+$img_prop{'ans-dup-ans'}{'SizeHeight'} = '23';
+$img_prop{'ans-dup-ans'}{'SizeBytes'} = '182';
+
+$img_type{'ans-dup-part'} = 'gif';
+
+$img_prop{'ans-dup-part'}{'SizeWidth'} = '23';
+$img_prop{'ans-dup-part'}{'SizeHeight'} = '32';
+$img_prop{'ans-dup-part'}{'SizeBytes'} = '194';
+
+$img_type{'ans-edit-part'} = 'gif';
+
+$img_prop{'ans-edit-part'}{'SizeWidth'} = '32';
+$img_prop{'ans-edit-part'}{'SizeHeight'} = '31';
+$img_prop{'ans-edit-part'}{'SizeBytes'} = '285';
+
+$img_type{'ans-ins-part'} = 'gif';
+
+$img_prop{'ans-ins-part'}{'SizeWidth'} = '32';
+$img_prop{'ans-ins-part'}{'SizeHeight'} = '32';
+$img_prop{'ans-ins-part'}{'SizeBytes'} = '261';
+
+$img_type{'ans-opts'} = 'gif';
+
+$img_prop{'ans-opts'}{'SizeWidth'} = '23';
+$img_prop{'ans-opts'}{'SizeHeight'} = '28';
+$img_prop{'ans-opts'}{'SizeBytes'} = '131';
+
+$img_type{'ans-reorder'} = 'gif';
+
+$img_prop{'ans-reorder'}{'SizeWidth'} = '23';
+$img_prop{'ans-reorder'}{'SizeHeight'} = '28';
+$img_prop{'ans-reorder'}{'SizeBytes'} = '191';
+
+$img_type{'ans-small'} = 'gif';
+
+$img_prop{'ans-small'}{'SizeWidth'} = '12';
+$img_prop{'ans-small'}{'SizeHeight'} = '14';
+$img_prop{'ans-small'}{'SizeBytes'} = '88';
+
+$img_type{'ans-title'} = 'gif';
+
+$img_prop{'ans-title'}{'SizeWidth'} = '32';
+$img_prop{'ans-title'}{'SizeHeight'} = '32';
+$img_prop{'ans-title'}{'SizeBytes'} = '257';
+
+$img_type{'ans-to-cat'} = 'gif';
+
+$img_prop{'ans-to-cat'}{'SizeWidth'} = '29';
+$img_prop{'ans-to-cat'}{'SizeHeight'} = '26';
+$img_prop{'ans-to-cat'}{'SizeBytes'} = '223';
+
+$img_type{'ans'} = 'gif';
+
+$img_prop{'ans'}{'SizeWidth'} = '23';
+$img_prop{'ans'}{'SizeHeight'} = '28';
+$img_prop{'ans'}{'SizeBytes'} = '150';
+
+$img_type{'baglink'} = 'gif';
+
+$img_prop{'baglink'}{'SizeWidth'} = '21';
+$img_prop{'baglink'}{'SizeHeight'} = '14';
+$img_prop{'baglink'}{'SizeBytes'} = '103';
+
+$img_type{'cat-also'} = 'gif';
+
+$img_prop{'cat-also'}{'SizeWidth'} = '25';
+$img_prop{'cat-also'}{'SizeHeight'} = '14';
+$img_prop{'cat-also'}{'SizeBytes'} = '139';
+
+$img_type{'cat-del-part'} = 'gif';
+
+$img_prop{'cat-del-part'}{'SizeWidth'} = '32';
+$img_prop{'cat-del-part'}{'SizeHeight'} = '27';
+$img_prop{'cat-del-part'}{'SizeBytes'} = '208';
+
+$img_type{'cat-dup-ans'} = 'gif';
+
+$img_prop{'cat-dup-ans'}{'SizeWidth'} = '26';
+$img_prop{'cat-dup-ans'}{'SizeHeight'} = '23';
+$img_prop{'cat-dup-ans'}{'SizeBytes'} = '201';
+
+$img_type{'cat-dup-part'} = 'gif';
+
+$img_prop{'cat-dup-part'}{'SizeWidth'} = '32';
+$img_prop{'cat-dup-part'}{'SizeHeight'} = '27';
+$img_prop{'cat-dup-part'}{'SizeBytes'} = '201';
+
+$img_type{'cat-edit-part'} = 'gif';
+
+$img_prop{'cat-edit-part'}{'SizeWidth'} = '32';
+$img_prop{'cat-edit-part'}{'SizeHeight'} = '31';
+$img_prop{'cat-edit-part'}{'SizeBytes'} = '286';
+
+$img_type{'cat-ins-part'} = 'gif';
+
+$img_prop{'cat-ins-part'}{'SizeWidth'} = '32';
+$img_prop{'cat-ins-part'}{'SizeHeight'} = '27';
+$img_prop{'cat-ins-part'}{'SizeBytes'} = '250';
+
+$img_type{'cat-new-ans'} = 'gif';
+
+$img_prop{'cat-new-ans'}{'SizeWidth'} = '32';
+$img_prop{'cat-new-ans'}{'SizeHeight'} = '32';
+$img_prop{'cat-new-ans'}{'SizeBytes'} = '253';
+
+$img_type{'cat-new-cat'} = 'gif';
+
+$img_prop{'cat-new-cat'}{'SizeWidth'} = '32';
+$img_prop{'cat-new-cat'}{'SizeHeight'} = '32';
+$img_prop{'cat-new-cat'}{'SizeBytes'} = '245';
+
+$img_type{'cat-opts'} = 'gif';
+
+$img_prop{'cat-opts'}{'SizeWidth'} = '32';
+$img_prop{'cat-opts'}{'SizeHeight'} = '27';
+$img_prop{'cat-opts'}{'SizeBytes'} = '165';
+
+$img_type{'cat-reorder'} = 'gif';
+
+$img_prop{'cat-reorder'}{'SizeWidth'} = '32';
+$img_prop{'cat-reorder'}{'SizeHeight'} = '27';
+$img_prop{'cat-reorder'}{'SizeBytes'} = '207';
+
+$img_type{'cat-small'} = 'gif';
+
+$img_prop{'cat-small'}{'SizeWidth'} = '16';
+$img_prop{'cat-small'}{'SizeHeight'} = '14';
+$img_prop{'cat-small'}{'SizeBytes'} = '113';
+
+$img_type{'cat-title'} = 'gif';
+
+$img_prop{'cat-title'}{'SizeWidth'} = '32';
+$img_prop{'cat-title'}{'SizeHeight'} = '32';
+$img_prop{'cat-title'}{'SizeBytes'} = '232';
+
+$img_type{'cat'} = 'gif';
+
+$img_prop{'cat'}{'SizeWidth'} = '32';
+$img_prop{'cat'}{'SizeHeight'} = '27';
+$img_prop{'cat'}{'SizeBytes'} = '185';
+
+$img_type{'checked-large'} = 'gif';
+
+$img_prop{'checked-large'}{'SizeWidth'} = '20';
+$img_prop{'checked-large'}{'SizeHeight'} = '24';
+$img_prop{'checked-large'}{'SizeBytes'} = '139';
+
+$img_type{'checked'} = 'gif';
+
+$img_prop{'checked'}{'SizeWidth'} = '16';
+$img_prop{'checked'}{'SizeHeight'} = '17';
+$img_prop{'checked'}{'SizeBytes'} = '104';
+
+$img_type{'help-small'} = 'gif';
+
+$img_prop{'help-small'}{'SizeWidth'} = '16';
+$img_prop{'help-small'}{'SizeHeight'} = '12';
+$img_prop{'help-small'}{'SizeBytes'} = '108';
+
+$img_type{'help'} = 'gif';
+
+$img_prop{'help'}{'SizeWidth'} = '32';
+$img_prop{'help'}{'SizeHeight'} = '24';
+$img_prop{'help'}{'SizeBytes'} = '181';
+
+$img_type{'picker'} = 'jpg';
+
+$img_prop{'picker'}{'SizeWidth'} = '256';
+$img_prop{'picker'}{'SizeHeight'} = '128';
+$img_prop{'picker'}{'SizeBytes'} = '3189';
+
+$img_type{'space-large'} = 'gif';
+
+$img_prop{'space-large'}{'SizeWidth'} = '20';
+$img_prop{'space-large'}{'SizeHeight'} = '25';
+$img_prop{'space-large'}{'SizeBytes'} = '61';
+
+$img_type{'space'} = 'gif';
+
+$img_prop{'space'}{'SizeWidth'} = '16';
+$img_prop{'space'}{'SizeHeight'} = '16';
+$img_prop{'space'}{'SizeBytes'} = '55';
+
+$img_type{'unchecked'} = 'gif';
+
+$img_prop{'unchecked'}{'SizeWidth'} = '16';
+$img_prop{'unchecked'}{'SizeHeight'} = '16';
+$img_prop{'unchecked'}{'SizeBytes'} = '79';
+
 
 1;

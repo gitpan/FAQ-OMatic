@@ -91,12 +91,19 @@ this secret into the Validation form:
 
      Secret: $secret
 
-Or access the following URL. Be careful that, when you copy and
-paste the URL, the line-break doesn't cut the URL short.
+Or access the following URL. Be careful when you copy and
+paste the URL that the line-break doesn't cut the URL short.
 
 $secreturl
 
 Thank you for using Faq-O-Matic.
+
+(Note: if you did not sign up to use the Faq-O-Matic,
+someone else has attempted to log in using your name.
+Do not access the URL above; it will validate the password
+that user has supplied. Instead, send mail to
+	$FAQ::OMatic::Config::adminEmail
+and I will look into the matter.)
 __EOF__
 			if (FAQ::OMatic::sendEmail($id, $subj, $mesg)) {
 				FAQ::OMatic::gripe('error',

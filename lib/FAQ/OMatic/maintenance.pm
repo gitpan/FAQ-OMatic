@@ -57,7 +57,7 @@ my $html = '';
 my %taskUntaint = map {$_=>$_}
 	( 'writeMaintenanceHint', 'trimUHDB', 'trimSubmitTmps',
 	 'buildSearchDB', 'trim', 'cookies', 'errors', 'logSummary',
-	 'rebuildAllSummaries', 'rebuildCache' );
+	 'rebuildAllSummaries', 'rebuildCache', 'expireBags', 'bagAllImages' );
 
 sub main {
 	my $cgi = $FAQ::OMatic::dispatch::cgi;
@@ -361,6 +361,46 @@ sub rebuildCache {
 		my $item = new FAQ::OMatic::Item($itemName);
 		$item->saveToFile('', '', '', 'updateAllDependencies');
 	}
+}
+
+sub expireBags {
+	return if ((not defined $FAQ::OMatic::Config::cacheDir)
+				or ($FAQ::OMatic::Config::cacheDir eq '')
+				or (not defined $FAQ::OMatic::Config::bagsDir)
+				or ($FAQ::OMatic::Config::bagsDir eq ''));
+	
+	my $anyMessages = 0;
+	my @bagList = grep { not m/\.desc$/ }
+		FAQ::OMatic::getAllItemNames($FAQ::OMatic::Config::bagsDir);
+	my $bagName;
+	foreach $bagName (@bagList) {
+		#$html.="<br>Checking $bagName\n";
+		my @dependents = FAQ::OMatic::Item::getDependencies("bags.".$bagName);
+		if (scalar(@dependents) == 0) {
+			if (not $anyMessages) {
+				$html .= "The following suggestion(s) are based on "
+					."dependency files.\n You might run rebuildCache first "
+					."if you want to be certain that they are valid.\n\n";
+			}
+			$anyMessages = 1;
+			my $msg = "Consider removing bag $bagName; it is not linked from "
+				."any item in the FAQ.";
+			$html.="<br>$msg\n";
+			# TODO: in a future version, we could actually just unlink
+			# TODO: the unreferenced bags. (garbage collection).
+			# The comment above about rebuildCache would apply.
+			# Dependencies should stay current, but I'd sure hate
+			# to accidentally blast your bag.
+		}
+	}
+}
+
+sub bagAllImages {
+	return if ((not defined $FAQ::OMatic::Config::bagsDir)
+				or ($FAQ::OMatic::Config::bagsDir eq ''));
+
+	require FAQ::OMatic::ImageRef;
+	FAQ::OMatic::ImageRef::bagAllImages();
 }
 
 sub mtime {

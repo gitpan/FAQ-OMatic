@@ -67,6 +67,13 @@ sub new {
 		$item->setProperty('Title', 'New Item');
 	}
 
+	# ensure every item has a sequence number.
+	# sequence numbers are used to:
+	# 1. detect conflicting edits. We discard the later submission;
+	# no attempt is made to prevent simultaneous edits in the first place.
+	# The assumption is that simultaneous edits are uncommon, and stale
+	# locks would probably be less convenient than occasional conflicts.
+	# 2. incremental transfers for mirrored faqs
 	$item->{'SequenceNumber'} = 0 if (not defined($item->{'SequenceNumber'}));
 
 	return $item;
@@ -222,6 +229,9 @@ sub saveToFile {
 		my ($parentTitles,$parentNames) = $self->getParentChain();
 		$newSet->insert(@{$parentNames});
 		$newSet->insert(grep {defined($_)} $self->getSiblings());
+		# ...and any bags.
+		$newSet->insert(map { "bags.".$_ } $self->getBags());
+
 		$self->{'IDependOn-Set'} = $newSet;
 	}
 
@@ -307,7 +317,7 @@ sub saveToFile {
 			# this item's title has changed:
 			# update the cache for any items that refer to this one (and
 			# thus have this one's title in their cached HTML)
-			foreach $dependent ($self->getDependencies()) {
+			foreach $dependent (getDependencies($self->{'filename'})) {
 				my $dependentItem = new FAQ::OMatic::Item($dependent);
 				$dependentItem->writeCacheCopy();
 			}
@@ -334,8 +344,8 @@ sub saveToFile {
 }
 
 sub getDependencies {
-	my $self = shift;
-	my $depItem = loadDepItem($self->{'filename'});
+	my $filename = shift;
+	my $depItem = loadDepItem($filename);
 	return $depItem->getSet('HeDependsOnMe-Set')->getList();
 }
 
@@ -355,7 +365,6 @@ sub adjustDependencies {
 	my $itemName = shift;
 	my $targetName = shift;
 
-	my $depFile = "$itemName.dep";
 	my $depItem = loadDepItem($itemName);
 	my $hdos = $depItem->getSet('HeDependsOnMe-Set');
 	if ($what eq 'insert') {
@@ -365,6 +374,7 @@ sub adjustDependencies {
 	}
 	$depItem->setProperty('HeDependsOnMe-Set', $hdos);
 			# in case $hdos was new
+	my $depFile = "$itemName.dep";
 	$depItem->saveToFile($depFile,
 			$FAQ::OMatic::Config::cacheDir);
 }
@@ -404,6 +414,19 @@ sub getChildren {
 	return ();
 }
 
+sub getBags {
+	my $self = shift;
+
+	# remove duplicates but keep order using a Set
+	my $bagset = new FAQ::OMatic::Set('keepOrdered');
+	my $i;
+	for ($i=0; $i<$self->numParts(); $i++) {
+		$bagset->insert($self->getPart($i)->getBags());
+	}
+
+	return $bagset->getList();
+}
+
 # Currently meaningful -Sets that can be in an Item:
 # HeDependsOnMe-Set: list of items that depend on this item's Title property
 # IDependOn-Set: list of items whose titles this item depends upon.
@@ -427,8 +450,10 @@ sub writeCacheCopy {
 		my $staticFilename =
 			"$FAQ::OMatic::Config::cacheDir/$filename.html";
 		my $params = {'file'=>$self->{'filename'},
-					'_fullUrls'=>1};	# static pages need rooted urls
-										# to get back to the CGI side
+					'_fromCache'=>1};
+			# this link is coming from inside the cache, so we
+			# can use relative links. That's nice if we later
+			# wrap up the cache and mail it somewhere.
 		my $staticHtml = FAQ::OMatic::pageHeader($params, 'suppressType')
 						.$self->displayHTML($params)
 						.basicURL($params)
@@ -528,7 +553,6 @@ sub displaySiblings {
 	my $self = shift;
 	my $params = shift;
 	my $rt = '';		# return text
-	my ($titles,$filenames) = $self->getParentChain();
 	my $useTable = not $params->{'simple'};
 
 	my ($prevs,$nexts) = $self->getSiblings();
@@ -545,6 +569,8 @@ sub displaySiblings {
 		$rt.=FAQ::OMatic::makeAref('-command'=>'faq',
 							'-params'=>$params,
 							'-changedParams'=>{"file"=>$prevs})
+			.FAQ::OMatic::ImageRef::getImageRefCA('-small',
+				'border=0', $prevItem->isCategory(), $params)
 			."$prevTitle</a>\n";
 		$rt.="</td></tr>\n" if $useTable;
 	}
@@ -561,6 +587,8 @@ sub displaySiblings {
 		$rt.=FAQ::OMatic::makeAref('-command'=>'faq',
 							'-params'=>$params,
 							'-changedParams'=>{"file"=>$nexts})
+			.FAQ::OMatic::ImageRef::getImageRefCA('-small',
+				'border=0', $nextItem->isCategory(), $params)
 			."$nextTitle</a>\n";
 		$rt.="</td></tr>\n" if $useTable;
 	}
@@ -597,29 +625,19 @@ sub displayCoreHTML {
 	# prefix item title with a path back to the root, so that user
 	# can find his way back up. (This replaces the old "Up to:" line.)
 	my ($titles,$filenames) = $self->getParentChain();
-#	if ((@{$filenames} <= 1)
-#		and ($self->{'filename'} eq 'trash')) {
-#		# TODO
-#		# TODO: When we're in the trash, provide a way to get back to the
-#		# TODO: top. (There should be some less-hackish way to do this.)
-#		# TODO: such as whenever 1 isn't the rootmost item, make it appear so
-#		# TODO: here.
-#		my $topitem = new FAQ::OMatic::Item('1');
-#		my $toptitle = $topitem->getTitle();
-#		push @{$titles}, $toptitle;
-#		push @{$filenames}, '1';
-#	}
-#	TODO fix: ensure in getParentChain that every item ultimately
-#	finds its root at 1.
 	my ($thisTitle) = shift @{$titles};
 	my ($thisFilename) = shift @{$filenames};
 	my (@parentTitles) = reverse @{$titles};
 	my (@parentFilenames) = reverse @{$filenames};
 	my $i;
 	for ($i=0; $i<@parentTitles; $i++) {
-		$titlebox.=FAQ::OMatic::makeAref('-command'=>'faq',
-					'-params'=>$params,
-					'-changedParams'=>{"file"=>$parentFilenames[$i]})
+		# all parent icons are necessarily categories, duh. :v)
+		$titlebox.=
+			FAQ::OMatic::makeAref('-command'=>'faq',
+				'-params'=>$params,
+				'-changedParams'=>{"file"=>$parentFilenames[$i]})
+			.FAQ::OMatic::ImageRef::getImageRef('cat-small',
+				'border=0', $params)
 			.$parentTitles[$i]
 			."</a>:";
 	}
@@ -645,6 +663,12 @@ sub displayCoreHTML {
 					'-params'=>$params,
 					'-changedParams'=>{@fixfn}),
 			"Edit $whatAmI Title and Options")."\n";
+
+		$rt .= FAQ::OMatic::button(
+			FAQ::OMatic::makeAref('-command'=>'editModOptions',
+					'-params'=>$params,
+					'-changedParams'=>{@fixfn}),
+			"Edit $whatAmI Permissions")."\n";
 
 		# Duplicate it
 		my $dupTitle = ($whatAmI eq 'Answer')
@@ -676,8 +700,31 @@ sub displayCoreHTML {
 					"Trash $whatAmI")."\n";
 		}
 
+		# Convert category to answer / answer to category
+		# THANKS: to Steve Herber for suggesting pulling this out of
+		# THANKS: editPart and putting it here as a distinct command
+		# THANKS: for clarity.
+		if ($self->isCategory()
+				and scalar($self->getChildren())==0) {
+			$rt .= FAQ::OMatic::button(
+				FAQ::OMatic::makeAref('-command'=>'submitCatToAns',
+						'-params'=>$params,
+						'-changedParams'=>{
+							'checkSequenceNumber'=>$self->{'SequenceNumber'},
+							@fixfn}),
+					"Convert to Answer")."\n";
+		} elsif (not $self->isCategory()) {
+			$rt .= FAQ::OMatic::button(
+				FAQ::OMatic::makeAref('-command'=>'submitAnsToCat',
+						'-params'=>$params,
+						'-changedParams'=>{
+							'checkSequenceNumber'=>$self->{'SequenceNumber'},
+							@fixfn}),
+					"Convert to Category")."\n";
+		}
+
 		# Create new children
-		if (defined $self->{'directoryHint'}) {
+		if ($self->isCategory()) {
 			$rt .= FAQ::OMatic::button(
 				FAQ::OMatic::makeAref('-command'=>'addItem',
 						'-params'=>$params,
@@ -791,29 +838,43 @@ sub basicURL {
 	delete $killParams{'recurse'} if ($params->{'recurse'});
 	my $i; foreach $i (keys %killParams) { $killParams{$i} = ''; }
 
+	# TODO: We have always had the "This document is:"
+	# TODO: refer to the CGI. I liked that because it let me fiddle
+	# TODO: with the cache layout (after all, it changed in 2.604.)
+	# TODO: But others have asked to totally hide the presence of the CGI,
+	# TODO: in which case we should *only* display cache URLs here.
+	# TODO: Or leave this line out altogether.
+
 	my $url = FAQ::OMatic::makeAref('-command'=>'faq',
 				'-params' => $params,
 				'-changedParams'=>\%killParams,
-				'-refType'=>'url',
-				'-fullUrls'=>1);
+				'-noCache'=>1,
+				'-refType'=>'url');
+
 	return "This document is: <i>$url</i><br>\n";
 }
 
 sub permissionBox {
 	my $self = shift;
 	my $perm = shift;
+
 	my $rt = "<select name=\"_$perm\">\n";
 	my $i;
 
-	my @permDesc = ('The moderator');
-	push @permDesc, FAQ::OMatic::Groups::getGroupNameList();
-	push @permDesc,
-				('Authenticated users',
-				'Users giving their names', 
-				'Whoever can for my parent,');
 	my @permNum = (7);
 	push @permNum, FAQ::OMatic::Groups::getGroupCodeList();
-	push @permNum, (5, 3, '');
+	push @permNum, (5, 3);
+
+	my @permDesc = map { nameForPerm($_); } @permNum;
+
+	push @permNum, ('');
+	if ($self->{'filename'} eq '1') {
+		push @permDesc, '(System default) '
+			.nameForPerm(FAQ::OMatic::Auth::getDefaultProperty($perm));
+	} else {
+		push @permDesc, 'Whoever can for my parent,';
+	}
+
 	#'Because I never ask, people are anonymous when they',
 	# mode 1 (allowing anonymous) always succeeds, and therefore never
 	# even prompts the user for an ID (to bump them at least to level 3),
@@ -832,6 +893,23 @@ sub permissionBox {
 	return $rt;
 }
 
+sub nameForPerm {
+	# this is a lot like Auth::authError, but with more concise descriptions
+	my $perm = shift;
+
+	if ($perm =~ m/^6 (.*)$/) {
+		return "Group $1";
+	}
+
+	my %map = (
+		'3' => 'Users giving their names',
+		'5' => 'Authenticated users',
+		'7' => 'The moderator',
+	);
+
+	return $map{$perm};
+}
+
 sub displayItemEditor {
 	my $self = shift;
 	my $params = shift;
@@ -844,7 +922,7 @@ sub displayItemEditor {
 	} elsif ($insertHint eq 'answer') {
 		$rt .= "New Answer\n";
 	} else {
-		$rt .= "Editing item <b>".$self->getTitle()."</b>\n";
+		$rt .= "Editing ".$self->whatAmI()." <b>".$self->getTitle()."</b>\n";
 	}
 	$rt .= FAQ::OMatic::makeAref('-command'=>'submitItem',
 			'-params'=>$params,
@@ -857,6 +935,15 @@ sub displayItemEditor {
 	# then person A returns the form (incrementing the sequence number),
 	# then person B returns the form, the sequence number won't match,
 	# so B will be turned back, so he can't mistakenly overwrite A's changes.
+	# (it doesn't help for race conditions involving two simultaneously-
+	# running CGIs, only with the simultaneity of two people typing into
+	# browser forms at once.
+	# TODO: Lock files are supposed to help with two CGIs, but their
+	# TODO: implementation isn't right. They only protect during the
+	# TODO: actual write (which keeps the item files consistent). But
+	# TODO: data can get lost in a race, since two CGIs can still
+	# TODO: run in the classic A:read-B:read-A:modify,write-B:modify,write
+	# TODO: race condition.
 	$rt .= "<input type=hidden name=\"checkSequenceNumber\" value=\""
 			.$self->{'SequenceNumber'}."\">\n";
 
@@ -880,95 +967,15 @@ sub displayItemEditor {
 	$rt .= "CHECKED" if $self->{'AttributionsTogether'};
 	$rt .= "> Show attributions from all parts together at bottom\n";
 
-	if ((not defined $self->{'directoryHint'})
-		and (not $params->{'_insert'})) {
-		# we hide this on initial inserts, because it serves to confuse, and
-		# they can always come back here.
-		$rt .= "<p><input type=checkbox name=\"_addDirectory\">"
-			." Add a directory part to turn this answer item into "
-			."a category item.\n";
-	}
-
-	my $showModOptions = 0;
-	if ($params->{'modOptions'}) {
-		# don't show moderator options unless user can see them.
-		# check nicely first so we can turn off modOptions flag
-		# to avoid locking the user out of the edit screen.
-		if (FAQ::OMatic::Auth::checkPerm($self, 'PermModOptions')) {
-			delete $params->{'modOptions'};	# avoid lock-out,
-				# which would happen if user couldn't authenticate
-				# as the moderator, but had this flag following him around.
-				# Downside is that user will have to click "show mod opts"
-				# again after auth to see them. Wah.
-			if ($params->{'_fromEdit'}) {
-				# if user is coming from edit page already, offer him
-				# the chance to upgrade his permissions. Otherwise,
-				# silently hide the mod options, and he can click
-				# to try getting them back.
-				my $rd = FAQ::OMatic::Auth::ensurePerm($self, 'PermModOptions',
-					FAQ::OMatic::commandName(), $cgi, 0, 'modOptions');
-				if ($rd) { print $rd; exit 0; }
-			}
-		} else {
-			$showModOptions = 1;
-		}
-	}
-
-	if ($showModOptions) {
-		# Moderator
-		$rt .= "<p>Moderator: <i>(leave blank to inherit from parent item)</i>"
-				."<br><input type=text name=\"_Moderator\" value=\""
-				.($self->{'Moderator'}||'')."\" size=60>\n";
-	
-		$rt .= "<br>Send mail to the moderator "
-				."<select name=\"_MailModerator\">\n";
-		$rt .= "<option value=\"1\"";
-		$rt .= " SELECTED" if (defined($self->{'MailModerator'})
-								and ($self->{'MailModerator'} eq '1'));
-		$rt .= "> whenever someone modifies this item.\n";
-		$rt .= "<option value=\"0\"";
-		$rt .= " SELECTED" if (defined($self->{'MailModerator'})
-								and ($self->{'MailModerator'} eq '0'));
-		$rt .= "> never.\n";
-		$rt .= "<option value=\"\"";
-		$rt .= " SELECTED" if (not defined $self->{'MailModerator'});
-		$rt .= "> whenever my parent would.\n";
-		$rt .= "</select>\n";
-	
-		# Permission info
-		$rt .= "<br>";
-		$rt .= $self->permissionBox('PermAddPart');
-		$rt .= " may add new text parts to this page.\n";
-
-		$rt .= "<br>";
-		$rt .= $self->permissionBox('PermUseHTML');
-		$rt .= " may use HTML in my parts.\n";
-	
-		$rt .= "<br>";
-		$rt .= $self->permissionBox('PermEditPart');
-		$rt .= " may edit and delete existing parts from this page.\n";
-	
-		$rt .= "<br>";
-		$rt .= $self->permissionBox('PermEditItem');
-		$rt .= " may edit my item configuration, "
-			."including adding and moving answers and subcategories.\n";
-
-		$rt .= "<br>";
-		$rt .= $self->permissionBox('PermModOptions');
-		$rt .= " may edit these Moderator options.\n";
-
-		$rt .= "<p>".FAQ::OMatic::button(
-			FAQ::OMatic::makeAref('-command'=>FAQ::OMatic::commandName(),
-				'-params'=>$params,
-				'-changedParams'=>{'modOptions'=>''}),
-			"Hide Moderator Options")."\n";
-	} else {
-		$rt .= "<p>".FAQ::OMatic::button(
-			FAQ::OMatic::makeAref('-command'=>FAQ::OMatic::commandName(),
-				'-params'=>$params,
-				'-changedParams'=>{'modOptions'=>'1', '_fromEdit'=>1}),
-			"Show Moderator Options")."\n";
-	}
+# TODO: delete this block. superseded by submitAnsToCat
+#	if ((not defined $self->{'directoryHint'})
+#		and (not $params->{'_insert'})) {
+#		# we hide this on initial inserts, because it serves to confuse, and
+#		# they can always come back here.
+#		$rt .= "<p><input type=checkbox name=\"_addDirectory\">"
+#			." Add a directory part to turn this answer item into "
+#			."a category item.\n";
+#	}
 
 	# Submit
 	$rt .="<br><input type=submit name=\"_submit\" value=\"Submit Changes\">\n";
@@ -992,6 +999,108 @@ sub displayItemEditor {
 	return $rt;
 }
 
+sub displayModOptionsEditor {
+	my $self = shift;
+	my $params = shift;
+	my $cgi = shift;
+	my $rt = ""; 	# return text
+
+	$rt .= "Moderator options for "
+			.$self->whatAmI()." <b>".$self->getTitle()."</b>:\n"
+			."<p>\n";
+
+	$rt .= FAQ::OMatic::makeAref('-command'=>'submitModOptions',
+			'-params'=>$params,
+			'-changedParams'=>{'_insert'=>$params->{'_insert'}},
+			'-refType'=>POST);
+
+	$rt .= "<input type=hidden name=\"checkSequenceNumber\" value=\""
+			.$self->{'SequenceNumber'}."\">\n";
+
+	# Moderator
+	$rt .= "<p>Moderator: <i>(leave blank to inherit from parent item)</i>"
+			."<br><input type=text name=\"_Moderator\" value=\""
+			.($self->{'Moderator'}||'')."\" size=60>\n";
+
+	$rt .= "<br>Send mail to the moderator "
+			."<select name=\"_MailModerator\">\n";
+	$rt .= "<option value=\"1\"";
+	$rt .= " SELECTED" if (defined($self->{'MailModerator'})
+							and ($self->{'MailModerator'} eq '1'));
+	$rt .= "> whenever someone modifies this item.\n";
+	$rt .= "<option value=\"0\"";
+	$rt .= " SELECTED" if (defined($self->{'MailModerator'})
+							and ($self->{'MailModerator'} eq '0'));
+	$rt .= "> never.\n";
+	$rt .= "<option value=\"\"";
+	$rt .= " SELECTED" if (not defined $self->{'MailModerator'});
+	if ($self->{'filename'} eq '1') {
+		$rt .= "> (System default) "
+			.(FAQ::OMatic::Auth::getDefaultProperty('MailModerator')
+				? "whenever someone modifies this item."
+				: "never")
+			.".\n";
+	} else {
+		$rt .= "> whenever my parent would.\n";
+	}
+	$rt .= "</select>\n";
+
+	# Permission info
+	$rt .= "<p>Permissions:";
+
+	$rt .= "<br>";
+	$rt .= $self->permissionBox('PermAddPart');
+	$rt .= " may add new text parts to this page.\n";
+
+	$rt .= "<br>";
+	$rt .= $self->permissionBox('PermUseHTML');
+	$rt .= " may use HTML in my parts.\n";
+
+	$rt .= "<br>";
+	$rt .= $self->permissionBox('PermEditPart');
+	$rt .= " may edit and delete existing parts from this page.\n";
+
+	$rt .= "<br>";
+	$rt .= $self->permissionBox('PermEditItem');
+	$rt .= " may edit my item configuration, "
+		."including adding and moving answers and subcategories.\n";
+
+	$rt .= "<br>";
+	$rt .= $self->permissionBox('PermModOptions');
+	$rt .= " may edit these Moderator options.\n";
+
+	if ($self->{'filename'} eq '1') {
+		$rt .= "<p>System-wide moderator options:\n";
+
+		$rt .= "<br>";
+		$rt .= $self->permissionBox('PermNewBag');
+		$rt .= " may upload new bags.\n";
+
+		$rt .= "<br>";
+		$rt .= $self->permissionBox('PermReplaceBag');
+		$rt .= " replace the contents of existing bags.\n";
+
+		$rt .= "<br>";
+		$rt .= $self->permissionBox('PermEditGroups');
+		$rt .= " can change group memberships.\n";
+		# TODO: These global permissions should probably appear
+		# TODO: on a different page. As-is, the administrator must
+		# TODO: give away control over these permissions to give
+		# TODO: away moderatorship of the root item.
+	}
+
+	$rt .="<p><input type=submit name=\"_submit\" value=\"Submit Changes\">\n";
+	$rt .= "<input type=reset name=\"_reset\" value=\"Revert\">\n";
+	$rt .= "<input type=hidden name=\"_zzverify\" value=\"zz\">\n";
+		# this lets the submit script check that the whole POST was
+		# received.
+	$rt .= "</form>\n";
+
+	$rt .= FAQ::OMatic::Help::helpFor($params, 'editModOptions', "<br>\n");
+
+	return $rt;
+}
+
 sub setProperty {
 	my $self = shift;
 	my $property = shift;
@@ -1009,6 +1118,13 @@ sub setProperty {
 	} else {
 		delete $self->{$property};
 	}
+}
+
+sub getProperty {
+	my $self = shift;
+	my $property = shift;
+
+	return $self->{$property};
 }
 
 sub getDirPart {
