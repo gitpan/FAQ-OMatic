@@ -944,10 +944,8 @@ sub setConfigStep {
 		if ($configInfo->{$aleft}->{'-cmd'}) {	# it represents a command...
 			$map->{$left} =~ s#[^\w/'-]##gs;	# be very restrictive
 		}
-		my $warn = checkConfig($left, $map->{$left});
-		my $noproblem='';
-		($warn,$noproblem) = @{$warn} if (ref($warn));
-		if ($noproblem) {
+		my ($warn,$howbad) = checkConfig($left, \$map->{$left});
+		if ($howbad eq 'ok') {
 			$notices .= "<li>$warn";
 		} elsif ($warn) {
 			$warnings .= "<li>$warn";
@@ -969,40 +967,40 @@ sub setConfigStep {
 
 sub checkConfig {
 	my $left = shift;
-	my $right = shift;
+	my $rightref = shift;
+	my $right = ${$rightref};
 	my $aright = stripQuotes($right);
 	if ($left eq '$adminAuth') {
 		if (not FAQ::OMatic::validEmail($aright)) {
-			return "$left ($right) doesn't look like an email address.";
+			return ("$left ($right) doesn't look like an email address.",
+				'fix');
 		}
-		return '';
 	}
 	if ($left eq '$adminEmail' and $right ne '$adminAuth') {
 		if (not FAQ::OMatic::validEmail($aright)) {
-			return "$left ($right) doesn't look like an email address.";
+			return ("$left ($right) doesn't look like an email address.",
+				'fix');
 		}
-		return '';
 	}
 	if ($left eq '$mailCommand') {
 		if (not -x $aright) {
-			return "$left ($right) isn't executable.";
+			return ("$left ($right) isn't executable.", 'fix');
 		}
-		return '';
 	}
 	if ($left eq '$RCSci') {
 		if (not -x $aright) {
-			return "$left ($right) isn't executable.";
+			return ("$left ($right) isn't executable.", 'fix');
 		}
-		return '';
 	}
 	if ($left eq '$serveDir') {
 		if ($aright eq '') {
-			return "$left undefined. You must define a directory readable "
+			return ("$left undefined. You must define a directory readable "
 				."by the web server from which to serve data. If you are "
 				."upgrading, I recommend creating a new directory in the "
 				."appropriate place in your filesystem, and copying in "
 				."your old items later. The installer checklist will tell you "
-				."when to do the copy.";
+				."when to do the copy.",
+				'fix');
 		}
 		$aright = FAQ::OMatic::canonDir($aright);
 		if (not -d $aright) {
@@ -1012,20 +1010,26 @@ sub checkConfig {
 			}
 			$dirname = $1;
 			if (not mkdir($dirname, 0755)) {
-				return "$left ($right) can't be created.";
+				return ("$left ($right) can't be created.", 'fix');
 			} else {
 				chmod(0755,$dirname);
-				return ["$left: Created directory $right.", 1];
+				return ("$left: Created directory $right.", 'ok');
 			}
 		}
-		return '';
 	}
 	if ($left eq '$cookieLife') {
 		if ($aright < 1) {
-			return "$left is not a reasonable number. Login cookies will "
-			."expire instantly, which isn't very convenient.";
+			$$rightref = "'3600'";
+			return ("$left was nonpositive; I set it to '3600' (one hour).",
+				'ok');
+			# simply disallow unreasonable numbers. I can't imagine a
+			# scenario where someone would want a 0 cookieLife (uttering
+			# those words, of course, will cause such a scenario to
+			# spring into existence), and this will save a lot of grief
+			# for most people upgrading.
 		}
 	}
+	return ('','');
 }
 
 sub firstItemStep {

@@ -47,7 +47,7 @@ use FAQ::OMatic::Bags;
 # fully qualified) without getting a gripe from 'use strict'.
 use vars qw($VERSION $authorAddress %theParams $userGripes);
 
-$VERSION = '2.620';
+$VERSION = '2.621';
 
 $authorAddress = 'jonh@cs.dartmouth.edu';
 	# This is never used to automatically send mail to (that's authorEmail),
