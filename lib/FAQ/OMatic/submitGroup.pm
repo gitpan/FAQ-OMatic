@@ -55,6 +55,13 @@ sub main {
 		#		."be a valid email address.");
 		#}
 
+		# THANKS: To "Mark D. Nagel" <nagel@intelenet.net> for catching
+		# this bad case.
+		if (($member eq '') or ($member=~m/\s/)) {
+			FAQ::OMatic::gripe('error',
+				"Member field ('$member') is empty or contains whitespace.");
+		}
+
 		FAQ::OMatic::Groups::addMember($group, $member);
 
 		FAQ::OMatic::Versions::setVersion('CustomGroups', '1');

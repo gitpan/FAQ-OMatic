@@ -44,13 +44,17 @@ sub cPageHeader {
 	# this is a func because FAQ::OMatic::fomTitle() isn't well-defined at
 	# global initialization time.
 	my $type = ($suppressType) ? '' : "Content-type: text/html\n\n";
+
+	# THANKS: to Billy Naylor for requesting the ability to insert
+	# THANKS: a corporate logo into every page's HTML.
+	my $pageHeader = $FAQ::OMatic::Config::pageHeader || '';
 	return $type
 			."<html><head><title>".FAQ::OMatic::fomTitle()
 			.FAQ::OMatic::pageDesc($params)."</title></head>\n"
 			."<body bgcolor=\"$FAQ::OMatic::Config::backgroundColor\" "
 			."text=$FAQ::OMatic::Config::textColor "
 			."link=$FAQ::OMatic::Config::linkColor "
-			."vlink=$FAQ::OMatic::Config::vlinkColor>\n";
+			."vlink=$FAQ::OMatic::Config::vlinkColor>\n$pageHeader\n";
 }
 
 sub cPageFooter {
@@ -164,8 +168,12 @@ sub cPageFooter {
 			."This is <a href=\"http://www.dartmouth.edu/cgi-bin/cgiwrap/jonh/faq.pl\">Faq-O-Matic</a> $FAQ::OMatic::VERSION.\n"
 			."</td></tr>"
 			."</table>"
-			.partEnd({})
-			."</body></html>\n";
+			.partEnd({});
+
+	$page .= $FAQ::OMatic::Config::pageFooter || '';
+
+	$page .= "</body></html>\n";
+	
 	return $page;
 }
 

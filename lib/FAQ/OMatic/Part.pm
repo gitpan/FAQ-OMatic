@@ -72,6 +72,13 @@ sub loadFromFile {
 			# out with updated header keys.
 			$key = 'Author-Set';
 		}
+		if ($key eq 'DateOfPart') {
+			# convert old-style 'DateOfPart' keys to 'LastModifiedSecs' keys
+			# transparently.
+			$value = FAQ::OMatic::Item::compactDateToSecs($value);
+				# turn back into seconds
+			$key = 'LastModifiedSecs';
+		}
 		if ($key eq 'Lines') {
 			# Lines header is always last before the text content of a Part
 			$lines = $value;
@@ -215,14 +222,12 @@ sub displayHTML {
 	}
 	if ($showAttributions eq 'all') {
 		#$rt .= "<i>".join(", ",
-		# (DateOfPart courtesy Scott Hardin <scott@cs.dlh.de>)
-		# Because the 'DateOfPart' keyword is not a standard hack,
-		# we only print out the additional semicolon and space
-		# if the keyword exists. Since we're lazy, we'll just pack
-		# it into a string.
+		# THANKS: DateOfPart courtesy Scott Hardin <scott@cs.dlh.de>
 		my ($date_string) = '';
-		if ($self->{'DateOfPart'} and $params->{'showLastModified'}) {
-		        $date_string = $self->{'DateOfPart'} . "  ";
+		if ($self->{'LastModifiedSecs'} and
+			($params->{'showLastModified'} or $FAQ::OMatic::Config::showLastModifiedAlways)) {
+		        $date_string = FAQ::OMatic::Item::compactDate(
+						$self->{'LastModifiedSecs'}) . " ";
 		}
 		$rt .= "<i>"
 			.$date_string
@@ -338,6 +343,8 @@ sub displayPartEditor {
 
 	# THANKS: no text boxes wrap anymore -- it breaks long URLs.
 	# THANKS: to Billy Naylor <banjo@actrix.gen.nz> for the fix
+	# THANKS: to "Alan R. Zimmerman" <mailto:alanz@mdhost.cse.tek.com>) for
+	# noticing it a long time ago. I just forgot about his bug report! Blush.
 	$rt .= "<input type=radio name=\"_inputType\" value=\"textarea\" CHECKED>\n"
 		." Enter text in this box:";
 	$rt .= "<br><textarea cols=80 rows=$rows name=_newText>";

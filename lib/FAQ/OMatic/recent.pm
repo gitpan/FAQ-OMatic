@@ -41,6 +41,17 @@ sub main {
 	# Get the names of the recent files
 	my $matchset = FAQ::OMatic::Search::getRecentSet($params);
 
+	# Filter out those in the trash
+	# THANKS: dschulte@facstaff.wisc.edu for the suggestion
+	my @finalset = ();
+	my $file;
+	foreach $file (@{$matchset}) {
+		$item = new FAQ::OMatic::Item($file);
+		if (not $item->hasParent('trash')) {
+			push @finalset, $item;
+		}
+	}
+
 	# reasonable text for 'n' days
 	my %dayMap = (
 		0 => 'zero days',
@@ -58,16 +69,15 @@ sub main {
 	} else {
 		$rt.="Items modified in the last $englishDays:\n<p>\n";
 
-		my ($file, $item);
-		foreach $file (@{$matchset}) {
-			$item = new FAQ::OMatic::Item($file);
+		my $item;
+		foreach $item (sort byModDate @finalset) {
 			$rt .= FAQ::OMatic::Appearance::itemStart($params, $item);
 				# goes before & between display item's title
 			$rt .= FAQ::OMatic::makeAref("faq",
 					{ 'file'	=>	$item->{'filename'} })
 					.$item->getTitle()."</a>";
 			$rt .= "<br>"
-					.FAQ::OMatic::Item::compactDate($item->{'LastModified'})
+					.FAQ::OMatic::Item::compactDate($item->{'LastModifiedSecs'})
 					."\n";
 		}
 		$rt .= FAQ::OMatic::Appearance::itemEnd($params);		# goes after items
@@ -82,6 +92,12 @@ sub main {
 	print $rt;
 
 	FAQ::OMatic::Search::closeWordDB();
+}
+
+sub byModDate {
+	my $lmsa = $a->{'LastModifiedSecs'} || -1;
+	my $lmsb = $b->{'LastModifiedSecs'} || -1;
+	return $lmsb <=> $lmsa;
 }
 
 1;

@@ -49,7 +49,19 @@ sub main {
 
 	# Get the names of the matching files
 	my $matchset = FAQ::OMatic::Search::getMatchesForSet($params);
-	
+
+	# Filter out those in the trash
+	# THANKS: dschulte@facstaff.wisc.edu for the suggestion
+	# I have no idea why grep{} won't work here, but I couldn't get it to.
+	my @finalset = ();
+	my $file;
+	foreach $file (@{$matchset}) {
+		$item = new FAQ::OMatic::Item($file);
+		if (not $item->hasParent('trash')) {
+			push @finalset, $item;
+		}
+	}
+
 	my $rt = FAQ::OMatic::pageHeader();
 	if (scalar(@{$matchset})==0) {
 		$rt.="No items matched "
@@ -64,9 +76,8 @@ sub main {
 			.join(", ", @{$params->{'_searchArray'}})
 			."</i>:<p>\n";
 
-		my ($file, $item);
-		foreach $file (@{$matchset}) {
-			$item = new FAQ::OMatic::Item($file);
+		my $item;
+		foreach $item (@finalset) {
 			$rt .= FAQ::OMatic::Appearance::itemStart($params, $item);
 			$rt .= $item->displaySearchContext($params);
 		}

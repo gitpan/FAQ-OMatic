@@ -452,7 +452,7 @@ sub updateAllChildren {
 
 	foreach $filei ($self->getChildren()) {
 		$itemi = new FAQ::OMatic::Item($filei);
-		$itemi->saveToFile();
+		$itemi->writeCacheCopy();
 	}
 }
 
@@ -600,7 +600,28 @@ sub getParentChain {
 	return (\@titles, \@filenames);
 }
 
-# okay, I guess this displays the neightbors, too...
+# same structure as above, but only used to check for a particular parent
+sub hasParent {
+	my $self = shift;
+	my $parentFile = shift;
+
+	my ($nextfile, $nextitem, $thisfile);
+
+	$nextitem = $self;
+	$nextfile = $self->{'filename'};
+	do {
+		return 1 if ($nextfile eq $parentFile);
+
+		$thisfile = $nextfile;
+		$nextfile = $nextitem->{'Parent'};
+		$nextitem = $nextitem->getParent();
+	} while ((defined $nextitem) and (defined $nextfile)
+		and ($nextfile ne $thisfile));
+	
+	return 0;
+}
+
+# okay, I guess this displays the neighbors, too...
 sub displaySiblings {
 	my $self = shift;
 	my $params = shift;
@@ -672,7 +693,9 @@ sub displayCoreHTML {
 
 	$rt .= FAQ::OMatic::Appearance::itemStart($params, $self);
 
-	my $titlebox = '';
+	my $titlebox = "\n\n";	# visual separation for Page Source view
+	$titlebox .= "<a name=\"file_"
+			.$self->{'filename'}."\">\n";	# link for internal refs
 
 	# prefix item title with a path back to the root, so that user
 	# can find his way back up. (This replaces the old "Up to:" line.)
@@ -788,16 +811,22 @@ sub displayCoreHTML {
 	
 			# Create new children
 			if ($self->isCategory()) {
+				# suggestion of adding cat title to reduce confusion is from
+				# THANKS: pauljohn@ukans.edu
+				my $title = $self->getTitle();
+				if (length($title) > 15) {
+					$title = substr($title, 0, 12)."...";
+				}
 				$rt .= FAQ::OMatic::button(
 					FAQ::OMatic::makeAref('-command'=>'addItem',
 							'-params'=>$params,
 							'-changedParams'=>{'_insert'=>'answer', @fixfn}),
-						"New Answer")."\n";
+						"New Answer in \"$title\"")."\n";
 				$rt .= FAQ::OMatic::button(
 					FAQ::OMatic::makeAref('-command'=>'addItem',
 							'-params'=>$params,
 							'-changedParams'=>{'_insert'=>'category', @fixfn}),
-						"New Subcategory")."\n";
+						"New Subcategory of \"$title\"")."\n";
 			}
 		}
 
@@ -852,7 +881,10 @@ sub displayCoreHTML {
 
 	my $showLastModified = $params->{'showLastModified'};
 	my $lastModified = $self->{'LastModifiedSecs'};
-	if ($showLastModified and $lastModified) {
+	# THANKS: Config::showLastModifiedAlways feature was requested by
+	# THANKS: parker@austx.tandem.com
+	if ($lastModified and
+		($showLastModified or $FAQ::OMatic::Config::showLastModifiedAlways)) {
 		$rt .= "<br>" if ($needbr);
 		$rt .= "<i>".compactDate($self->{'LastModifiedSecs'})."</i>\n";
 		$needbr = 1;
@@ -881,7 +913,18 @@ sub displayHTML {
 	my $params = shift;	# ref to hash of display params
 	my $rt = "";
 
+	# signal to aref generator that some internal links are
+	# possible. (only signal this when recursing to save effort otherwise)
+	if ($params->{'recurse'} or $params->{'_recurse'}) {
+		$params->{'_recurseRoot'} = $self->{'filename'};
+	}
+
 	$rt .= $self->displayCoreHTML($params);
+
+	# turn #internal links off after the items are displayed.
+	# Otherwise they mess up the bottom link bar.
+	# (is there a general way to solve that problem?)
+	delete $params->{'_recurseRoot'};
 
 	$rt .= FAQ::OMatic::Appearance::itemEnd($params);
 
@@ -919,7 +962,7 @@ sub basicURL {
 	my $url = FAQ::OMatic::makeAref('-command'=>'faq',
 				'-params' => $params,
 				'-changedParams'=>\%killParams,
-				'-noCache'=>1,
+				'-thisDocIs'=>1,
 				'-refType'=>'url');
 
 	return "This document is: <i>$url</i><br>\n";

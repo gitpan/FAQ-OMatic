@@ -190,6 +190,7 @@ sub writeMaintenanceHint {
 		print LMHINT $^T."  ".scalar localtime($^T)."\n";
 		close LMHINT;
 	}
+	FAQ::OMatic::Versions::setVersion('MaintenanceInvoked');
 }
 
 sub trimUHDB {

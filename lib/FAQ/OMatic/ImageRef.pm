@@ -89,6 +89,12 @@ sub getImageUrl {
 	if (-f $bagPath and not $forceBagWrite) {
 		return $bagUrl;
 	}
+	if (not defined $FAQ::OMatic::Config::bagsDir) {
+		# fail obviously if bagsDir not configured -- this
+		# happens when upgrading versions
+		return "x:";
+	}
+
 	# attempt to cache this image file in $bagsDir
 	if (not open(CACHEIMAGE, ">$bagPath")) {
 		FAQ::OMatic::gripe('problem',

@@ -41,6 +41,12 @@ sub main {
 	
 	$page.="<h3>Appearance Options</h3>";
 
+# Data structure key:
+#		['parameterName',			# as resolved by $params->{'parameterName'}
+#			['value-names', ...],	# one per table column
+#			['value', ...],			# as will appear in value="" field
+#			'description'],			# text description of parameter
+
 	my $boxes = [
 #		['recurse',
 #			['', 'Show', 'Hide'],
@@ -50,10 +56,16 @@ sub main {
 			['', 'Show', 'Hide'],
 			['', '1', ''],
 			'name of moderator who organizes current category'],
-		['showLastModified',
-			['', 'Show', 'Hide'],
-			['', '1', ''],
-			'last modified date'],
+		($FAQ::OMatic::Config::showLastModifiedAlways||0)
+			? ['',
+				['', '', ''],
+				['', '', ''],
+				'<i>last modified date always shown</i>']
+			: ['showLastModified',
+				['', 'Show', 'Hide'],
+				['', '1', ''],
+				'last modified date']
+			,
 		['showEditCmds',
 			['', 'Show', 'Hide'],
 			['', '1', ''],

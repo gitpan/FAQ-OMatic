@@ -32,6 +32,13 @@
 ### Faq-O-Matic.
 ###
 
+$VERSION = undef;
+# This is NOT really the version number. See FAQ/OMatic.pm.
+# THANKS: "Andreas J. Koenig" <andreas.koenig@anima.de> says that I need
+# THANKS: a dummy VERSION string to fix a weird interaction among MakeMaker,
+# THANKS: CPAN, and FAQ-O-Matic encountered by
+# THANKS: "Larry W. Virden" <lvirden@cas.org>.
+
 package FAQ::OMatic::install;
 
 use Config;
@@ -81,7 +88,7 @@ my %knownSteps = map {$_=>$_} qw(
 	firstItem		initMetaFiles					setConfig
 	maintenance		makeSecure
 	colorSampler	askColor		setColor
-	upgradeItems
+	copyItems		configVersion
 	);
 
 sub doStep {
@@ -254,7 +261,7 @@ sub initConfigStep {
 			'$adminAuth'		=> "''",
 			'$adminEmail'		=> "\$adminAuth",
 			'$metaDir'			=> "'$metaDfl'",
-			'$itemDir'			=> "'$itemDfl'",
+			#'$itemDir'			=> "'$itemDfl'",
 			'$authorEmail'		=> "''",
 			'$maintSendErrors'	=> "'true'",
 			'$mailCommand'		=> "'$mailDfl'",
@@ -327,7 +334,7 @@ sub mainMenuStep {
 	my $par = "";	# "<p>" for more space between items
 
 	$rt.="<h3>Configuration Main Menu (install module)</h3>\n";
-	$rt.="<ol>Perform these tasks in order to prepare a new FAQ-O-Matic:\n";
+	$rt.="<ol>Perform these tasks in order to prepare your FAQ-O-Matic version $FAQ::OMatic::VERSION:\n";
 	$rt.="$par<li><a href=\"".installUrl('askConfig')."\">"
 			.checkBoxFor('askConfig')
 			."Define configuration parameters.</a>\n";
@@ -350,21 +357,27 @@ sub mainMenuStep {
 	}
 	$rt.="$par<li><a href=\"".installUrl('configItem')."\">"
 			.checkBoxFor('configItem')
-			."Create item, cache, and bags directories.</a>\n";
-	if ( (0 < FAQ::OMatic::Versions::getVersion('Items'))
-		and (FAQ::OMatic::Versions::getVersion('Items') < 2.604) ) {
-		# items exist but from a version where the itemDir was different
-		$rt.="$par<li>".checkBoxFor('firstItem')
-			."Copy the contents of your old item/ directory to <tt>"
-			.$FAQ::OMatic::Config::itemDir."</tt> now, then "
-			."<a href=\"".installUrl('upgradeItems')."\">"
-			."click here</a> to check this item off; <i> or </i>\n";
-		$rt.="<a href=\"".installUrl('firstItem')."\">"
-			."create an initial category and a trash can.</a>\n";
-	} else {
+			."Create item, cache, and bags directories in serve dir.</a>\n";
+
+	if (defined($FAQ::OMatic::Config::itemDir_Old)) {
+		$rt.="$par<li>"
+			."<a href=\"".installUrl('copyItems')."\">"
+			.checkBoxFor('copyItems')
+			."Copy old items</a> from "
+			."<tt>$FAQ::OMatic::Config::itemDir_Old</tt> "
+			."to <tt>$FAQ::OMatic::Config::itemDir</tt>.\n";
+		$rt.="$par<li>"
+			."<a href=\"".installUrl('firstItem')."\">"
+			.checkBoxFor('firstItem')
+			."Install any new items that come with the system.</a>\n"
+	} elsif (not isDone('firstItem')) {
 		$rt.="$par<li><a href=\"".installUrl('firstItem')."\">"
 			.checkBoxFor('firstItem')
-			."Create an initial category and a trash can.</a>\n";
+			."Create system default items.</a>\n";
+	} else {
+		$rt.="$par<li>"
+			.checkBoxFor('firstItem')
+			."Items are installed.\n";
 	}
 
 	$rt.="$par<li>"
@@ -393,6 +406,12 @@ sub mainMenuStep {
 				."Run maintenance script manually now (Need to set up "
 				."the maintenance cron job first).\n";
 	}
+
+	$rt.="$par<li><a href=\"".installUrl('configVersion')."\">"
+		.checkBoxFor('configVersion')
+		."Mark the config file as upgraded to Version "
+		."$FAQ::OMatic::VERSION</a>\n";
+
 	$rt.="$par<li><a href=\"".installUrl('colorSampler')."\">"
 			.checkBoxFor('customColors')
 			."Select custom colors for your Faq-O-Matic</a> (optional).\n";
@@ -443,39 +462,59 @@ sub mainMenuStep {
 	displayMessage($rt);
 }
 
-sub checkBoxFor {
+sub isDone {
 	my $thing = shift;
-	my $done = '';
 
-	my $rt = "<img border=0 src=\"";
-	$done = 1 if (($thing eq 'askConfig') && ($FAQ::OMatic::Config::adminAuth));
-	$done = 1 if (($thing eq 'configItem')
+	return 1 if (($thing eq 'askConfig')
+		&& ($FAQ::OMatic::Config::adminAuth)
+		&& not undefinedConfigsExist());
+	return 1 if (($thing eq 'configItem')
+		&& (defined $FAQ::OMatic::Config::itemDir)
 		&& (-d "$FAQ::OMatic::Config::itemDir/.")
+		&& (defined $FAQ::OMatic::Config::cacheDir)
 		&& (-d "$FAQ::OMatic::Config::cacheDir/.")
+		&& (defined $FAQ::OMatic::Config::bagsDir)
 		&& (-d "$FAQ::OMatic::Config::bagsDir/."));
-	$done = 1 if (($thing eq 'firstItem')
+	return 1 if (($thing eq 'firstItem')
 		&& FAQ::OMatic::Versions::getVersion('Items') eq $FAQ::OMatic::VERSION);
 		# The above test ensures that the "create initial items" routine
 		# has been run once by this version of the faq. That way as new
 		# default initial items are supplied, upgraders don't get a checkbox
 		# until they're installed.
-	$done = 1
-		if (($thing eq 'maintenance') && ($FAQ::OMatic::Config::maintenanceSecret));
-	$done = 1 if (($thing eq 'makeSecure') && ($FAQ::OMatic::Config::secureInstall));
-	$done = 1 if (($thing eq 'manualMaintenance')
-					&& (-f "$FAQ::OMatic::Config::metaDir/lastMaintenance"));
-	$done = 1 if (($thing eq 'customColors')
+	return 1
+		if (($thing eq 'maintenance')
+					&& ($FAQ::OMatic::Config::maintenanceSecret));
+	return 1 if (($thing eq 'makeSecure') && ($FAQ::OMatic::Config::secureInstall));
+	return 1 if (($thing eq 'manualMaintenance')
+					&& (-f "$FAQ::OMatic::Config::metaDir/lastMaintenance")
+					&& (FAQ::OMatic::Versions::getVersion('MaintenanceInvoked')
+						eq $FAQ::OMatic::VERSION));
+	return 1 if (($thing eq 'customColors')
 					&& FAQ::OMatic::Versions::getVersion('CustomColors'));
-	$done = 1 if (($thing eq 'rebuildCache')
+	return 1 if (($thing eq 'rebuildCache')
 					&& (FAQ::OMatic::Versions::getVersion('CacheRebuild')
 						eq $FAQ::OMatic::VERSION));
-	$done = 1 if (($thing eq 'customGroups')
+	return 1 if (($thing eq 'customGroups')
 					&& FAQ::OMatic::Versions::getVersion('CustomGroups'));
-	$done = 1 if (($thing eq 'systemBags')
+	return 1 if (($thing eq 'systemBags')
 					&& (FAQ::OMatic::Versions::getVersion('SystemBags')
 						eq $FAQ::OMatic::VERSION));
-	$done = 1 if ($CGI::VERSION >= 2.42);
+	return 1 if (($thing eq 'CGIversion')
+					&& ($CGI::VERSION >= 2.42));
+	return 1 if (($thing eq 'copyItems')
+					&& (-f "$FAQ::OMatic::Config::itemDir/1"));
+	return 1 if (($thing eq 'configVersion')
+					&& ($FAQ::OMatic::Config::version
+						eq $FAQ::OMatic::VERSION));
 
+	return 0;
+}
+
+sub checkBoxFor {
+	my $thing = shift;
+	my $done = isDone($thing);
+
+	my $rt = "<img border=0 src=\"";
 	if ($thing eq 'nothing') {
 		$rt.=installUrl('', 'url', 'img', 'space');
 	} elsif ($done) {
@@ -542,11 +581,17 @@ sub createDir {
 	}
 
 	my $map = readConfig();
+	if (defined $map->{$dirSymbol."Dir"}
+		and ($map->{$dirSymbol."Dir"} ne "''")) {
+		# copy the prior definition. Used so we know where the old
+		# $itemDir was after we've created the new one.
+		$map->{$dirSymbol."Dir_Old"} = $map->{$dirSymbol."Dir"};
+	}
 	$map->{$dirSymbol."Dir"} = "'".$dirPath."'";
 	$map->{$dirSymbol."URL"} = "'".$dirUrl."'";
 	writeConfig($map);
-	displayMessage("updated config file: $dirSymbol"."Dir = <b>$dirPath</b>");
-	displayMessage("updated config file: $dirSymbol"."URL = <b>$dirUrl</b>");
+	displayMessage("updated config file: $dirSymbol"."Dir = <b>$dirPath</b>"
+		."<br>updated config file: $dirSymbol"."URL = <b>$dirUrl</b>");
 }
 
 sub dirFail {
@@ -570,6 +615,13 @@ $configInfo = {
 	'RCSuser' =>	[ 'y-r3',
 		'User to use for RCS ci command (default is process UID)',
 		['getpwuid($<)'], 1 ],
+	'useServerRelativeRefs' =>	[ 'y-s1',
+		'Links from cache to CGI are relative to the server root, rather than '
+		.'absolute URLs including hostname:',
+		[ "'true'", "''" ], 0 ],
+	'showLastModifiedAlways' =>	[ 'y-s2',
+		'Items always display their last-modified date.',
+		[ "'true'", "''" ], 0 ],
 	'adminAuth' =>	[ 'a-a1',
 		'Identity of local FAQ-O-Matic administrator (an email address)',
 		[], 1 ],
@@ -577,6 +629,14 @@ $configInfo = {
 		'Where FAQ-O-Matic should send email when it wants to alert the administrator'
 		.' (usually same as $adminAuth)',
 		[ '$adminAuth' ], 1 ],
+	'pageHeader' => [ 'm-p1',
+		'An HTML fragment inserted at the top of each page. '
+		.'You might use this to place a corporate logo.',
+		[], 1 ],
+	'pageFooter' => [ 'm-p2',
+		'An HTML fragment appended to the bottom of each page. '
+		.'You might use this to identify the webmaster for this site.',
+		[], 1 ],
 # Disabled -- I don't think I care anymore about everybody's install problems.
 # It's popular enough now that folks can probably bear to email me
 # themselves if things go south.
@@ -607,11 +667,15 @@ $configInfo = {
 	'secureInstall'=>[ 'hide' ],
 	'version'=>[ 'hide' ],
 	'maintenanceSecret'=>[ 'hide' ],
+	'cacheDir'=>[ 'hide' ],
+	'cacheURL'=>[ 'hide' ],
+	'itemDir'=>[ 'hide' ],
 	'serveDir' =>	[ 'c-c1',
 		'Filesystem directory where FAQ-O-Matic will keep item files, '
 		.'image and other bit-bag files,'
 		.'and a cache of generated HTML files. '
-		.'This directory must be accesible directly via the http server.',
+		.'This directory must be accesible directly via the http server. '
+		.'It might be something like /home/faqomatic/public_html/fom-serve/.',
 		[], 1 ],
 	'serveURL' =>	[ 'c-c2',
 		'The URL prefix needed to access files in <b>$serveDir</b>. '
@@ -638,6 +702,15 @@ sub getPotentialConfig {
 	}
 
 	return $map;
+}
+
+sub undefinedConfigsExist {
+	my $map = readConfig();
+	my $ckey;
+	foreach $ckey (sort keys %{$configInfo}) {
+		return 1 if not defined($map->{'$'.$ckey});
+	}
+	return 0;
 }
 
 sub askConfigStep {
@@ -712,6 +785,12 @@ sub askConfigStep {
 	$widgets->{'e--separator'} = "<tr><td colspan=2>"
 			."<hr>Optional configurations... defaults are pretty good.<hr>"
 			."</td></tr>\n";
+	$widgets->{'z--separator'} = "<tr><td colspan=2>"
+			."<hr>Other configurations that you should probably "
+			."ignore if present.<hr>"
+			."</td></tr>\n";
+			# ...because install doesn't have any docs on them, so they're
+			# probably obsolete anyway.
 
 	# now display the widgets in sorted order
 	$rt.= join('', map {$widgets->{$_}} sort(keys %{$widgets}));
@@ -793,8 +872,16 @@ sub checkConfig {
 		return '';
 	}
 	if ($left eq '$serveDir') {
+		if ($aright eq '') {
+			return "$left undefined. You must define a directory readable "
+				."by the web server from which to serve data. If you are "
+				."upgrading, I recommend creating a new directory in the "
+				."appropriate place in your filesystem, and copying in "
+				."your old items later. The installer checklist will tell you "
+				."when to do the copy.";
+		}
 		$aright = FAQ::OMatic::canonDir($aright);
-		if ($aright and (not -d $aright)) {
+		if (not -d $aright) {
 			if (not mkdir(stripSlash($aright), 0755)) {
 				return "$left ($right) can't be created.";
 			} else {
@@ -854,32 +941,45 @@ sub firstItemStep {
 		displayMessage("Created a help category.");
 	} else {
 		displayMessage("<b>$FAQ::OMatic::Config::itemDir</b> already "
-				."contains a 'help' file.");
+				."contains a 'help000' file.");
 	}
 
+	# The reason for an Items version field is to ensure that
+	# all of the items that come with a default FOM of a given
+	# version are now installed. Old items are not replaced...
 	FAQ::OMatic::Versions::setVersion('Items');
+
+	# set itemDir_Old to current itemDir, since that's now the
+	# working directory. That way if it ever moves again (oh man
+	# I hope not), we'll know where to copy from. Ugh.
+	my $map = readConfig();
+	delete $map->{'$itemDir_Old'};
+	writeConfig($map);
+
 	doStep('mainMenu');
 }
 
-sub upgradeItemsStep {
-	# user has transferred items from an old FAQ-O-Matic, and
-	# we can indicate in the versions file that they're okay.
-	if (not -f "$FAQ::OMatic::Config::itemDir/1") {
-		FAQ::OMatic::gripe('error',
-			"I don't see $FAQ::OMatic::Config::itemDir/1");
+sub copyItemsStep {
+	my $oldDir = $FAQ::OMatic::Config::itemDir_Old;
+	my $newDir = $FAQ::OMatic::Config::itemDir;
+	
+	my @oldList = FAQ::OMatic::getAllItemNames($oldDir);
+	my $file;
+	foreach $file (@oldList) {
+		my $item = new FAQ::OMatic::Item($file, $oldDir);
+		$item->saveToFile('', $newDir, 'noChange');
 	}
-	if (not -f "$FAQ::OMatic::Config::itemDir/help000") {
-		FAQ::OMatic::gripe('error',
-			"I don't see $FAQ::OMatic::Config::itemDir/help000");
-	}
-	if (not -f "$FAQ::OMatic::Config::itemDir/trash") {
-		FAQ::OMatic::gripe('error',
-			"I don't see $FAQ::OMatic::Config::itemDir/trash");
-	}
+	my @newList = FAQ::OMatic::getAllItemNames($newDir);
 
-	# indicate that the item files are in place
-	FAQ::OMatic::Versions::setVersion('Items');
-
+	if (scalar(@oldList) ne scalar(@newList)) {
+		displayMessage("I'm vaguely concerned that $oldDir contained "
+			.scalar(@oldList)." items, but (after copying) $newDir has "
+			.scalar(@newList)." items. I don't plan on doing anything "
+			."about this, though. How about you check? :v)");
+	} else {
+		displayMessage("Copied ".scalar(@newList)." items from "
+			."<tt>$oldDir</tt> to <tt>$newDir</tt>.");
+	}
 	doStep('mainMenu');
 }
 
@@ -978,6 +1078,7 @@ sub maintenanceStep {
 			'default', 'abort');
 	}
 
+	FAQ::OMatic::Versions::setVersion('MaintenanceCronJob');
 	$rt.="<p>Cron job installed. The maintenance script should run hourly.\n";
 	displayMessage($rt);
 	doStep('default');
@@ -1150,11 +1251,19 @@ sub setColorStep {
 	$map->{$which} = $colorSpec;
 	writeConfig($map);
 
-	FAQ::OMatic::Versions::setVersion('CustomColors', '1');
+	FAQ::OMatic::Versions::setVersion('CustomColors');
 
 	rereadConfig();
 
 	doStep('colorSampler');
+}
+
+sub configVersionStep {
+	my $map = readConfig();
+	$map->{'$version'} = "'$FAQ::OMatic::VERSION'";
+	writeConfig($map);
+	
+	doStep('mainMenu');
 }
 
 sub displayMessage {

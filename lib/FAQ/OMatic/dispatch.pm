@@ -80,6 +80,16 @@ sub main {
 		'editGroups',		'submitGroup',
 		'img'
 	);
+
+	# functions that we need to run even if the versions mismatch.
+	# not sure every maintenance task can be run when there's
+	# a mismatch, but some need to, since they're accessed from
+	# the installer. Can add another version check in maintenance.pm
+	# if I need to later, I guess.
+	%versionSafeFunc = map { $_ => $_ } (
+		'install',			'img',
+		'authenticate',		'maintenance'
+	);
 	
 	use CGI;
 	
@@ -100,6 +110,17 @@ sub main {
 		# This invocation will call the $func module's main()
 		eval {
 			require "FAQ/OMatic/$func.pm";
+
+			if ($FAQ::OMatic::Config::version ne $FAQ::OMatic::VERSION
+				and not $versionSafeFunc{$func}) {
+				FAQ::OMatic::gripe('abort', "The scripts don't match the "
+					."configured version number. Admin must run "
+					.FAQ::OMatic::makeAref('-command'=>'install')
+					."installer</a>. "
+					."This message has been sent to "
+					."$FAQ::OMatic::Config::adminEmail.");
+			}
+
 			&{"FAQ::OMatic::".$func."::main"}();
 		};
 		$problem = $@;

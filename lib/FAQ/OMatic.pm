@@ -41,7 +41,7 @@ use FAQ::OMatic::Appearance;
 use FAQ::OMatic::Intl;
 use FAQ::OMatic::Bags;
 
-$VERSION = '2.609';
+$VERSION = '2.610';
 
 # This is never used to automatically send mail to (that's authorEmail),
 # but when we need to report the author's address, we use this constant:
@@ -302,7 +302,7 @@ sub hostAndPath {
 
 	my $cgi = $FAQ::OMatic::dispatch::cgi;	# TODO ugly global for $cgi
 	my $cgiUrl = $cgi->url();
-	my ($urlRoot,$urlPath) = $cgiUrl =~ m#^(http://[^/]+)/(.*)$#;
+	my ($urlRoot,$urlPath) = $cgiUrl =~ m#^(https?://[^/]+)/(.*)$#;
 	if (not defined $urlRoot or not defined $urlPath) {
 		if (not $cgi->protocol() =~ m/^http/i) {
 			FAQ::OMatic::gripe('abort', "The server protocol ("
@@ -368,15 +368,17 @@ sub insertLinks {
 	
 	if (not $ishtml) {
 	    $arg = entify($arg);
-	    $arg =~ s#(http://[^\s"]*[^\s.,)\?!])#<a href=\"$1\">$1</a>#sg;
+	    $arg =~ s#(https?://[^\s"]*[^\s.,)\?!])#<a href=\"$1\">$1</a>#sg;
 														# absolute URL
-	    $arg =~ s#http:((?!//)[^\s"]*[^\s.,)\?!])#"<a href=\"".relativeReference($params,$1)."\">$1</a>"#sge;
+	    $arg =~ s#https?:((?!//)[^\s"]*[^\s.,)\?!])#"<a href=\"".relativeReference($params,$1)."\">$1</a>"#sge;
 														# relative URL
 	    $arg =~ s#(ftp://[^\s"]*[^\s.,)\?!])#<a href=\"$1\">$1</a>#sg;
 	    $arg =~ s#(gopher://[^\s"]*[^\s.,)\?!])#<a href=\"$1\">$1</a>#sg;
 	    $arg =~ s#(telnet://[^\s"]*[^\s.,)\?!])#<a href=\"$1\">$1</a>#sg;
+	    $arg =~ s#(news:[^\s"]*[^\s.,)\?!])#<a href=\"$1\">$1</a>#sg;
 	    $arg =~ s#(mailto:\S+@\S*[^\s.,)\?!])#<a href=\"$1\">$1</a>#sg;
 	}
+	# THANKS: njl25@cam.ac.uk for pointing out the absence of the news: regex
 
 	$arg =~ s#faqomatic:(\S*[^\s.,)\?!])#faqomaticReference($params,$1,$sa)#sge;
 	$arg =~ s#baginline:(\S*[^\s.,)\?!])#baginlineReference($params,$1)#sge;
@@ -445,7 +447,7 @@ sub makeAref {
 	my $blastAll = '';
 	my $params = \%theParams;	# default to global params (not preferred, tho)
 	my $target = '';			# <a TARGET=""> tag
-	my $noCache = '';			# prevent conversion to a cache URL
+	my $thisDocIs = '';			# prevent conversion to a cache URL
 
 	if ($_[0] =~ m/^\-/) {
 		# named-parameter style
@@ -465,8 +467,8 @@ sub makeAref {
 				$params = $argVal;
 			} elsif ($argName =~ m/\-target$/i) {
 				$target = $argVal;
-			} elsif ($argName =~ m/\-noCache$/i) {
-				$noCache = $argVal;
+			} elsif ($argName =~ m/\-thisDocIs$/i) {
+				$thisDocIs = $argVal;
 			}
 		}
 		if (scalar(@_)) {
@@ -521,11 +523,12 @@ sub makeAref {
 
 	# Also, we strip the useless .pl suffix from commands now, if
 	# some lame client passes it in.
-	if ($command =~ m/\.pl$/) {
-		gripe('note',
-			"Got passed a command like \"$command\" -- fix source.\n");
-		$command =~ s/\.pl$//;
-	}
+	# (V2.610: now deprecated; its time has passed.)
+	#if ($command =~ m/\.pl$/) {
+	#	gripe('note',
+	#		"Got passed a command like \"$command\" -- fix source.\n");
+	#	$command =~ s/\.pl$//;
+	#}
 	$command = '' if ($command eq 'faq');	# it's implied anyway
 	if ($command eq '') {
 		delete $newParams{'cmd'};
@@ -539,8 +542,20 @@ sub makeAref {
 	# the same links work in the cache, or when the cache file
 	# is copied for use elsewhere. It also means that pointing
 	# at a mirror version of the CGI should be a minor tweak.
+	# V2.610: Answer -- people like
+	# THANKS: Mark Nagel need server-relative references, because
+	# absolute references won't work -- at their site, servers are
+	# accessed through a ssh forwarder. (Why not just use https?)
 
-	my $cgiName = $FAQ::OMatic::dispatch::cgi->url();
+	my $cgiName;
+	if (not $thisDocIs and
+		($FAQ::OMatic::Config::useServerRelativeRefs || 0)) {
+		# return a server-relative path (starts with /)
+		$cgiName = $FAQ::OMatic::dispatch::cgi->script_name();
+	} else {
+		# return an absolute URL (including protocol and server name)
+		$cgiName = $FAQ::OMatic::dispatch::cgi->url();
+	}
 
 	# collect args in $rt in appropriate form -- hidden fields for
 	# forms, or key=value pairs for URLs.
@@ -575,9 +590,12 @@ sub makeAref {
 	my $url = $cgiName.$rt;
 
 	# see if url can be converted to point to local cache instead of CGI.
-	if (not $noCache) {
-		# noCache is a special parameter really meant only to be
-		# used to generate the "This document is:" line.
+	if (not $thisDocIs) {
+		# $thisDocIs indicates that this URL is going to appear to the
+		# user in the "This document is:" line. So it should be a
+		# fully-qualified URL, and it should not point to the cache.
+		# Otherwise, see if the reference can be resolved in the cache to
+		# save one or more future CGI accesses.
 		$url = getCacheUrl(\%newParams, $params) || $url;
 	}
 
@@ -596,6 +614,26 @@ sub getCacheUrl {
 	my $paramsForUrl = shift;
 	my $paramsForMe = shift;
 
+	# Sometimes we can do *better* than the cache -- a link
+	# can point inside this very document! That's true when
+	# the document is the result of a "show this entire category."
+	# We require the linkee to be a child of the root of this display
+	# (i.e., the linked item must appear on this page :v), and the
+	# desired URL must have cmd=='' (i.e., looking at the FAQ, not
+	# editing it or otherwise). Any other params I think should be
+	# appearance-related, and therefore would be the same as the top
+	# item being displayed.
+	if ($paramsForMe->{'_recurseRoot'}
+		and not defined($paramsForUrl->{'cmd'})) {
+		my $linkFile = $paramsForUrl->{'file'} || '1';
+		my $linkItem = new FAQ::OMatic::Item($linkFile);
+		my $topFile = $paramsForMe->{'_recurseRoot'};
+
+		if ($linkItem->hasParent($paramsForMe->{'_recurseRoot'})) {
+			return "#file_".$linkFile;
+		}
+	}
+
 	if ($FAQ::OMatic::Config::cacheDir
 		and (not grep {not m/^file$/} keys(%{$paramsForUrl}))
 		) {
@@ -607,7 +645,7 @@ sub getCacheUrl {
 			return $paramsForUrl->{'file'}
 				.".html";
 		} else {
-			# pointer into the cache from elsewhere -- use a full URL
+			# pointer into the cache from elsewhere (the CGI) -- use a full URL
 			# to get them to our cache.
 			return ((hostAndPath())[0])
 				.$FAQ::OMatic::Config::cacheURL
@@ -634,6 +672,9 @@ sub makeBagRef {
 		# $cacheURL configuration items might seem to imply that they're
 		# independent paths, but they're not.
 		return "../bags/$bagName";
+	} elsif (not defined($FAQ::OMatic::Config::bagsURL)) {
+		# put a bad URL in the link to make it obviously fail
+		return "x:";
 	} else {
 		return ((hostAndPath())[0])
 			.$FAQ::OMatic::Config::bagsURL
