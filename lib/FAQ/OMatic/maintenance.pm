@@ -305,7 +305,12 @@ sub cookies {
 	}
 	while (<COOKIES>) {
 		my ($cookie,$id,$time) = split(' ');
-		if ($time+$FAQ::OMatic::Auth::cookieLife+$FAQ::OMatic::Auth::cookieExtra > $^T) {
+		if ($time
+				+($FAQ::OMatic::Config::cookieLife||3600)
+				+$FAQ::OMatic::Auth::cookieExtra
+					> $^T) {
+			# TODO: that 3600 default should be encoded somewhere,
+			# rather than being a magic number. It also appears in Auth.pm.
 			print NEWCOOKIES $_;
 		}
 	}

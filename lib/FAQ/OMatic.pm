@@ -47,7 +47,7 @@ use FAQ::OMatic::Bags;
 # fully qualified) without getting a gripe from 'use strict'.
 use vars qw($VERSION $authorAddress %theParams $userGripes);
 
-$VERSION = '2.619';
+$VERSION = '2.620';
 
 $authorAddress = 'jonh@cs.dartmouth.edu';
 	# This is never used to automatically send mail to (that's authorEmail),
@@ -277,7 +277,7 @@ sub baginlineReference {
 	# TODO: deal with this correctly when handling all the variations on
 	# TODO: urls.
 	my $bagUrl = makeBagRef($filename, $params);
-	return "<img src=\"$bagUrl\"$sw$sh>";
+	return "<img src=\"$bagUrl\"$sw$sh alt=\"($filename)\">";
 }
 
 sub baglinkReference {
@@ -371,6 +371,7 @@ sub relativeReference {
 sub mailtoReference {
 	my $addr = shift || '';
 
+	$addr =~ s/^mailto://;	# strip off mailto prefix if it's there
 	$addr = entify($addr);
 	my $how = $FAQ::OMatic::Config::antiSpam || 'off';
 
@@ -380,7 +381,7 @@ sub mailtoReference {
 	} elsif ($how eq 'hide') {
 		$addr = 'address-suppressed';
 	}
-	return "<a href=\"$addr\">$addr</a>";
+	return "<a href=\"mailto:$addr\">$addr</a>";
 }
 
 # turns link-looking things into actual HTML links, but also turns
@@ -464,6 +465,26 @@ sub getParams {
 	return \%theParams;
 }
 
+# if a param is equal to the default interpretation, we can just
+# delete the param. This keeps urls short, and helps us identify
+# when the user can be sent over to the cache for faster service.
+# TODO: implementations of these defaults are scattered all over
+# the code; the various "|| 'default'" clauses should actually
+# point to this hash. When that happens, there will also be a
+# straightforward mechanism for letting admins change the defaults.
+my $defaultParams = {
+	'cmd' => 'faq',
+	'render' => 'tables'
+};
+
+sub getParam {
+	my $params = shift;
+	my $key = shift;
+	return $params->{$key} if defined($params->{$key});
+	return $defaultParams->{$key} if defined($defaultParams->{$key});
+	return '';
+}
+
 sub makeAref {
 	my $command = 'faq';
 	my $changedParams = {};
@@ -474,6 +495,7 @@ sub makeAref {
 	my $target = '';			# <a TARGET=""> tag
 	my $thisDocIs = '';			# prevent conversion to a cache URL
 	my $urlBase = '';			# use included params, but specified urlBase
+	my $multipart = '';			# tell browser to reply with a multipart POST
 
 	if ($_[0] =~ m/^\-/) {
 		# named-parameter style
@@ -497,6 +519,8 @@ sub makeAref {
 				$thisDocIs = $argVal;
 			} elsif ($argName =~ m/\-urlBase$/i) {
 				$urlBase = $argVal;
+			} elsif ($argName =~ m/\-multipart$/i) {
+				$multipart = $argVal;
 			}
 		}
 		if (scalar(@_)) {
@@ -550,20 +574,14 @@ sub makeAref {
 			$newParams{$i} = $changedParams->{$i};
 		}
 	}
+	$newParams{'cmd'} = $command;
 
-	# Also, we strip the useless .pl suffix from commands now, if
-	# some lame client passes it in.
-	# (V2.610: now deprecated; its time has passed.)
-	#if ($command =~ m/\.pl$/) {
-	#	gripe('note',
-	#		"Got passed a command like \"$command\" -- fix source.\n");
-	#	$command =~ s/\.pl$//;
-	#}
-	$command = '' if ($command eq 'faq');	# it's implied anyway
-	if ($command eq '') {
-		delete $newParams{'cmd'};
-	} else {
-		$newParams{'cmd'}=$command;
+	# delete keys where values are equal to defaults
+	foreach $i (sort keys %newParams) {
+		if (defined($defaultParams->{$i})
+			and ($newParams{$i} eq $defaultParams->{$i})) {
+			delete $newParams{$i};
+		}
 	}
 
 	# So why ever bother generating local references when
@@ -605,13 +623,12 @@ sub makeAref {
 	if (($refType eq 'POST') or ($refType eq 'GET')) {
 		my $encoding = '';
 		if ($refType eq 'POST') {
-			# don't generate ENCTYPE fields for GET method forms
-			# (I wonder if we even should always generate ENCTYPEs
-			# for all POSTs?)
-			# THANKS: charlie buckheit <buckheit@olg.com> for discovering
-			# THANKS: this bug, which only shows up in MSIE.
-			$encoding = " ENCTYPE=\"multipart/form-data\""
-						  ." ENCODING";
+			if ($multipart) {
+				# THANKS: charlie buckheit <buckheit@olg.com> for discovering
+				# THANKS: this bug, which only shows up in MSIE.
+				$encoding = " ENCTYPE=\"multipart/form-data\""
+						  	." ENCODING";
+			}
 		}
 		return "<form action=\"".$cgiName."\" "
 				."method=\"$refType\""
@@ -724,9 +741,14 @@ sub button {
 	#$label =~ s/ /\&nbsp;/g;
 	if ($FAQ::OMatic::Config::showEditIcons
 		and ($image ne '')) {
+		if (($FAQ::OMatic::Config::showEditIcons||'') eq 'icons-only') {
+			$label = '';
+		} elsif ($label ne '') {
+			$label = "<br>$label";
+		}
 		return "$ahref"
 			.FAQ::OMatic::ImageRef::getImageRef($image, 'border=0', $params)
-			."<br>$label</a>\n";
+			."$label</a>\n";
 	} else {
 		return "[$ahref$label</a>]";
 	}
@@ -857,10 +879,12 @@ sub sendEmail {
 
 	# untaint $to address
 	if (ref $to) {
-		$to = join(" ", map {validEmail($_)} @{$to});
+		$to = join(" ", map {validEmail($_)||''} @{$to});
 	} else {
-		$to = validEmail($to);
+		$to = validEmail($to)||'';
 	}
+	return 'problem' if ($to =~ m/^\s*$/);
+		# found no valid email addresses
 
 	if ($FAQ::OMatic::Config::mailCommand =~ m/sendmail/) {
 		my $to2 = $to;

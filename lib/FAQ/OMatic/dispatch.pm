@@ -37,7 +37,10 @@ use strict;
 
 package FAQ::OMatic::dispatch;
 
-use FAQ::OMatic;
+#use FAQ::OMatic;
+#	--the fewer pieces we statically include, the more likely we can
+#	dynamically catch any compile errors and display them gracefully
+#	instead of giving an Infernal Server Error.
 
 use vars qw($meta $cgi);
 
@@ -54,7 +57,7 @@ sub main {
 		# note config file is not subject to 'use strict,' since it is
 		# inside its own file.
 		require "$meta/config";
-		if ($meta eq $FAQ::OMatic::Config::metaDir) {
+		if ($meta eq ($FAQ::OMatic::Config::metaDir||'')) {
 			$haveMeta = 1;
 		} else {
 			print "Content-type: text/plain\n\n";
@@ -149,9 +152,8 @@ sub main {
 		# 'use strict' message or -w warning.
 		# try a nice presentation, else fall back on text:
 		# (unfortunately, text errors don't get mailed to $faqAdmin.)
-		require FAQ::OMatic;
 		eval("require FAQ::OMatic; "
-			."FAQ::OMatic::gripe('abort', 'problem: '.\$problem.length(\$problem))");
+			."FAQ::OMatic::gripe('abort', 'problem: '.\$problem);");
 		if ($@) {
 			print $cgi->header('-type'=>"text/html");
 			print "<tt>\n$problem\n</tt>\n";

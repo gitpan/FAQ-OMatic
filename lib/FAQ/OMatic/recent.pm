@@ -72,19 +72,24 @@ sub main {
 		$rt.="Items modified in the last $englishDays:\n<p>\n";
 
 		my $item;
+		my $itemboxes = [];
 		foreach $item (sort byModDate @finalset) {
-			$rt .= FAQ::OMatic::Appearance::itemStart($params, $item);
-				# goes before & between display item's title
-			$rt .= "<td>\n";
-			$rt .= FAQ::OMatic::makeAref("faq",
-					{ 'file'	=>	$item->{'filename'} })
-					.$item->getTitle()."</a>";
-			$rt .= "<br>"
-					.FAQ::OMatic::Item::compactDate($item->{'LastModifiedSecs'})
-					."\n";
-			$rt .= "</td></tr>\n";
+			push @$itemboxes, {
+				'item'=>$item,
+				'rows'=>[
+					{ 'type'=>'wide', 'text'=>
+						FAQ::OMatic::makeAref("faq",
+							{ 'file'	=>	$item->{'filename'} })
+							.$item->getTitle()."</a>",
+						'id'=>'recent-title' },
+						# TODO -- include first part or an excerpt from it?
+					{ 'type'=>'wide',
+						'text'=>FAQ::OMatic::Item::compactDate(
+							$item->{'LastModifiedSecs'}),
+						'id'=>'recent-date' }
+				] };
 		}
-		$rt .= FAQ::OMatic::Appearance::itemEnd($params);		# goes after items
+		$rt.=FAQ::OMatic::Appearance::itemRender($params, $itemboxes);
 	}
 	
 	$rt.=FAQ::OMatic::button(

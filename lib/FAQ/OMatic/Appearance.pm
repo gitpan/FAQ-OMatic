@@ -37,9 +37,28 @@ use strict;
 package FAQ::OMatic::Appearance;
 use FAQ::OMatic::ImageRef;
 
+use vars qw($editStart $editEnd $otherStart $otherEnd $highlightColor
+	$highlightStart $highlightEnd $graphHistory $graphHeight $graphWidth);
+
+# These surround the editing buttons. I make them smaller so they'll
+# not look as much like part of the item being displayed, and more
+# like little intruders.
+$editStart = "<font size=-1>";
+$editEnd = "</font>";
+
+# These surround words in the document that were in a search query.
+$highlightColor	= $FAQ::OMatic::Config::highlightColor || "#a01010";
+$highlightStart = "<font color=$highlightColor><b>";
+$highlightEnd	= "</b></font>";
+
+$graphHistory	= 60;	# default graphs show data going back two months
+$graphWidth		= 250;	# image size of stats graphs
+$graphHeight	= 180;
+
 # These control the overall appearance of the page (background color/gif,
 # title string). Please leave the string in the footer that identifies
-# the author and the homepage of Faq-O-Matic.
+# the homepage of Faq-O-Matic so others can see where to get the
+# software for their own site.
 sub cPageHeader {
 	my $params = shift;
 	my $suppressType = shift || '';
@@ -58,6 +77,10 @@ sub cPageHeader {
 			."link=$FAQ::OMatic::Config::linkColor "
 			."vlink=$FAQ::OMatic::Config::vlinkColor>\n$pageHeader\n";
 }
+
+# TODO: reorganize cPageFooter to be able to render simple HTML
+# (no tables, just a <hr> in front of the links) and even text
+#	my $render = $params->{'render'} || 'fancy';
 
 sub cPageFooter {
 	my $params = shift;		# hash ref
@@ -181,7 +204,6 @@ sub cPageFooter {
 	$page .= "<tr>\n".join('', @cells)."</tr>\n";
 
 	my $numCells = scalar(@cells) || 0;
-	my $foo = "y".$FAQ::OMatic::VERSION."x";
 	$page.=	"<tr><td colspan=$numCells align=center>\n"
 			."This is <a href=\""
 			."http://www.dartmouth.edu/cgi-bin/cgiwrap/jonh/faq.pl"
@@ -230,51 +252,6 @@ sub helpButton {
 	return $page;
 }
 
-# This is called before every item is printed. (There are multiple
-# items in the "[Show All Items Below Here]" display and the search
-# output.)
-sub itemStart {
-	my $params = shift;
-	my $item = shift;
-	my $alreadyStart = $params->{'_as'} || '';	# info hidden away in $params
-	my $numParts = $params->{'_numParts'} || 1;	# info hidden away in $params
-
-	my ($spacer,$sw) = FAQ::OMatic::ImageRef::getImageRefCA('', '',
-		$item->isCategory(), $params);
-
-	if ($params->{'simple'}) {
-		return $alreadyStart
-			? "\n\n<p>\n"
-			: "";
-	} else {
-		$params->{'_as'} = 1;
-		# IE doesn't add white space between table cells by default,
-		# so we explicitly use the cellspacing tag to delineate between
-		# parts. Plus we add some cellpadding to give the text inside
-		# the colored boxes a little "air" around it.
-		# THANKS: Jim Adler <jima@sr.hp.com> for the suggestion.
-		my $rt = '';
-		if (not $alreadyStart) {
-			$rt = "<table width=100% cellpadding=5 cellspacing=2>\n";
-		}
-		$rt.="<tr>\n"
-			."<td bgcolor=$FAQ::OMatic::Config::itemBarColor "
-			."valign=top align=center rowspan=$numParts width=$sw>\n"
-			."$spacer\n</td>\n";
-		return $rt;
-	}
-}
-
-# This is called only once, after the last item is drawn.
-sub itemEnd {
-	my $params = shift;
-	if (not $params->{'simple'}) {
-		return "</table>\n";
-	} else {
-		return "<hr>";
-	}
-}
-
 sub max {
 	my $champ = shift;
 	while (my $contender = shift) {
@@ -283,69 +260,95 @@ sub max {
 	return $champ;
 }
 
-sub decodeCell {
-	my $cell = shift;
-
-	if (ref($cell)) {
-		if ($cell->[0] eq 'edit') {
-			return ("<font size=-1>".$cell->[1]."</font>",
-				" align=center valign=bottom");
-		} elsif ($cell->[0] eq 'regPart') {
-			return ($cell->[1], " align=top valign=left"
-					." bgcolor=$FAQ::OMatic::Config::regularPartColor");
-		} elsif ($cell->[0] eq 'dirPart') {
-			return ($cell->[1], " align=top valign=left"
-					." bgcolor=$FAQ::OMatic::Config::directoryPartColor");
-		}
-		return ($cell->[1],'');
-	}
-	return ($cell,'');
-}
-
 sub itemRender {
 	my $params = shift;
-	#my $item = shift; # TODO NOW: fix
 	my $itemboxes = shift;
 
+	# Here is how the itemRender data structure is arranged:
+	# $itemboxes is a ref to an array, each element contains the data to
+	#	draw a single item. (There are multiple entries when
+	#	[Show All Items Below Here] is in effect.)
+	# $itemboxes->[i] is a ref to a hash.
+	# $itemboxes->[i]->{'item'} is the FAQ::OMatic::Item object that this
+	#	itembox represents.
+	# $itemboxes->[i]->{'rows'} is a ref to an array, each element of which
+	#	is a row, structured as described below. Each row corresponds
+	#	to a part in the item, plus a few extra rows for other parts of
+	#	the page.
+	# $itemboxes->[i]->{'rows'}->[p] is a ref to a hash, describing that part.
+	# $itemboxes->[i]->{'rows'}->[p]->{'type'} is one of
+	#	'three', 'multirow', 'wide'.
+	# type 'three' parts have ->{'body'}, ->{'editbody'}, ->{'afterbody'}
+	#	refs. 'body' is a hash ref to 'text' and 'color'.
+	#	'editbody' is an array ref to edit cmds that apply to this part body.
+	#	each element of the array is a hash of 'text' and 'color'.
+	#	'afterbody' is an array ref to edit cmds that apply after this
+	#	part body.
+	# type 'multirow' fields have ->{'cells'}, a ref to an array of cells
+	#	that should be laid out horizontally.
+	# type 'wide' fields have ->{'text'} and ->{'color'} parts that should
+	#	fill the width of the display.
+
+	my $render = $params->{'render'} || 'fancy';
+	if ($render eq 'simple') {
+		return itemRenderSimple($params, $itemboxes);
+	} else {
+		my $editDisplay = $params->{'showEditCmds'} || '';
+		if ($editDisplay eq 'compact') {
+			return itemRenderCompactEdits($params, $itemboxes);
+		} else {
+			return itemRenderNormalEdits($params, $itemboxes);
+		}
+	}
+}
+
+sub itemRenderNormalEdits {
+	my $params = shift;
+	my $itemboxes = shift;
+
+	# first, compute the widest row of cells in the table, so that
+	# 'wide' and 'three'->'body' parts fit the width of the table.
 	my $maxwidth = 0;
 	my $tablerows = 0;
 	my $tablerowcounts = {};
 	foreach my $itembox (@{$itemboxes}) {
-		my ($item, $rows) = @{$itembox};
+		my $item = $itembox->{'item'};
+		my $rows = $itembox->{'rows'};
 		foreach my $row (@{$rows}) {
-			if (scalar(@{$row})==3) {
-				# a row from Part.pm with edit commands
-				if ($FAQ::OMatic::Config::compactEditCmds || '') {
-					$maxwidth = max($maxwidth, 3, scalar(@{$row->[1]}));
-					$maxwidth = max($maxwidth, 3, scalar(@{$row->[2]}));
-					$tablerows += 3;
-				} else {
-					$maxwidth = max($maxwidth, 3, scalar(@{$row->[2]}));
-					$tablerows += max(2, scalar(@{$row->[1]})+1);
-				}
-			} elsif (ref($row->[0])) {
-				$maxwidth = max($maxwidth, scalar(@{$row->[0]}));
+			if ($row->{'type'} eq 'three') {
+				$maxwidth = max($maxwidth, 3, scalar(@{$row->{'afterbody'}}));
+				$tablerows += max(2, scalar(@{$row->{'editbody'}})+1);
+			} elsif ($row->{'type'} eq 'multirow') {
+				$maxwidth = max($maxwidth, scalar(@{$row->{'cells'}}));
 				$tablerows += 1;
-			} else {
+			} elsif ($row->{'type'} eq 'wide') {
 				$maxwidth = max($maxwidth, 1);
 				$tablerows += 1;
+			} else {
+				die "unknown row type ".$row->{'type'};
 			}
 		}
 		$tablerowcounts->{$rows} = $tablerows;
 		$tablerows = 0;
+			# rows are tallied per item ($rows is the set of rows in an item),
+			# so that we can compute the correct rowspan for the solid bar
+			# at the left of an item.
 	}
 
 	my $rt = '';
 
 	$rt.= "<table width=100% cellpadding=5 cellspacing=2>\n";
 	foreach my $itembox (@{$itemboxes}) {
-		my ($item, $rows) = @{$itembox};
+		my $item = $itembox->{'item'};
+		my $rows = $itembox->{'rows'};
 		$tablerows = $tablerowcounts->{$rows};
 
 		my ($spacer,$sw) = FAQ::OMatic::ImageRef::getImageRefCA('', '',
 			$item->isCategory(), $params);
 	
-		$rt.="<tr>\n"
+		my $itemFile = $item->{'filename'};
+		my $itemName = $item->getTitle();
+		$rt.="\n<!--Item: $itemName file: $itemFile--><tr>\n"
 				."<td bgcolor=$FAQ::OMatic::Config::itemBarColor "
 				."valign=top align=center rowspan=$tablerows width=$sw>\n"
 				."$spacer\n</td>\n";
@@ -358,73 +361,53 @@ sub itemRender {
 			} else {
 				$rt .= "\n<tr><!-- next Part -->";
 			}
-			if (scalar(@{$row})==3) {
-				$rt.="<!--three-part row-->";
-				if ($FAQ::OMatic::Config::compactEditCmds || '') {
-					# put part on its own line
-					my ($celltxt,$tdopts) = decodeCell($row->[0]);
-					$rt .= "\n<!--Part body--><td colspan="
-							.($maxwidth)
-							." $tdopts>$celltxt</td></tr>\n";
+			if ($row->{'type'} eq 'three') {
+				my ($bodycolor,$bodytext) = getColorText($row->{'body'});
+				my @editbody = @{$row->{'editbody'}};	# array ref
+				my $rowspan = scalar @editbody;
+				my $colspan = $maxwidth - 1;
+				my @afterbody = @{$row->{'afterbody'}};	# array ref
 
-					# cram "right" and "below" cells into a single cell
-					$rt .= "<tr><!--\"right\" and below cells--><td colspan="
-						.($maxwidth)
-						.">\n";
-					foreach my $cell (@{$row->[1]}, "<br>", @{$row->[2]}) {
-						($celltxt,$tdopts) = decodeCell($cell);
-						$rt .= "\n$celltxt\n";
-					}
-					$rt .= "</td></tr>\n";
-				} else {
-					# append a row (spanned by part box) for each right cell
-					# first cell shares a row with part body
-					my @rightcells = @{$row->[1]};
-					my ($celltxt,$tdopts) = decodeCell(shift @rightcells);
-					$rt .= "\n<!--right cell--><td $tdopts>$celltxt</td>\n\n";
-		
-					# a row from Part.pm with edit commands
-					($celltxt,$tdopts) = decodeCell($row->[0]);
-					$rt .= "\n<!--Part body--><td colspan="
-							.($maxwidth-1)
-							." rowspan="
-							.(scalar(@{$row->[1]}))
-							." $tdopts>$celltxt</td></tr>\n";
-					# remaining cells get own rows
-					foreach my $cell (@rightcells) {
-						my ($celltxt,$tdopts) = decodeCell($cell);
-						$rt .= "\n<tr><!--right cell--><td $tdopts>"
-								."$celltxt</td>\n</tr>\n";
-					}
+				$rt.="<!-- type 'three' -->";
+				# append a row (spanned by part box) for each editbody cell
+				# first cell shares a row with part body
+				my $cell = shift @editbody;
+				my ($color,$text) = getColorText($cell);
+				$rt .= "\n<!--editbody--><td $color>$text</td>\n\n";
 	
-					# append a row containing the below cells
-					$rt .= "<tr><!--below cells-->\n";
-					foreach my $cell (@{$row->[2]}) {
-						my ($celltxt,$tdopts) = decodeCell($cell);
-						$rt .= "\n<td $tdopts>$celltxt</td>\n";
-					}
+				# a row from Part.pm with edit commands
+				$rt .= "\n<!--Part body--><td colspan=$colspan "
+						."rowspan=$rowspan"
+						." $bodycolor>$bodytext</td></tr>\n";
+				# remaining cells get own rows
+				foreach $cell (@editbody) {
+					($color,$text) = getColorText($cell);
+					$rt .= "\n<tr><!--editbody--><td $color>"
+							."$text</td>\n</tr>\n";
+				}
+
+				# append a row containing the below cells
+				$rt .= "<tr><!--afterbody-->\n";
+				foreach $cell (@afterbody) {
+					($color,$text) = getColorText($cell);
+					$rt .= "\n<td $color>$text</td>\n";
 				}
 				$rt .= "</tr>\n";
-			} elsif (ref($row->[0])) {
-				if ($FAQ::OMatic::Config::compactEditCmds || '') {
-					$rt.="<!--multi row--><td colspan=$maxwidth>\n";
-					foreach my $cell (@{$row->[0]}) {
-						my ($celltxt,$tdopts) = decodeCell($cell);
-						$rt .= "\n$celltxt\n";
-					}
-					$rt .= "</td></tr>\n";
-				} else {
-					$rt.="<!--multi row-->";
-					foreach my $cell (@{$row->[0]}) {
-						my ($celltxt,$tdopts) = decodeCell($cell);
-						$rt .= "\n<td $tdopts>$celltxt</td>\n";
-					}
-					$rt .= "</tr>\n";
+			} elsif ($row->{'type'} eq 'multirow') {
+				# row is specified as a series of cells to be crammed
+				# together horizontally.
+				$rt.="<!--multirow-->";
+				foreach my $cell (@{$row->{'cells'}}) {
+					my ($color,$text) = getColorText($cell);
+					$rt .= "\n<td $color>$text</td>\n";
 				}
+				$rt .= "</tr>\n";
 			} else {
-				my ($celltxt,$tdopts) = decodeCell($row->[0]);
-				$rt .= "<!--single row-->"
-					."<td colspan=$maxwidth $tdopts>$celltxt</td></tr>\n";
+				# row is specified as a single cell that should fill the
+				# width of the table.
+				my ($color,$text) = getColorText($row);
+				$rt .= "<!--wide-->"
+					."<td colspan=$maxwidth $color>$text</td></tr>\n";
 			}
 		}
 	}
@@ -433,51 +416,208 @@ sub itemRender {
 	return $rt;
 }
 
-# These are called before and after drawing each part.
-sub partStart {
-	my $params = shift;
-	my $part = shift;	# can examine the part to see if it's a directory
-
-	if (not $params->{'simple'}) {
-		my $color = (($part->{'Type'} || '') eq 'directory')
-					? $FAQ::OMatic::Config::directoryPartColor
-					: $FAQ::OMatic::Config::regularPartColor;
-		return "<tr><td bgcolor=$color>\n";
-	} else {
-		return "<p>\n";
+sub getColorText {
+	my $hashref = shift;
+	my $color = $hashref->{'color'} || '';
+	my $size = $hashref->{'size'} || '';
+	$color = "bgcolor=$color" if ($color);
+	my $text = $hashref->{'text'} || '';
+	if ($size eq 'edit') {
+		$text = $FAQ::OMatic::Appearance::editStart
+			.$text
+			.$FAQ::OMatic::Appearance::editEnd;
 	}
+	return ($color,$text);
 }
 
-sub partEnd {
+sub itemRenderCompactEdits {
 	my $params = shift;
-	if (not $params->{'simple'}) {
-		return "</td></tr>\n";
-	} else {
-		return "<br>\n";
+	my $itemboxes = shift;
+
+	# first, compute the widest row of cells in the table, so that
+	# 'wide' and 'three'->'body' parts fit the width of the table.
+	my $maxwidth = 0;
+	my $tablerows = 0;
+	my $tablerowcounts = {};
+	foreach my $itembox (@{$itemboxes}) {
+		my $item = $itembox->{'item'};
+		my $rows = $itembox->{'rows'};
+		foreach my $row (@{$rows}) {
+			if ($row->{'type'} eq 'three') {
+				# both editbody and afterbody are laid out horizontally.
+				$maxwidth = max($maxwidth, 3, scalar(@{$row->{'editbody'}}));
+				$maxwidth = max($maxwidth, 3, scalar(@{$row->{'afterbody'}}));
+				# the 'body' gets one row, the 'editbody' and 'afterbody'
+				# share a second row.
+				$tablerows += 2;
+			} elsif ($row->{'type'} eq 'multirow') {
+				$maxwidth = max($maxwidth, scalar(@{$row->{'cells'}}));
+				$tablerows += 1;
+			} elsif ($row->{'type'} eq 'wide') {
+				$maxwidth = max($maxwidth, 1);
+				$tablerows += 1;
+			} else {
+				die "unknown row type ".$row->{'type'};
+			}
+		}
+		$tablerowcounts->{$rows} = $tablerows;
+		$tablerows = 0;
+			# rows are tallied per item ($rows is the set of rows in an item),
+			# so that we can compute the correct rowspan for the solid bar
+			# at the left of an item.
 	}
+
+	my $rt = '';
+
+	$rt.= "<table width=100% cellpadding=5 cellspacing=2>\n";
+	foreach my $itembox (@{$itemboxes}) {
+		my $item = $itembox->{'item'};
+		my $rows = $itembox->{'rows'};
+		$tablerows = $tablerowcounts->{$rows};
+
+		my ($spacer,$sw) = FAQ::OMatic::ImageRef::getImageRefCA('', '',
+			$item->isCategory(), $params);
+	
+		my $itemFile = $item->{'filename'};
+		my $itemName = $item->getTitle();
+		$rt.="\n<!--Item: $itemName file: $itemFile--><tr>\n"
+				."<td bgcolor=$FAQ::OMatic::Config::itemBarColor "
+				."valign=top align=center rowspan=$tablerows width=$sw>\n"
+				."$spacer\n</td>\n";
+		my $first = 1;
+			# don't send <tr> on first table row, since we already did
+
+		foreach my $row (@{$rows}) {
+			if ($first) {
+				$first = 0;
+			} else {
+				$rt .= "\n<tr><!-- next Part -->";
+			}
+			if ($row->{'type'} eq 'three') {
+				my ($bodycolor,$bodytext) = getColorText($row->{'body'});
+				my @editbody = @{$row->{'editbody'}};	# array ref
+				my @afterbody = @{$row->{'afterbody'}};	# array ref
+
+				$rt.="<!-- type 'three' -->";
+				# in compact mode, the 'body' gets a row to itself
+				# a row from Part.pm with edit commands
+				$rt .= "\n<!--Part body--><td colspan=$maxwidth "
+						."$bodycolor>$bodytext</td></tr>\n";
+
+				# 'editbody' and 'afterbody' cells crammed into a single
+				# cell (hence the "compact" :v)
+				# everybody in the cell gets the color of the first guy.
+				my ($color,$text) = getColorText($editbody[0]);
+				$rt .= "<tr><td colspan=$maxwidth $color>";
+				my $cell;
+				foreach $cell (@editbody) {
+					($color,$text) = getColorText($cell);
+					$rt.="<!--editbody-->".$text;
+				}
+				$rt .= "\n<br>";
+				foreach $cell (@afterbody) {
+					($color,$text) = getColorText($cell);
+					$rt.="<!--afterbody-->".$text;
+				}
+				$rt .= "</tr>\n";
+			} elsif ($row->{'type'} eq 'multirow') {
+				# row is specified as a series of cells to be crammed
+				# together horizontally.
+				my @cells = @{$row->{'cells'}};
+
+				# everybody in the cell gets the color of the first guy.
+				my ($color,$text) = getColorText($cells[0]);
+				$rt.="<!--multirow--><td colspan=$maxwidth $color>";
+
+				foreach my $cell (@cells) {
+					my ($color,$text) = getColorText($cell);
+					$rt .= "<!--cell-->".$text;
+				}
+				$rt .= "</tr>\n";
+			} else {
+				# row is specified as a single cell that should fill the
+				# width of the table.
+				my ($color,$text) = getColorText($row);
+				$rt .= "<!--wide-->"
+					."<td colspan=$maxwidth $color>$text</td></tr>\n";
+			}
+		}
+	}
+	$rt.="\n</table>\n";
+
+	return $rt;
 }
 
-use vars qw($editStart $editEnd $otherStart $otherEnd $highlightColor
-	$highlightStart $highlightEnd $graphHistory $graphHeight $graphWidth);
+sub itemRenderSimple {
+	# an HTML rendering mode that uses no tables; a goal is for it to
+	# look acceptable in lynx.
+	my $params = shift;
+	my $itemboxes = shift;
 
-# These surround the editing buttons. I make them smaller so they'll
-# not look as much like part of the item being displayed, and more
-# like little intruders.
-# TODO: should be functions to handle 'simple' HTML mode
-$editStart = "<tr><td><font size=-1>\n";
-$editEnd = "\n</font></td></tr>\n";
+	my $rt = "<dl>\n";
 
-# These surround other text, such as moderator and attributionsTogether
-$otherStart = "<tr><td>\n";
-$otherEnd = "\n</td></tr>\n";
+	foreach my $itembox (@{$itemboxes}) {
+		my $item = $itembox->{'item'};
+		my $rows = $itembox->{'rows'};
 
-# These surround words in the document that were in a search query.
-$highlightColor	= $FAQ::OMatic::Config::highlightColor || "#a01010";
-$highlightStart = "<font color=$highlightColor><b>";
-$highlightEnd	= "</b></font>";
+		my $itemFile = $item->{'filename'};
+		my $itemName = $item->getTitle();
 
-$graphHistory	= 60;	# default graphs show data going back two months
-$graphWidth		= 250;	# image size of stats graphs
-$graphHeight	= 180;
+		# this rendering method assumes (hopes!) that the first
+		# row of an item is a 'wide' row, something that looks like
+		# a title.
+		my $row = shift @$rows;
+		if ($row->{'type'} ne 'wide') {
+			FAQ::OMatic::gripe('problem', "assertion failed. ".caller(0));
+		}
+		my $text = $row->{'text'};
+		$rt.="\n<!--Item: $itemName file: $itemFile-->\n"
+			."<dt>$text\n"
+			."<dd><ul>\n";
+
+		foreach $row (@{$rows}) {
+			$rt .= "\n<!-- next Part -->";
+			if ($row->{'type'} eq 'three') {
+				my ($bodycolor,$bodytext) = getColorText($row->{'body'});
+				my @editbody = @{$row->{'editbody'}};	# array ref
+				my @afterbody = @{$row->{'afterbody'}};	# array ref
+
+				$rt.="<!-- type 'three' -->";
+				$rt.="<li>$bodytext<br>\n";
+				my $cell;
+				foreach $cell (@editbody) {
+					my ($color,$text) = getColorText($cell);
+					$rt.="<!--editbody-->".$text;
+				}
+				$rt .= "\n<br>";
+				foreach $cell (@afterbody) {
+					my ($color,$text) = getColorText($cell);
+					$rt.="<!--afterbody-->".$text;
+				}
+			} elsif ($row->{'type'} eq 'multirow') {
+				# row is specified as a series of cells to be crammed
+				# together horizontally.
+				$rt.="<!--multirow-->";
+				$rt.="<li>";
+				foreach my $cell (@{$row->{'cells'}}) {
+					my ($color,$text) = getColorText($cell);
+					$rt .= "$text\n";
+				}
+			} else {
+				# row is specified as a single cell that should fill the
+				# width of the table.
+				my ($color,$text) = getColorText($row);
+				$rt .= "<!--wide-->"
+					."<li>$text\n";
+			}
+		}
+		$rt.="\n</ul>\n";
+	}
+	$rt.="\n</dl>\n";
+
+	return $rt;
+}
+
+# TODO: eventually, an itemRenderText function.
 
 1;

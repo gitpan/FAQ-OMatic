@@ -40,6 +40,7 @@ package FAQ::OMatic::Intl;
 
 use vars qw(%pageDesc);
 
+# evaluated in the lexical context of Appearance::pageDesc. Eeeew.
 %pageDesc = (
 	'authenticate' => '"Log In"',
 	'changePass' => '"Change Password"',
@@ -47,7 +48,7 @@ use vars qw(%pageDesc);
 	'insertItem' => '"New $whatAmI"',	# special case -- varies editItem
 	'editPart' => '"Edit Part in $whatAmI $title"',
 	'insertPart' => '"Insert Part in $whatAmI $title"',
-	'faq' => '"$title"',
+	'faq' => '$file eq "1" ? "" : "$title"',
 	'moveItem' => '"Move $whatAmI $title"',
 	'search' => '"Search"',
 	'stats' => '"Access Statistics"',

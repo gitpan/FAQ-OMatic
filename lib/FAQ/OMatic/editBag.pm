@@ -81,6 +81,7 @@ sub main {
 	$rt .= FAQ::OMatic::makeAref('-command'=>'submitBag',
 						'-params'=>$params,
 						'-refType'=>'POST',
+						'-multipart'=>1,
 						'-saveTransients'=>1);
 	if ($bagName ne '') {
 		$rt .= 

@@ -116,6 +116,7 @@ sub getImageUrl {
 	$bagDesc->setProperty('SizeWidth', $img_prop{$name}{'SizeWidth'});
 	$bagDesc->setProperty('SizeHeight', $img_prop{$name}{'SizeHeight'});
 	$bagDesc->setProperty('SizeBytes', $img_prop{$name}{'SizeBytes'});
+	$bagDesc->setProperty('Alt', $img_prop{$name}{'Alt'});
 	FAQ::OMatic::Bags::saveBagDesc($bagDesc);
 
 	print CACHEIMAGE getImage($name);
@@ -139,11 +140,12 @@ sub getImageRef {
 	my $swt = ($sw ne '') ? " width=$sw" : '';
 	my $sh = FAQ::OMatic::Bags::getBagProperty($bagName, 'SizeHeight', '');
 	my $sht = ($sh ne '') ? " height=$sh" : '';
+	my $alt = FAQ::OMatic::Bags::getBagProperty($bagName, 'Alt', $name);
 
 	if (wantarray) {
-		return ("<img src=\"$url\" $imgargs$swt$sht>", $sw, $sh);
+		return ("<img src=\"$url\" alt=$alt $imgargs$swt$sht>", $sw, $sh);
 	} else {
-		return "<img src=\"$url\" $imgargs$swt$sht>";
+		return "<img src=\"$url\" alt=\"$alt \" $imgargs$swt$sht>";
 	}
 }
 
@@ -166,6 +168,18 @@ sub bagAllImages {
 		getImageUrl($imgname, {}, 'forceBagWrite');
 	}
 }
+
+# these properties are manually-defined, so they're not in the
+# section of this file that gets automatically regenerated.
+$img_prop{'ans-also'}{'Alt'}		= '(Xref)';
+$img_prop{'ans'}{'Alt'}				= '(Answer)';
+$img_prop{'ans-small'}{'Alt'}		= '(Answer)';
+$img_prop{'baglink'}{'Alt'}			= '(Download)';
+$img_prop{'cat-also'}{'Alt'}		= '(Xref)';
+$img_prop{'cat-small'}{'Alt'}		= '(Category)';
+$img_prop{'cat'}{'Alt'}				= '(Category)';
+$img_prop{'help-small'}{'Alt'}		= '(?)';
+$img_prop{'help'}{'Alt'}			= '(?)';
 
 # to regenerate:
 #:.,$-2!(cd ../../../img; ../dev-bin/encodeBin.pl -desc *)
@@ -354,10 +368,6 @@ $img_prop{'picker'}{'SizeHeight'} = '128';
 $img_prop{'picker'}{'SizeBytes'} = '3189';
 
 $img_type{'picker'} = 'jpg';
-
-$img_prop{'picker'}{'SizeWidth'} = '256';
-$img_prop{'picker'}{'SizeHeight'} = '128';
-$img_prop{'picker'}{'SizeBytes'} = '3189';
 
 $img_type{'space-large'} = 'gif';
 

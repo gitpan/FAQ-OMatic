@@ -664,7 +664,7 @@ sub displaySiblings {
 	my $self = shift;
 	my $params = shift;
 	my $rt = '';		# return text
-	my $useTable = not $params->{'simple'};
+	my $useTable = FAQ::OMatic::getParam($params, 'render') eq 'tables';
 
 	my ($prevs,$nexts) = $self->getSiblings();
 	if ($prevs) {
@@ -763,7 +763,8 @@ sub displayCoreHTML {
 		# improvement: larger type to make the titles stand out.
 		# TODO: make things like this admin-tweakable.
 		$titlebox.="<font size=+1><b>$thisTitle</b></font>";
-		push @rowboxes, [ $titlebox ];
+		push @rowboxes, { 'type'=>'wide', 'text'=>$titlebox,
+			'id'=>'title' };
 	}
 
 	if ($params->{'showModerator'}) {
@@ -774,7 +775,8 @@ sub displayCoreHTML {
 		$brt .= " <i>(inherited from parent)</i>" if (not $self->{'Moderator'});
 		$brt .= "\n";
 		#$brt .= $FAQ::OMatic::Appearance::otherEnd;
-		push @rowboxes, [ $brt ];
+		push @rowboxes, { 'type'=>'wide', 'text'=>$brt,
+			'id'=>'showModerator' };
 	}
 
 	## Edit commands:
@@ -782,23 +784,26 @@ sub displayCoreHTML {
 
 	if ($params->{'showEditCmds'}) {
 		my $editrow = [];
-		push @$editrow, ['edit', FAQ::OMatic::button(
+		push @$editrow, {'text'=>FAQ::OMatic::button(
 			FAQ::OMatic::makeAref('-command'=>'editItem',
 					'-params'=>$params,
 					'-changedParams'=>{@fixfn}),
 			"Edit $whatAmI Title and Options",
-			"$aoc-title", $params)];
+			"$aoc-title", $params),
+				'size'=>'edit'};
 			# TODO: just edit title. Options is only part order; need
 			# a new interface for that.
 
-		push @$editrow, ['edit', FAQ::OMatic::button(
+		push @$editrow, {'text'=>FAQ::OMatic::button(
 			FAQ::OMatic::makeAref('-command'=>'editModOptions',
 					'-params'=>$params,
 					'-changedParams'=>{@fixfn}),
 			"Edit $whatAmI Permissions",
-			"$aoc-opts", $params)];
+			"$aoc-opts", $params),
+				'size'=>'edit'};
 
-		push @rowboxes, [ $editrow ];
+		push @rowboxes, { 'type'=>'multirow', 'cells'=>$editrow,
+			'id'=>'title, perms' };
 		$editrow = [];
 
 		# These don't make sense if we're in a special-case item file, such
@@ -816,7 +821,7 @@ sub displayCoreHTML {
 			my $dupTitle = ($whatAmI eq 'Answer')
 						? "Duplicate Answer"
 						: "Duplicate Category as Answer";
-			push @$editrow, ['edit', FAQ::OMatic::button(
+			push @$editrow, {'text'=>FAQ::OMatic::button(
 				FAQ::OMatic::makeAref('-command'=>'addItem',
 						'-params'=>$params,
 						'-changedParams'=>{'_insert'=>'answer',
@@ -824,23 +829,26 @@ sub displayCoreHTML {
 								'file'=>$self->{'Parent'}}
 					),
 					$dupTitle,
-					"$aoc-dup-ans", $params)];
+					"$aoc-dup-ans", $params),
+						'size'=>'edit'};
 	
 			# Move it (if not at the top)
 			if ($self->{'Parent'} ne $self->{'filename'}) {
-				push @$editrow, ['edit', FAQ::OMatic::button(
+				push @$editrow, {'text'=>FAQ::OMatic::button(
 						FAQ::OMatic::makeAref('-command'=>'moveItem',
 							'-params'=>$params,
 							'-changedParams'=>{@fixfn}),
-						"Move $whatAmI")];
+						"Move $whatAmI"),
+							'size'=>'edit'};
 	
 				# Trash it (same rules as for moving)
-				push @$editrow, ['edit', FAQ::OMatic::button(
+				push @$editrow, {'text'=>FAQ::OMatic::button(
 						FAQ::OMatic::makeAref('-command'=>'submitMove',
 							'-params'=>$params,
 							'-changedParams'=>{@fixfn,
 								'_newParent'=>'trash'}),
-						"Trash $whatAmI")];
+						"Trash $whatAmI"),
+							'size'=>'edit'};
 			}
 	
 			# Convert category to answer / answer to category
@@ -849,23 +857,25 @@ sub displayCoreHTML {
 			# THANKS: for clarity.
 			if ($self->isCategory()
 					and scalar($self->getChildren())==0) {
-				push @$editrow, ['edit', FAQ::OMatic::button(
+				push @$editrow, {'text'=>FAQ::OMatic::button(
 					FAQ::OMatic::makeAref('-command'=>'submitCatToAns',
 							'-params'=>$params,
 							'-changedParams'=>{
 							  'checkSequenceNumber'=>$self->{'SequenceNumber'},
 							  @fixfn}),
 						"Convert to Answer",
-						'cat-to-ans', $params)];
+						'cat-to-ans', $params),
+							'size'=>'edit'};
 			} elsif (not $self->isCategory()) {
-				push @$editrow, ['edit', FAQ::OMatic::button(
+				push @$editrow, {'text'=>FAQ::OMatic::button(
 					FAQ::OMatic::makeAref('-command'=>'submitAnsToCat',
 							'-params'=>$params,
 							'-changedParams'=>{
 							  'checkSequenceNumber'=>$self->{'SequenceNumber'},
 							  @fixfn}),
 						"Convert to Category",
-						"$aoc-to-cat", $params)];
+						"$aoc-to-cat", $params),
+							'size'=>'edit'};
 			}
 	
 			# Create new children
@@ -875,28 +885,35 @@ sub displayCoreHTML {
 				if (length($title) > 15) {
 					$title = substr($title, 0, 12)."...";
 				}
-				push @$editrow, ['edit', FAQ::OMatic::button(
+				push @$editrow, {'text'=>FAQ::OMatic::button(
 					FAQ::OMatic::makeAref('-command'=>'addItem',
 							'-params'=>$params,
 							'-changedParams'=>{'_insert'=>'answer', @fixfn}),
 						"New Answer in \"$title\"",
-						'cat-new-ans', $params)];
-				push @$editrow, ['edit', FAQ::OMatic::button(
+						'cat-new-ans', $params),
+							'size'=>'edit'};
+				push @$editrow, {'text'=>FAQ::OMatic::button(
 					FAQ::OMatic::makeAref('-command'=>'addItem',
 							'-params'=>$params,
 							'-changedParams'=>{'_insert'=>'category', @fixfn}),
 						"New Subcategory of \"$title\"",
-						'cat-new-cat', $params)];
+						'cat-new-cat', $params),
+							'size'=>'edit'};
 			}
 		}
 
-		push @rowboxes, [ $editrow ];
+		push @rowboxes, { 'type'=>'multirow', 'cells'=>$editrow,
+			'id'=>'dup, trash, etc' };
 		$editrow = [];
 
 		# Allow user to insert a part before any other
 		if ($self->ordinaryItem()) {	# as opposed to trash, help, ...
-			push @$editrow, '';
-			push @$editrow, ['edit',
+			push @$editrow, {'text'=>''};	# empty cell --
+				# this is a *hack* so that this 'multirow' lines up the
+				# same as the afterbody's of the 'three'-type parts generated
+				# by Part.pm. But it may confuse some future itemRender
+				# routine.
+			push @$editrow, {'text'=>
 				FAQ::OMatic::button(
 					FAQ::OMatic::makeAref('-command'=>'editPart',
 						'-params'=>$params,
@@ -906,8 +923,9 @@ sub displayCoreHTML {
 							@fixfn}
 						),
 					"Insert Text Here",
-					"$aoc-ins-part", $params)];
-			push @$editrow, ['edit',
+					"$aoc-ins-part", $params),
+						'size'=>'edit'};
+			push @$editrow, {'text'=>
 				FAQ::OMatic::button(
 					FAQ::OMatic::makeAref('-command'=>'editPart',
 						'-params'=>$params,
@@ -918,8 +936,10 @@ sub displayCoreHTML {
 							@fixfn}
 						),
 					"Insert Uploaded Text Here",
-					"$aoc-ins-part", $params)];
-			push @rowboxes, [ $editrow ];
+					"$aoc-ins-part", $params),
+						'size'=>'edit'};
+			push @rowboxes, { 'type'=>'multirow', 'cells'=>$editrow,
+				'id'=>'insert before other parts' };
 		}
 	}
 
@@ -932,27 +952,26 @@ sub displayCoreHTML {
 		++$partnum;
 	}
 
-	# TODO: test a config var to see if admin wants editability to be
-	# obvious
 	if (not $FAQ::OMatic::Config::hideEasyEdits) {
 		if ($self->isCategory()) {
 			# Categories: offer a way to insert a new answer
 			# TODO: does this link belong just below the directory
 			# part, rather than at the bottom?
 			my $title = $self->getTitle();
-			push @rowboxes, [ [ ['edit',
-				FAQ::OMatic::button(
+			push @rowboxes, { 'type'=>'wide',
+				'text'=>FAQ::OMatic::button(
 					FAQ::OMatic::makeAref('-command'=>'addItem',
 							'-params'=>$params,
 							'-changedParams'=>{'_insert'=>'answer', @fixfn}),
 					"Add a New Answer in \"$title\"",
-					'cat-new-ans', $params)
-				] ] ];
+					'cat-new-ans', $params),
+				'size'=>'edit',
+				'id'=>'easy edit insert answer'};
 		} else {
 			# answers: offer a way to append an item
 			my $partnum = scalar(@{$self->{'Parts'}})-1;
-			push @rowboxes, [ [ ['edit',
-				FAQ::OMatic::button(
+			push @rowboxes, { 'type'=>'wide',
+				'text'=>FAQ::OMatic::button(
 					FAQ::OMatic::makeAref('-command'=>'editPart',
 						'-params'=>$params,
 						'-changedParams'=>{'partnum'=>'9999afterLast',
@@ -961,8 +980,9 @@ sub displayCoreHTML {
 							@fixfn}
 						),
 					"Append to This Answer",
-					"$aoc-ins-part", $params)
-				] ] ];
+					"$aoc-ins-part", $params),
+				'size'=>'edit',
+				'id'=>'easy edit append to answer'};
 		}
 	}
 
@@ -981,7 +1001,8 @@ sub displayCoreHTML {
 				(sort keys %authorHash))
 			."</i><br>\n";
 		# $brt .= $FAQ::OMatic::Appearance::otherEnd;
-		push @rowboxes, [ $brt ];
+		push @rowboxes, { 'type'=>'wide', 'text'=>$brt,
+			'id'=>'attributionsTogether' };
 	}
 
 	my $showLastModified = $params->{'showLastModified'};
@@ -994,10 +1015,12 @@ sub displayCoreHTML {
 		# $brt .= $FAQ::OMatic::Appearance::otherStart;
 		$brt .= "<i>".compactDate($self->{'LastModifiedSecs'})."</i>\n";
 		# $brt .= $FAQ::OMatic::Appearance::otherEnd;
-		push @rowboxes, [ $brt ];
+		push @rowboxes, { 'type'=>'wide', 'text'=>$brt,
+			'id'=>'lastModified' };
 	}
 
-	my @items = ( [ $self, \@rowboxes ] );
+	my @items = { 'item'=>$self,
+				  'rows'=>\@rowboxes };
 
 	## recurse on children
 	if ($params->{'recurse'} or $params->{'_recurse'}) {
@@ -1041,9 +1064,10 @@ sub displayHTML {
 
 	# $rt .= FAQ::OMatic::Appearance::itemEnd($params);
 
-
-	my $useTable = not $params->{'simple'};
-	$rt.="\n<table><!-- Sibling links -->\n" if $useTable;
+	my $useTable = FAQ::OMatic::getParam($params, 'render') eq 'tables';
+	$rt.="\n";
+	$rt.="<table>" if $useTable;
+	$rt.="<!-- Sibling links -->\n";
 	$rt.= $self->displaySiblings($params);
 	$rt.="</table>\n" if $useTable;
 
@@ -1111,7 +1135,7 @@ sub permissionBox {
 
 	for ($i=0; $i<@permNum; $i++) {
 		$rt .= "<option value=\"$permNum[$i]\"";
-		$rt .= " SELECTED" if ($self->{$perm} eq $permNum[$i]);
+		$rt .= " SELECTED" if (($self->{$perm}||'') eq $permNum[$i]);
 		$rt .= ">$permDesc[$i]\n";
 	}
 	$rt .= "</select>\n";
@@ -1485,9 +1509,9 @@ sub rightEnd {
 sub displaySearchContext {
 	my $self = shift;
 	my $params = shift;
-	my $rt = "";
+	my $rows = [];
 	my $text = "";
-	my $context = "";
+	my @contexts = ();
 	my @pieces=();
 	my @parts=();
 	my @hw;
@@ -1496,14 +1520,15 @@ sub displaySearchContext {
 	my $count;
 
 	# start with a title that's a link
-	$rt = FAQ::OMatic::makeAref('-command'=>'faq',
-		'-params'=>$params,
-		'-changedParams'=>
-		{	'file'				=>	$self->{'filename'},
-			'_highlightWords'	=>	join(' ', @{$params->{'_searchArray'}})
-		}
-	)
-			.FAQ::OMatic::highlightWords($self->getTitle(),$params)."</a>";
+	push @$rows, { 'type'=>'wide', 'text'=>
+		FAQ::OMatic::makeAref('-command'=>'faq',
+			'-params'=>$params,
+			'-changedParams'=>
+			{	'file'				=>	$self->{'filename'},
+				'_highlightWords'	=>	join(' ', @{$params->{'_searchArray'}})
+			})
+			.FAQ::OMatic::highlightWords($self->getTitle(),$params)."</a>",
+		'id'=>'displaySearchContext-title' };
 
 	# add some context
 	# get all of my parts' text
@@ -1541,8 +1566,8 @@ sub displaySearchContext {
 		my $rs = ($i+1 < scalar(@parts)) ? $parts[$i+1] : '';
 		my $ltrunc = (($i>1) or length($ls)>40);
 		my $rtrunc = (($i<scalar(@parts)-2) or length($rs)>40);
-		$context.='<br>'
-			.FAQ::OMatic::entify(
+		push @contexts,
+			FAQ::OMatic::entify(
 				($ltrunc ? '...' : '')
 				.rightEnd($ls,40)
 				.' '
@@ -1550,11 +1575,14 @@ sub displaySearchContext {
 				.substr($rs,0,40)
 				.($rtrunc ? '...' : ''));
 	}
+	my $context = join("\n<br>", @contexts);
 
 	# highlight the matching words
-	$rt .= "<br>".FAQ::OMatic::highlightWords($context,$params);
+	push @$rows, { 'type'=>'wide',
+		'text'=>FAQ::OMatic::highlightWords($context,$params),
+		'id'=>'displaySearchContext-text' };
 
-	return $rt;
+	return { 'item'=>$self, 'rows'=>$rows };
 }
 
 sub notifyModerator {

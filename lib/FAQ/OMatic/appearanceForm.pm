@@ -55,8 +55,8 @@ sub main {
 #			['', '1', ''],
 #			'all categories and answers below current category'],
 		['showEditCmds',
-			['', 'Show', 'Hide'],
-			['', '1', ''],
+			['Show', 'Compact', 'Hide'],
+			['1', 'compact', ''],
 			'expert editing commands'],
 		['showModerator',
 			['', 'Show', 'Hide'],
@@ -76,16 +76,16 @@ sub main {
 			['Show All', 'Default', 'Hide'],
 			['all', '', 'hide'],
 			'attributions'],
-		['simple',
+		['render',
 			['', 'Simple', 'Fancy'],
-			['', '1', ''],
+			['', 'simple', 'tables'],
 			'HTML']
 	];
 
 	$page.=FAQ::OMatic::makeAref("faq",
 			# kill all params that have a form entry
 			{ map {$_->[0] => ''} @{$boxes} },
-			'POST')
+			'GET')
 		."<table>\n";
 	my ($setup, $choice);
 	foreach $setup (@{$boxes}) {
@@ -98,7 +98,7 @@ sub main {
 					."\" value=\""
 					.$setup->[2][$choice]
 					."\"";
-				my $existing = $params->{$setup->[0]} || '';
+				my $existing = FAQ::OMatic::getParam($params, $setup->[0]);
 				if ($existing eq $setup->[2][$choice]) {
 					$page.=" checked\n";
 				}

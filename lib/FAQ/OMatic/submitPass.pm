@@ -42,7 +42,7 @@ sub main {
 	if ($params->{'_fromChangePass'} or $params->{'_badSecret'}) {
 		# this is the user coming from changePass; send the secret
 		# in email, and put up a page explaining what to do.
-		my $id = $params->{'_id'};
+		my $id = $params->{'_id'} || '';
 		if (not FAQ::OMatic::validEmail($id)) {
 			FAQ::OMatic::gripe('error', "An email address must look like "
 				."'name\@some.domain'. If yours ($id) does and I keep "

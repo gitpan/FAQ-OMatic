@@ -79,13 +79,11 @@ sub main {
 			."</i>:<p>\n";
 
 		my $item;
+		my $itemboxes = [];
 		foreach $item (@finalset) {
-			$rt .= FAQ::OMatic::Appearance::itemStart($params, $item);
-			$rt .= "<td>\n";
-			$rt .= $item->displaySearchContext($params);
-			$rt .= "</td></tr>\n";
+			push @$itemboxes, $item->displaySearchContext($params);
 		}
-		$rt .= FAQ::OMatic::Appearance::itemEnd($params);
+		$rt .= FAQ::OMatic::Appearance::itemRender($params, $itemboxes);
 	}
 
 	if (not -f "$FAQ::OMatic::Config::metaDir/freshSearchDBHint") {

@@ -46,7 +46,7 @@ use FAQ::OMatic::Item;
 use FAQ::OMatic::AuthLocal;
 use FAQ::OMatic::Groups;
 
-use vars qw($cookieLife $cookieExtra);
+use vars qw($cookieExtra);
 
 my $trustedID = undef;
 						# Perm values only:
@@ -61,11 +61,10 @@ my $authQuality = undef;
 						# '3' -- user has merely claimed this ID
 						# '1' -- no ID is offered
 
-$cookieLife = 3600;		# 60 sec * 60 min == 1 hour
 $cookieExtra = 600;		# 10 extra minutes to submit forms after filling
 						# them out so you don't have to worry about
 						# losing your text.
-my $cookieActual = $cookieLife;
+my $cookieActual = $FAQ::OMatic::Config::cookieLife || 3600;
 
 sub getID {
 	my $params = \%FAQ::OMatic::theParams;
@@ -135,8 +134,11 @@ sub getInheritedProperty {
 	my $depth = shift || 0;
 
 	if (isPropertyGlobal($property)) {
-		# save a recursive walk up the tree
-		return getDefaultProperty($property);
+		# save a recursive walk up the tree -- this property
+		# is defined at the top.
+		# THANKS to John Goerzen <jgoerzen@complete.org> for
+		# finding a dumb bug here.
+		$item = new FAQ::OMatic::Item('1');
 	}
 	if (not ref $item) {
 		# get property from top item if no item specified
@@ -339,8 +341,8 @@ sub writeIDfile {
 
 # given an id, returns an array starting ($id,$password,...)
 sub readIDfile {
-	my $id = shift;		# key to lookup on
-	my $dontHideVersion = shift;
+	my $id = shift || '';	# key to lookup on
+	my $dontHideVersion = shift || '';
 						# keep regular lookups from seeing version number
 						# record. (smacks of a hack, but this is Perl!)
 
@@ -405,8 +407,9 @@ sub authenticate {
 	}
 
 	# if we authenticate...
-	if ($params->{'auth'} eq 'pass' or
-		(($params->{'_none_id'} eq '') and ($params->{'_pass_id'} ne ''))) {
+	if (($params->{'auth'}||'') eq 'pass' or
+		((($params->{'_none_id'}||'') eq '')
+			and (($params->{'_pass_id'}||'') ne ''))) {
 		my $id = $params->{'_pass_id'};
 		my $pass = $params->{'_pass_pass'};
 		if (FAQ::OMatic::AuthLocal::checkPassword($id, $pass)) {

@@ -453,8 +453,8 @@ sub mainMenuStep {
 	# THANKS: to John Goerzen for discovering the CGI.pm/bags bug
 	$rt.="$par<li>"
 			.checkBoxFor('CGIversion')
-			."Upgrade to CGI.pm version 2.42 or newer. "
-			.($CGI::VERSION >= 2.42
+			."Upgrade to CGI.pm version 2.49 or newer. "
+			.($CGI::VERSION >= 2.49
 				? ''
 				: "(optional; older versions have bugs that affect bags).\n" )
 			."You are using version $CGI::VERSION now.\n";
@@ -539,7 +539,7 @@ sub isDone {
 					&& (FAQ::OMatic::Versions::getVersion('SystemBags')
 						eq $FAQ::OMatic::VERSION));
 	return 1 if (($thing eq 'CGIversion')
-					&& ($CGI::VERSION >= 2.42));
+					&& ($CGI::VERSION >= 2.49));
 	return 1 if (($thing eq 'copyItems')
 					&& (-f "$FAQ::OMatic::Config::itemDir/1"));
 	return 1 if (($thing eq 'configVersion')
@@ -727,6 +727,12 @@ $configInfo = {
 		'mailto: links can be rewritten such as '
 		.'jonhATdartmouthDOTedu (cheesy), '
 		.'or e-mail addresses suppressed entirely (hide).'),
+	ci('cookieLife', '-sort'=>'r-s8', '-free',
+		'-choices'=>[ "'3600'" ],
+		'-desc'=> 'Number of seconds that authentication cookies remain '
+		.'valid. These cookies are stored in URLs, and so can be retrieved '
+		.'from a browser history file. Hence they should usually time-out '
+		.'fairly quickly.'),
 
 	ci('sep_s', '-sort'=>'s--sep', '-separator', '-desc'=>
 			'These options fine-tune the appearance of editing features.'),
@@ -736,11 +742,11 @@ $configInfo = {
 	ci('hideEasyEdits', '-sort'=>'s-s4', '-mirror',
 		'-choices'=>[ "'true'", "''" ], '-desc'=>
 		'Hide [Append to This Answer] and [Add New Answer in ...] buttons.'),
-	ci('compactEditCmds', '-sort'=>'s-s5', '-mirror',
-		'-choices'=>[ "'true'", "''" ], '-desc'=>
-		'Expert editing commands appear below rather than beside their parts.'),
+#	ci('compactEditCmds', '-sort'=>'s-s5', '-mirror',
+#		'-choices'=>[ "'true'", "''" ], '-desc'=>
+#		'Expert editing commands appear below rather than beside their parts.'),
 	ci('showEditIcons', '-sort'=>'s-s6', '-mirror',
-		'-choices'=>[ "'true'", "''" ], '-desc'=>
+		'-choices'=>[ "'icons-and-label'", "'icons-only'", "''" ], '-desc'=>
 		'Editing commands appear with neat-o icons rather than [In Brackets].'),
 
 	ci('sep_z', '-sort'=>'z--sep', '-separator', '-desc'=>
@@ -1014,6 +1020,12 @@ sub checkConfig {
 		}
 		return '';
 	}
+	if ($left eq '$cookieLife') {
+		if ($aright < 1) {
+			return "$left is not a reasonable number. Login cookies will "
+			."expire instantly, which isn't very convenient.";
+		}
+	}
 }
 
 sub firstItemStep {
@@ -1111,8 +1123,6 @@ sub maintenanceStep {
 	my $rt = '';
 	my $secret = FAQ::OMatic::Auth::getRandomHex();
 
-	my @oldTab = getCurrentCrontab();
-
 	# The parameters we'll be passing to the maintenance module
 	# via the CGI dispatch mechanism:
 	my $host = $cgi->server_name();
@@ -1157,14 +1167,20 @@ sub maintenanceStep {
 		."$port, \"$req\");'";
 	my $cronLine = sprintf("%d * * * * %s\n", (rand(1<<16)%60), $cronCmd);
 
+	# display what we're planning to do, so that resourceful admins
+	# can still install even if our heuristics fail and we have to abort.
+	displayMessage("Attempting to install cron job:\n"
+			."<pre><font size=-1>$cronLine</font></pre>\n");
+
+	my @oldTab = getCurrentCrontab();
 	my @oldUnrelated = grep {not m/$path/} @oldTab;
 	my @oldReplacing = grep {m/$path/} @oldTab;
 
 	if (scalar(@oldReplacing)>1) {
-		displayMessage("Wait: more than one old crontab entry looks like"
+		displayMessage("Wait: more than one old crontab entry looks like\n"
 			."mine (path matches <b>$path</b>). "
-			."I'm not going to touch them. You better add\n"
-			."<pre><font size=-1>$cronLine</font></pre>\n"
+			."I'm not going to touch them. You'd better add\n"
+			."the above line\n"
 			."to some crontab yourself with <b><tt>crontab -e</tt></b>.\n",
 			'default', 'abort');
 	}
@@ -1228,7 +1244,7 @@ sub getCurrentCrontab {
 	my @oldTab;
 	if ($systemrc[0]==1) {
 		if ($systemrc[3]=~m/open.*crontab/i
-			or $systemrc[3]=~m/^no crontab for /i) {
+			or $systemrc[3]=~m/no crontab for /i) {
 			# looks like the "error" you get if you don't have a crontab.
 			# THANKS: to Hal Wine <hal@dtor.com> for supplying the
 			# second pattern to match vixie-cron's error message
@@ -1237,7 +1253,9 @@ sub getCurrentCrontab {
 		}
 	}
 	if ($systemrc[0] != 0) {
-		displayMessage("crontab -l failed: ".join(',', @systemrc),
+		displayMessage("crontab -l failed: "
+			.join(',', @systemrc)
+			."<p>Please report this problem to $FAQ::OMatic::authorAddress",
 			'default', 'abort');
 	} else {
 		@oldTab = @{$systemrc[4]};
@@ -1381,10 +1399,14 @@ sub setColorStep {
 		displayMessage("Unrecognized config parameter ($which).", 'default');
 		return;
 	}
-	my $color = $params->{'color'};
+	my $color = $params->{'color'}||'';
 	my $colorSpec;
 	if ($color =~ m/,/) {
 		my ($c,$r) = ($color =~ m/\?(\d+),(\d+)/);
+		if (not defined $c or not defined $r) {
+			displayMessage("color parameter ($color) not received", 'default');
+			return;
+		}
 		my ($red,$green,$blue) = FAQ::OMatic::ColorPicker::findRGB($c/255, $r/127);
 		$colorSpec = sprintf("'#%02x%02x%02x'",
 			$red*255, $green*255, $blue*255);
