@@ -22,6 +22,7 @@ lib/FAQ/OMatic/Item.pm
 lib/FAQ/OMatic/Language_de_iso8859_1.pm
 lib/FAQ/OMatic/Language_fi.pm
 lib/FAQ/OMatic/Language_fr.pm
+lib/FAQ/OMatic/Language_ja_JP.EUC.pm
 lib/FAQ/OMatic/Language_ru.pm
 lib/FAQ/OMatic/Language_uk.pm
 lib/FAQ/OMatic/Log.pm
@@ -70,6 +71,7 @@ lib/FAQ/OMatic/submitPass.pm
 po/HOWTO
 po/POTFILES
 po/call-xgettext
+po/ja.po
 po/po2pm
 po/ru.po
 po/uk.po

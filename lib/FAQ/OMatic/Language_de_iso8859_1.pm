@@ -112,6 +112,12 @@ msgstr "Ersetze Datei-Objekt"
 msgid "Replace which bag?"
 msgstr "Welches Datei-Objekt ersetzen?"
 
+msgid "Hint: Leave blank and Bag Data filename will be used."
+msgstr "Hinweis: Bei leerem Objektnamen wird der Dateiname verwendet."
+
+msgid "Inline (Images only):"
+msgstr "Inline (Nur Grafiken):"
+
 ###
 ### OMatic.pm
 ###
@@ -830,6 +836,18 @@ msgstr "Text löschen"
 msgid "Upload New Bag Here"
 msgstr "Datei-Objekt einfügen"
 
+msgid "Category Title and Options"
+msgstr "Kategorie-Titel und Optionen"
+
+msgid "Edit Category Permissions"
+msgstr "Kategorie-Zugriffsrechte ändern"
+
+msgid "Move Category"
+msgstr "Kategorie verschieben"
+
+msgid "Trash Category"
+msgstr "Kategorie löschen"
+
 
 ###
 ### searchForm.pm
@@ -886,22 +904,31 @@ msgstr "in den letzten vierzehn Tagen"
 msgid "month"
 msgstr "im letzten Monat"
 
+msgid "three months"
+msgstr "in den letzten drei Monaten"
+
+msgid "six months"
+msgstr "in den letzten sechs Monaten"
+
+msgid "year"
+msgstr "im letzten Jahr"
+
 
 ###
 ### search.pm
 ###
 
-msgid "No items matched"
-msgstr "Kein Eintrag passte zu"
+msgid "No items matched all of these words"
+msgstr "Kein Eintrag passte auf alle diese Wörter"
 
-msgid "of these words"
-msgstr "der folgenden Wörter"
+msgid "No items matched at least %0 of these words"
+msgstr "Kein Eintrag passte auf mindestens %0 dieser Wörter"
 
-msgid "Search results for"
-msgstr "Such-Ergebnisse für"
+msgid "Search results for at least %0 of these words"
+msgstr "Such-Ergebnisse für mindestens %0 dieser Wörter"
 
-msgid "at least"
-msgstr "zumindest"
+msgid "Search results for all of these words"
+msgstr "Suchergebnisse für alle diese Wörter"
 
 msgid "Results may be incomplete, because the search index has not been refreshed since the most recent change to the database."
 msgstr "Die Ergebnisse können unvollständig sein, da der Index nicht erneuert wurde seit der letzten Änderung an der Datenbasis."
@@ -1046,12 +1073,6 @@ msgstr "In Kategorie umwandeln"
 msgid "New Subcategory of "%0""
 msgstr "Neue Kategorie in <i>%0</i>"
 
-msgid "Move %0"
-msgstr "%0 verschieben"
-
-msgid "Trash %0"
-msgstr "%0 löschen"
-
 msgid "Parts"
 msgstr "Einträge"
 
@@ -1061,8 +1082,8 @@ msgstr "Neue Kategorie"
 msgid "New Answer"
 msgstr "Neuer Eintrag"
 
-msgid "Editing %0 <b>%1</b>"
-msgstr "Bearbeite %0 <b>%1</b>"
+msgid "Editing Answer <b>%0</b>"
+msgstr "Eintrag <b>%0</b> ändern"
 
 msgid "New Answer in "%0""
 msgstr "Neuer Eintrag in <i>%0</i>"
@@ -1073,11 +1094,17 @@ msgstr "Kategorie kopieren"
 msgid "Duplicate Answer"
 msgstr "Eintrag kopieren"
 
-msgid "%0 Title and Options"
-msgstr "%0-Titel & -Optionen"
+msgid "Move Answer"
+msgstr "Eintrag verschieben"
 
-msgid "Edit %0 Permissions"
-msgstr "%0-Rechte ändern"
+msgid "Trash Answer"
+msgstr "Eintrag löschen"
+
+msgid "Answer Title and Options"
+msgstr "Titel und Optionen ändern"
+
+msgid "Edit Answer Permissions"
+msgstr "Eintrags-Rechte ändern"
 
 msgid "Append to This Answer"
 msgstr "Eintrag erweitern"
@@ -1093,6 +1120,18 @@ msgstr "Vorhergehende"
 
 msgid "Next"
 msgstr "Nächste"
+
+msgid "Editing Category <b>%0</b>"
+msgstr "Ändere Kategorie <b>%0</b>"
+
+msgid "Moderator options for answer"
+msgstr "Moderator-Optionen für Eintrag"
+
+msgid "Relax: New answers and subcategories will be moderated by the creator of the item, allowing that person full freedom to edit that new item."
+msgstr "Lockerer: Neue Einträge und Kategorien werden durch die Ersteller moderiert."
+
+msgid "Don't Relax: new items will be moderated by the moderator of this item."
+msgstr "Nicht lockerer: Neue Einträge und Kategorien werden durch den Moderator dieses Eintrags moderiert."
 
 
 ###
@@ -1113,6 +1152,12 @@ msgstr "Zeige <em>gesamte</em> Kategorie"
 
 msgid "Show This %0 As Text"
 msgstr "%0 als Text anzeigen"
+
+msgid "Show This Category As Text"
+msgstr "Zeige diese Kategorie als Text"
+
+msgid "Show This Answer As Text"
+msgstr "Zeige diesen Eintrag als Text"
 
 msgid "Show This <em>Entire</em> Category As Text"
 msgstr "Zeige <em>gesamte</em> Kategorie als Text"
@@ -1208,6 +1253,7 @@ msgstr "Suche nach Begriffen"
 
 msgid "search for recent changes"
 msgstr "Suche nach kürzlichen Änderungen" 
+
 
 ###
 ### END

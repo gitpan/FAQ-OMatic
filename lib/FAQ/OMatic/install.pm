@@ -729,7 +729,7 @@ sub configInfo {
 		gettext("<i>Optional:</i> Miscellaneous configurations")),
 	ci('language',		'-sort'=>'k-m00',
 		'-choices'=>[ "'en'", "'de_iso8859_1'", "'fr'", "'ru'",
-					  "'uk'", "'fi'"],
+					  "'uk'", "'fi'", "'ja_JP.EUC'"],
 		'-desc'=>
 		gettext("Select the display language."),
 		'-default'=>"'en'"),
@@ -1237,9 +1237,9 @@ sub copyItemsStep {
 }
 
 sub maintenanceStep {
-	require FAQ::OMatic::Auth;
+	require FAQ::OMatic::Entropy;
 	my $rt = '';
-	my $secret = FAQ::OMatic::Auth::getRandomHex();
+	my $secret = FAQ::OMatic::Entropy::gatherRandomString();
 
 	# The parameters we'll be passing to the maintenance module
 	# via the CGI dispatch mechanism:

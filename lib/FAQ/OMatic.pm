@@ -56,7 +56,7 @@ use vars	# these are mod_perl-safe
 	# variables that get reset on every invocation
 	qw($theParams $theLocals);
 
-$VERSION = '2.716';
+$VERSION = '2.717';
 
 # can't figure out how to get file-scoped variables in mod_perl, so
 # we ensure that they're all file scoped by reseting them in dispatch.
@@ -1749,7 +1749,7 @@ sub usedbm {
 }
 
 sub checkLoadAverage {
-	if (0) {
+	if (1) {
 		# this cobbled feature has no install-page hook; turn it off for now.
 		return;
 	}
