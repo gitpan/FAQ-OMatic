@@ -101,7 +101,9 @@ sub main {
 		."</td></tr>\n";
 	$page.="</table></form>\n";
 
-	$page.= FAQ::OMatic::pageFooter();
+	$page.=FAQ::OMatic::Help::helpFor($params, 'Appearance Options', "\n");
+
+	$page.= FAQ::OMatic::pageFooter($params, ['help', 'faq']);
 
 	print $page;
 }

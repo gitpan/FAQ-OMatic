@@ -168,17 +168,17 @@ sub configMetaStep {
 		doStep('askMeta');
 		return;
 	}
-	if (not -d "$meta"."RCS/.") {
+	if (not -d "$meta/RCS/.") {
 		# try mkdir
 		if (not mkdir("$meta/RCS", 0700)) {
-			displayMessage("I couldn't create <b>$meta"."RCS/</b>: $!");
+			displayMessage("I couldn't create <b>$meta/RCS/</b>: $!");
 			doStep('askMeta');
 			return;
 		}
 		displayMessage("Created <b>$meta/RCS/</b>.");
 	}
-	if (not -w "$meta"."RCS/.") {
-		displayMessage("I don't have write permission to <b>$meta"."RCS/</b>.");
+	if (not -w "$meta/RCS/.") {
+		displayMessage("I don't have write permission to <b>$meta/RCS/</b>.");
 		doStep('askMeta');
 		return;
 	}
@@ -704,6 +704,18 @@ sub firstItemStep {
 	} else {
 		displayMessage("<b>$FAQ::OMatic::Config::itemDir</b> already "
 				."contains a 'trash' file.");
+	}
+	if (not -f "$FAQ::OMatic::Config::itemDir/help000") {
+		my $item = new FAQ::OMatic::Item();
+		$item->setProperty('Title', 'Help');
+		$item->setProperty('Parent', 'help000');
+		$item->setProperty('Moderator', $FAQ::OMatic::Config::adminAuth);
+		$item->makeDirectory();
+		$item->saveToFile('help000');
+		displayMessage("Created a help category.");
+	} else {
+		displayMessage("<b>$FAQ::OMatic::Config::itemDir</b> already "
+				."contains a 'help' file.");
 	}
 	doStep('mainMenu');
 }

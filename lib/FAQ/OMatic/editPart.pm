@@ -38,7 +38,7 @@ sub main {
 
 	my $params = FAQ::OMatic::getParams($cgi);
 
-	$rt .= FAQ::OMatic::pageHeader();
+	$rt .= FAQ::OMatic::pageHeader($params);
 	
 	$item = new FAQ::OMatic::Item($params->{'file'});
 	if ($item->isBroken()) {
@@ -126,7 +126,11 @@ sub main {
 	}
 	$rt .= $part->displayPartEditor($item, $partnum, $params);
 
-	$rt .= FAQ::OMatic::pageFooter();
+	$rt .= FAQ::OMatic::Help::helpFor($params, 'editPart', "<br>\n");
+	$rt .= FAQ::OMatic::Help::helpFor($params, 'makingLinks', "<br>\n");
+	$rt .= FAQ::OMatic::Help::helpFor($params, 'seeAlso', "<br>\n");
+
+	$rt .= FAQ::OMatic::pageFooter($params, ['help','faq']);
 
 	print $rt;
 }

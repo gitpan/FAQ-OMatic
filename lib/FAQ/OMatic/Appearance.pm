@@ -54,59 +54,150 @@ sub cPageHeader {
 
 sub cPageFooter {
 	my $params = shift;		# hash ref
-	my $showLinks = shift;
+	my $showLinks = shift || [];	# ref to array of links to show
+	my $numCells = 0;
+
+	my @sl;
+	if ($showLinks eq 'all') {
+		@sl = ('help', 'search', 'appearance', 'entire', 'edit');
+	} elsif (ref $showLinks) {
+		@sl = @{$showLinks};
+	}
+	my %sl = map {$_=>$_} @sl;
+	$showLinks = \%sl;
 
 	my $page= "\n"
 			.partStart({})
-			."<table width=\"100%\"><tr><td width=\"34%\" align=left>\n"
-			."The <a href=\"http://www.dartmouth.edu/cgi-bin/cgiwrap/jonh/faq.pl\">Faq-O-Matic</a> is by <a href=\"http://www.cs.dartmouth.edu/~jonh\">Jon&nbsp;Howell</a>.\n"
-			."</td>";
-	if ($showLinks) {
-		#my $boxColor = "bgcolor=\"$FAQ::OMatic::Config::backgroundColor\"";
-		my $boxColor = '';
+			."<table width=\"100%\">\n";
+	#my $boxColor = "bgcolor=\"$FAQ::OMatic::Config::backgroundColor\"";
+	my $boxColor = '';
+	my $filename = $params->{'file'} || '1';
+	my $recurse = $params->{'_recurse'} || '';
+	my $item = new FAQ::OMatic::Item($filename);
+	$page.="<tr>\n";
 
-		my $filename = $params->{'file'} || '1';
-		my $recurse = $params->{'_recurse'} || '';
-		my $item = new FAQ::OMatic::Item($filename);
+	if ($showLinks->{'help'}) {
+		$page.=helpButton($params);
+		$numCells++;
+	}
+
+	if ($showLinks->{'search'}) {
+		# Search Form
+		$page.="<td align=center $boxColor>"
+			.FAQ::OMatic::button(
+				FAQ::OMatic::makeAref('-command'=>'searchForm',
+					'-params'=>$params),
+				"Search</a>")
+			."</td>\n";
+		$numCells++;
+	}
+
+	if ($showLinks->{'appearance'}) {
+		# Appearance Options
+		$page.="<td align=center $boxColor>"
+			.FAQ::OMatic::button(
+				FAQ::OMatic::makeAref('-command'=>'appearanceForm',
+					'-params'=>$params),
+			"Appearance")
+			."</td>\n";
+		$numCells++;
+	}
+
+	if ($showLinks->{'entire'}) {
+		# Show This Entire Category
 		if ($item->isCategory() and (not $recurse)) {
-			$page.="<td width=\"16%\" align=center $boxColor>"
-				.FAQ::OMatic::makeAref('-command'=>'faq',
-					'-params'=>$params,
-					'-changedParams'=>{'_recurse'=>1})
-				."Show This <em>Entire</em> Category</a>"
+			$page.="<td align=center $boxColor>"
+				.FAQ::OMatic::button(
+					FAQ::OMatic::makeAref('-command'=>'faq',
+						'-params'=>$params,
+						'-changedParams'=>{'_recurse'=>1}),
+					"Show This <em>Entire</em> Category</a>")
 				."</td>\n";
 		} else {
-			$page.="<td width=\"16%\" align=center></td>\n";
+			$page.="<td align=center></td>\n";
 		}
-		$page.="<td width=\"16%\" align=center $boxColor>"
-			.FAQ::OMatic::makeAref('-command'=>'searchForm',
-				'-params'=>$params)
-			."Search</a>"
-			."</td>";
-		$page.="<td width=\"17%\" align=center $boxColor>"
-			.FAQ::OMatic::makeAref('-command'=>'appearanceForm',
-				'-params'=>$params)
-			."Appearance"
-			."</td>";
-		$page.="<td width=\"17%\" align=center $boxColor>";
-		if ($params->{'showEditCmds'}) {
-			$page.=FAQ::OMatic::makeAref('-command'=>'faq',
-				'-params'=>$params,
-				'-changedParams'=>{'showEditCmds'=>''})
-				."Hide Edit Commands";
-		} else {
-			$page.=FAQ::OMatic::makeAref('-command'=>'faq',
-				'-params'=>$params,
-				'-changedParams'=>{'showEditCmds'=>'1'})
-				."Show Edit Commands";
-		}
-		$page.="</td>";
-	} else {
-		$page.="<td width=\"66%\"></td>\n";
+		$numCells++;
 	}
-	$page .= "</tr></table>"
+
+	if ($showLinks->{'edit'}) {
+		# Show Edit Commands
+		$page.="<td align=center $boxColor>";
+		if ($params->{'showEditCmds'}) {
+			$page.=FAQ::OMatic::button(
+				FAQ::OMatic::makeAref('-command'=>'faq',
+					'-params'=>$params,
+					'-changedParams'=>{'showEditCmds'=>''}),
+				"Hide Edit Commands");
+		} else {
+			$page.=FAQ::OMatic::button(
+				FAQ::OMatic::makeAref('-command'=>'faq',
+					'-params'=>$params,
+					'-changedParams'=>{'showEditCmds'=>'1'}),
+				"Show Edit Commands");
+		}
+		$page.="</td>\n";
+		$numCells++;
+	}
+
+	if ($showLinks->{'faq'}) {
+		# Show Edit Commands
+		my $cmd = $params->{'cmd'} || '';
+		if ($cmd ne '' and $cmd ne 'faq') {
+			$page.="<td align=center $boxColor>";
+			$page.=FAQ::OMatic::button(
+				FAQ::OMatic::makeAref('-command'=>'faq',
+					'-params'=>$params,
+# kill unneeded params from 'authenticate':
+					'-changedParams'=>{'partnum'=>'',
+						'checkSequenceNumber'=>''},
+				),
+				"Return to FAQ");
+			$numCells++;
+		}
+	}
+
+	$page.="</tr>\n";
+
+	$page.=	"<tr><td colspan=$numCells align=center>\n"
+			."The <a href=\"http://www.dartmouth.edu/cgi-bin/cgiwrap/jonh/faq.pl\">Faq-O-Matic</a> is by <a href=\"http://www.cs.dartmouth.edu/~jonh\">Jon&nbsp;Howell</a>.\n"
+			."</td></tr>"
+			."</table>"
 			.partEnd({})
 			."</body></html>\n";
+	return $page;
+}
+
+sub helpButton {
+	my $params = shift;
+	my $page = '';
+	my $cmd = $params->{'cmd'} || '';
+
+	# Help
+	# -- disabled for this version, since it's not completely implemented
+	# or very tested. all the other code is here, there's just no
+	# "front door" to get into the help system through.
+#	if ($params->{'help'}) {
+#		$page.="<td align=center $boxColor>"
+#			.FAQ::OMatic::button(
+#				FAQ::OMatic::makeAref('-command'=>$cmd,
+#					'-params'=>$params,
+#					'-changedParams'=>{'help'=>''},
+#					'-saveTransients'=>1,
+#					'-target'=>'_top'),
+#				"Hide Help")
+#			."</td>\n";
+#	} else {
+#		$page.="<td align=center $boxColor>"
+#			.FAQ::OMatic::button(
+#				FAQ::OMatic::makeAref('-command'=>'help',
+#					'-params'=>$params,
+#					'-changedParams'=>{'_onCmd'=>$cmd},
+#					'-saveTransients'=>1,
+#					'-target'=>'_top'),
+#				"Help")
+#			."</td>\n";
+#	}
+
 	return $page;
 }
 

@@ -31,13 +31,14 @@ use CGI;
 use FAQ::OMatic::Item;
 use FAQ::OMatic;
 use FAQ::OMatic::Auth;
+use FAQ::OMatic::Help;
 
 sub main {
 	my $cgi = $FAQ::OMatic::dispatch::cgi;
 	
-	FAQ::OMatic::getParams($cgi);
+	my $params = FAQ::OMatic::getParams($cgi);
 	
-	my $rt = FAQ::OMatic::pageHeader();
+	my $rt = FAQ::OMatic::pageHeader($params);
 	
 	$item = new FAQ::OMatic::Item($FAQ::OMatic::theParams{'file'});
 	if ($item->isBroken()) {
@@ -122,17 +123,20 @@ sub main {
 	$rt .= "<p>";
 	if ($FAQ::OMatic::theParams{'showBarrenItems'}) {
 		$rt .= FAQ::OMatic::button(FAQ::OMatic::makeAref('moveItem',
-			{'showBarrenItems'=>''}), "Hide items with no sub-items")."\n";
+			{'showBarrenItems'=>''}), "Hide answers, show only categories")."\n";
 	} else {
 		$rt .= FAQ::OMatic::button(FAQ::OMatic::makeAref('moveItem',
-			{'showBarrenItems'=>'1'}), "Show items with no sub-items")."\n";
+			{'showBarrenItems'=>'1'}), "Show both categories and answers")."\n";
 	}
-	$rt .= FAQ::OMatic::button(FAQ::OMatic::makeAref('faq', {}),
-			"Cancel and return to FAQ")."\n";
+	$rt.="<br>\n";
+#	$rt .= FAQ::OMatic::button(FAQ::OMatic::makeAref('faq', {}),
+#			"Cancel and return to FAQ")."\n";
+
+	$rt .= FAQ::OMatic::Help::helpFor($params, 'moveItem');
 
 	print $rt;
 
-	print FAQ::OMatic::pageFooter();
+	print FAQ::OMatic::pageFooter($params, ['help', 'faq']);
 }
 
 1;

@@ -9,6 +9,7 @@ lib/FAQ/OMatic/Auth.pm
 lib/FAQ/OMatic/AuthLocal.pm
 lib/FAQ/OMatic/ColorPicker.pm
 lib/FAQ/OMatic/Groups.pm
+lib/FAQ/OMatic/Help.pm
 lib/FAQ/OMatic/Intl.pm
 lib/FAQ/OMatic/Item.pm
 lib/FAQ/OMatic/Log.pm
@@ -27,6 +28,7 @@ lib/FAQ/OMatic/editGroups.pm
 lib/FAQ/OMatic/editItem.pm
 lib/FAQ/OMatic/editPart.pm
 lib/FAQ/OMatic/faq.pm
+lib/FAQ/OMatic/help.pm
 lib/FAQ/OMatic/install.pm
 lib/FAQ/OMatic/maintenance.pm
 lib/FAQ/OMatic/moveItem.pm

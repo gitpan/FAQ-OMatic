@@ -36,9 +36,9 @@ sub main {
 	my $cgi = $FAQ::OMatic::dispatch::cgi;
 	my $rt = '';
 	
-	FAQ::OMatic::getParams($cgi);
+	my $params = FAQ::OMatic::getParams($cgi);
 	
-	$rt = FAQ::OMatic::pageHeader();
+	$rt = FAQ::OMatic::pageHeader($params);
 	
 	$item = new FAQ::OMatic::Item($FAQ::OMatic::theParams{'file'});
 	if ($item->isBroken()) {
@@ -51,8 +51,8 @@ sub main {
 	if ($rd) { print $rd; exit 0; }
 
 	$rt .= $item->displayItemEditor(\%FAQ::OMatic::theParams, $cgi);
-	
-	$rt .= FAQ::OMatic::pageFooter();
+
+	$rt .= FAQ::OMatic::pageFooter($params, ['help', 'faq']);
 
 	print $rt;
 }

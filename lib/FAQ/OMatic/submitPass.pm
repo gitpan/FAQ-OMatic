@@ -108,7 +108,7 @@ __EOF__
 		# now tell the user what's going on
 		my $rt = '';
 
-		$rt .= FAQ::OMatic::pageHeader();
+		$rt .= FAQ::OMatic::pageHeader($params);
 
 		if ($params->{'_badSecret'}) {
 			$rt .= "The secret you entered is not correct.\n";
@@ -131,7 +131,7 @@ __EOF__
 		$rt.= "<p><input type=submit name=\"_submit\" value=\"Validate\">\n";
 		$rt.= "</form>\n";
 
-		$rt .= FAQ::OMatic::pageFooter();
+		$rt .= FAQ::OMatic::pageFooter($params);
 		print $rt;
 	} else {
 		# this is the user presenting his secret received via email

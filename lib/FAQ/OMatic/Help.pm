@@ -25,72 +25,78 @@
 #                                                                            #
 ##############################################################################
 
-package FAQ::OMatic::search;
+### Help.pm
+###
+### Online, context-sensitive help system
+###
 
-use CGI;
-use FAQ::OMatic::Item;
+package FAQ::OMatic::Help;
+
 use FAQ::OMatic;
-use FAQ::OMatic::Search;
-use FAQ::OMatic::Appearance;
 
-sub main {
-	my $cgi = $FAQ::OMatic::dispatch::cgi;
-	
-	FAQ::OMatic::getParams($cgi);
-	my $params = \%FAQ::OMatic::theParams;
+my $helpIndex = {};
 
-	# Convert user input into a set of searchable words
-	FAQ::OMatic::Search::convertSearchParams($params);
-
-	if (scalar(@{$params->{_searchArray}})==0) {
-		my $url = FAQ::OMatic::makeAref('faq', {}, 'url');
-		$cgi->redirect(FAQ::OMatic::urlBase($cgi).$url);
+sub hr {
+	my $fileName = shift;
+	my $title = shift;
+	my $nick;
+	$helpIndex->{$title} = [ $fileName, $title ];
+	foreach $nick (@_) {
+		$helpIndex->{$nick} = [ $fileName, $title ];
 	}
+}
 
-	# Get the names of the matching files
-	my $matchset = FAQ::OMatic::Search::getMatchesForSet($params);
-	
-	my $rt = FAQ::OMatic::pageHeader();
-	if (scalar(@{$matchset})==0) {
-		$rt.="No items matched "
-			.$params->{'_minMatches'}." of these words: <i>"
-			.join(", ", @{$params->{'_searchArray'}})
-			."</i>.\n<br>\n";
-	} else {
-		$rt.="Search results for "
-			.($params->{'_minMatches'} eq 'all' ?
-				'all' : "at least ".$params->{'_minMatches'})
-			." of these words: <i>"
-			.join(", ", @{$params->{'_searchArray'}})
-			."</i>:<p>\n";
+hr('help000', 'Online Help', 'faq', '');
+hr('help001', 'How can I contribute to this FAQ?');
+hr('help002', 'Search Tips', 'search', 'searchForm');
+hr('help003', 'Appearance Options', 'appearanceForm');
+hr('help004', 'Authentication', 'authenticate');
+hr('help005', "Editing an Item's Title and Options", 'editItem');
+hr('help006', 'Moderator Options', 'moderatorOptions');
+hr('help007', 'Editing Text Parts', 'editPart');
+hr('help008', 'Making Links To Other Sites', 'makingLinks');
+hr('help009', 'Making Links To Other FAQ-O-Matic Items', 'seeAlso');
+hr('help010', 'Moving Answers and Categories', 'moveItem');
 
-		my ($file, $item);
-		foreach $file (@{$matchset}) {
-			$item = new FAQ::OMatic::Item($file);
-			$rt .= FAQ::OMatic::Appearance::itemStart($params);
-			$rt .= $item->displaySearchContext($params);
-		}
-		$rt .= FAQ::OMatic::Appearance::itemEnd($params);
-	}
+sub helpLookup {
+	my $params = shift;
+	my $target = shift;
 
-	if (not -f "$FAQ::OMatic::Config::metaDir/freshSearchDBHint") {
-		$rt .= "<br>Results may be incomplete, because the search "
-			."index has not been refreshed since the most recent change "
-			."to the database.<p>\n";
-	}
+	return @{ $helpIndex->{$target} || ["inv $target", 'Invalid Help Target'] };
+}
 
-	$rt.=FAQ::OMatic::Help::helpFor($params,
-		'Search Tips', "<br>");
+sub helpFor {
+	my $params = shift;
+	my $target = shift;
+	my $punctuation = shift || '';	# add only if button is presented
 
-#	$rt.=FAQ::OMatic::button(
-#		FAQ::OMatic::makeAref('faq', {'_minMatches'=>'','search'=>''}),
-#		'Return to FAQ');
-	
-	$rt .= FAQ::OMatic::pageFooter($params, ['search', 'faq']);
+	return '' if (not $params->{'help'});
+	my $file = $params->{'file'} || '';
+	return '' if ($file =~ m/^help/);
 
-	print $rt;
+	my ($helpFile, $helpName) = helpLookup($params, $target);
 
-	FAQ::OMatic::Search::closeWordDB();
+	return FAQ::OMatic::button(
+		FAQ::OMatic::makeAref('-params'=>$params,
+			'-changedParams'=>{'file'=>$helpFile,
+				'showEditCmds'=>''},
+			'-target'=>'help'),
+		"HELP: $helpName")
+		.$punctuation
+		."\n";
+}
+
+sub helpURL {
+	my $params = shift;
+	my $target = shift;
+
+	my ($file, $name) = helpLookup($params, $target);
+
+	return FAQ::OMatic::makeAref('-params'=>$params,
+		'-changedParams'=>{'file'=>$file,
+			'showEditCmds'=>''},
+		'-target'=>'help',
+		'-refType'=>'url');
 }
 
 1;

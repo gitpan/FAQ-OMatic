@@ -151,7 +151,12 @@ sub getInheritedProperty {
 
 # ensurePerm()
 # Checks permissions, returns '' if okay, else returns a redirect to
-# authenticate. A good use is:
+# authenticate.
+# In list context, returns the same value followed by a quality
+# value, so if you require two ensurePerms, you return the redirect
+# with the higher qualityf value (so the user gets all the authentication
+# done at once). See submitMove.
+# A good use is:
 # my $rd = ensurePerm(...);
 # if ($rd) { print $rd; exit 0; }
 sub ensurePerm {
@@ -165,6 +170,7 @@ sub ensurePerm {
 							# clicking "edit" and "submit", which annoys.
 	my $xreason = shift;	# an extra reason, needed to distinguish
 							# two cases (modOptions) in editItem.
+	my $result = '';
 
 	$cookieActual += $cookieExtra if ($extraTime);
 
@@ -174,10 +180,11 @@ sub ensurePerm {
 		my $url = FAQ::OMatic::makeAref('authenticate',
 			{'_restart' => $restart, '_reason'=>$authFailed,
 			 '_xreason'=>$xreason}, 'url', 'saveTransients');
-		return $cgi->redirect(FAQ::OMatic::urlBase($cgi).$url);
+		$result = $cgi->redirect(FAQ::OMatic::urlBase($cgi).$url);
 	}
 
-	return '';
+	return wantarray	? ($result, $authFailed)
+						: $result;
 }
 
 sub newCookie {
@@ -354,7 +361,8 @@ sub authenticate {
 	}
 
 	# if we authenticate...
-	if ($params->{'auth'} eq 'pass') {
+	if ($params->{'auth'} eq 'pass' or
+		(($params->{'_none_id'} eq '') and ($params->{'_pass_id'} ne ''))) {
 		my $id = $params->{'_pass_id'};
 		my $pass = $params->{'_pass_pass'};
 		if (FAQ::OMatic::AuthLocal::checkPassword($id, $pass)) {

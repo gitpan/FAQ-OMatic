@@ -130,6 +130,15 @@ sub main {
 
 	$item->saveToFile();
 
+	# If title changed, cached copy of parent item will have the wrong
+	# name for the link to this item.
+	# TODO: As will any see-also links,
+	# TODO: but I don't have a solution for that offhand.
+	my $parent = $item->getParent();
+	if ($parent ne $item) {
+		$parent->saveToFile();		# update cached copy of parent
+	}
+
 	$item->notifyModerator($cgi, 'edited the item configuration');
 
 	my $url;

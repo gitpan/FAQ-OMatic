@@ -56,7 +56,7 @@ sub main {
 	$rt.= "<p><input type=submit name=\"_submit\" value=\"Set Password\">\n";
 	$rt.= "</form>\n";
 
-	$rt .= FAQ::OMatic::pageFooter();
+	$rt .= FAQ::OMatic::pageFooter($params);
 
 	print $rt;
 }

@@ -40,7 +40,7 @@ use FAQ::OMatic::Log;
 use FAQ::OMatic::Appearance;
 use FAQ::OMatic::Intl;
 
-$VERSION = '2.602';
+$VERSION = '2.603';
 
 # This is never used to automatically send mail to (that's authorEmail),
 # but when we need to report the author's address, we use this constant:
@@ -330,6 +330,7 @@ sub makeAref {
 	my $blastAll = '';
 	my $params = \%theParams;	# default to global params (not preferred, tho)
 	my $fullUrls = '';
+	my $target = '';			# <a TARGET=""> tag
 
 	if ($_[0] =~ m/^\-/) {
 		# named-parameter style
@@ -349,6 +350,8 @@ sub makeAref {
 				$params = $argVal;
 			} elsif ($argName =~ m/\-fullUrls$/i) {
 				$fullUrls = $argVal;
+			} elsif ($argName =~ m/\-target$/i) {
+				$target = $argVal;
 			}
 		}
 		if (scalar(@_)) {
@@ -437,15 +440,19 @@ sub makeAref {
 	if (($refType eq 'POST') or ($refType eq 'GET')) {
 		return "<form action=\"".$cgiName."\" "
 				."method=\"$refType\">\n$rt";
-	} elsif ($refType eq 'url') {
-		$rt =~ s/^\&/\?/;	# turn initial & into ?
-		return $cgiName.$rt;
-	} else {
-		my $cacheUrl = getCacheUrl(\%newParams);
-		return "<a href=\"$cacheUrl\">" if ($cacheUrl);
+	}
 
-		$rt =~ s/^\&/\?/;	# turn initial & into ?
-		return "<a href=\"$cgiName$rt\">";
+	$rt =~ s/^\&/\?/;	# turn initial & into ?
+	my $url = $cgiName.$rt;
+	if (not $fullUrls) {
+		$url = getCacheUrl(\%newParams) || $url;
+	}
+
+	if ($refType eq 'url') {
+		return $url;
+	} else {
+		my $targetTag = $target ? " target=\"$target\"" : '';
+		return "<a href=\"$url\"$targetTag>";
 	}
 }
 
@@ -456,7 +463,13 @@ sub getCacheUrl {
 	my $params = shift;
 	if ($FAQ::OMatic::Config::cacheDir
 		and (not grep {not m/^file$/} keys(%{$params}))
-		and (-f $FAQ::OMatic::Config::cacheDir."/".$params->{'file'}.".html")) {
+# The next line is bad when writing the cache files, because as we're writing
+# one file, we won't be able to make reference to the cached versions of
+# those we haven't written yet. So let's "hope" the cache stays current.
+# It would be nice if we could have the web server forward requests for
+# missing files to a script that would regenerate them automatically...
+#		and (-f $FAQ::OMatic::Config::cacheDir."/".$params->{'file'}.".html")
+		) {
 		return $FAQ::OMatic::Config::cacheURL
 				.$params->{'file'}
 				.".html";
@@ -536,8 +549,13 @@ sub highlightWords {
 }
 
 sub unallocatedItemName {
-	my $filename=1;
-	if (open HINT, "<$FAQ::OMatic::Config::metaDir/biggestFileHint") {
+	my $filename= shift || 1;
+
+	# If the user is looking for a numeric filename (i.e. supplied no
+	# argument), use hint to skip forward to biggest existing file number.
+	my $useHint = ($filename =~ m/^\d*$/);
+	if ($useHint and
+		open HINT, "<$FAQ::OMatic::Config::metaDir/biggestFileHint") {
 		$filename = int(<HINT>);
 		$filename = 1 if ($filename<1);
 		close HINT;
@@ -550,7 +568,8 @@ sub unallocatedItemName {
 	while (-e "$FAQ::OMatic::Config::itemDir/$filename") {
 		$filename++;
 	}
-	if (open HINT, ">$FAQ::OMatic::Config::metaDir/biggestFileHint") {
+	if ($useHint and
+		open HINT, ">$FAQ::OMatic::Config::metaDir/biggestFileHint") {
 		print HINT "$filename\n";
 		close HINT;
 	}

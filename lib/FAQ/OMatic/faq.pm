@@ -71,7 +71,9 @@ sub main {
 	## print the url for people to reference
 	$html .= FAQ::OMatic::Item::basicURL($params);
 	
-	$html .= FAQ::OMatic::pageFooter($params, 'links');
+	if (not $params->{'file'} =~ m/^help/) {
+		$html .= FAQ::OMatic::pageFooter($params, 'all');
+	}
 
 	print $html;
 }

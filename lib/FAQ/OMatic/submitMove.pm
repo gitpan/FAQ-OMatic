@@ -85,12 +85,25 @@ sub main {
 	}
 
 	# check permissions on the parents to see that the move is legal
-	my $rd = FAQ::OMatic::Auth::ensurePerm($oldParentItem, 'PermEditItem',
-		'moveItem', $cgi, 1);
-	if ($rd) { print $rd; exit 0; }
-	$rd = FAQ::OMatic::Auth::ensurePerm($newParentItem, 'PermEditItem',
-		'moveItem', $cgi, 1);
-	if ($rd) { print $rd; exit 0; }
+	my ($rd1,$aq1) =
+		FAQ::OMatic::Auth::ensurePerm($oldParentItem, 'PermEditItem',
+		'submitMove', $cgi, 1);
+	my ($rd2,$aq2) =
+		FAQ::OMatic::Auth::ensurePerm($newParentItem, 'PermEditItem',
+		'submitMove', $cgi, 1);
+
+	# If both ends of the move are not authorized, demand authentication
+	# at the higher of the two levels
+	if ($rd1 and $rd2) {
+		print( ($aq1 > $aq2) ? $rd1 : $rd2 );
+		exit 0;
+	} elsif ($rd1) {
+		print $rd1;
+		exit 0;
+	} elsif ($rd2) {
+		print $rd2;
+		exit 0;
+	}
 
 	# don't remove an item from itself if it's a root (own parent)
 	if ($oldParentItem ne $movingItem) {

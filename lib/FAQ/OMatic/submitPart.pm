@@ -145,8 +145,8 @@ sub main {
 	# check for args coming from an authentication detour, and convert
 	# back to the ones we expect
 	if ($params->{'s_textInFile'}) {
-		$params->{'s_textInFile'} =~ s#/##gs;
-		$fn = "$FAQ::OMatic::Config::metaDir/submitTmp.".$params->{'s_textInFile'};
+		$params->{'s_textInFile'} =~ m#([^/]*)#gs;
+		$fn = "$FAQ::OMatic::Config::metaDir/submitTmp.".$1;
 		if (not open(TMPF, $fn)) {
 			# shoot, the save-file has disappeared ... send the user
 			# back to editPart, poor slob.

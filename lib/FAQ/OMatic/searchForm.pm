@@ -79,7 +79,14 @@ sub main {
 	$page .= "</form>\n";
 	$page.="</td></tr></table>\n" if $useTable;
 
-	$page.= FAQ::OMatic::pageFooter();
+#	$page.=FAQ::OMatic::button(
+#		FAQ::OMatic::makeAref('-command'=>''),
+#		'Return to FAQ')."<br>\n";
+
+	$page.=FAQ::OMatic::Help::helpFor($params,
+		'Search Tips', "<br>");
+
+	$page.= FAQ::OMatic::pageFooter($params, ['help','faq']);
 
 	print $page;
 }

@@ -37,10 +37,10 @@ sub main {
 	
 	my $params = FAQ::OMatic::getParams($cgi);
 
-	$item = new FAQ::OMatic::Item($FAQ::OMatic::theParams{'file'});
+	my $file = $params->{'file'} || '';
+	$item = new FAQ::OMatic::Item($file);
 	if ($item->isBroken()) {
-		FAQ::OMatic::gripe('error', "The file (".
-			$FAQ::OMatic::theParams{'file'}.") doesn't exist.");
+		FAQ::OMatic::gripe('error', "The file ($file) doesn't exist.");
 	}
 
 	my $rd = FAQ::OMatic::Auth::ensurePerm($item, 'PermEditItem',
@@ -76,7 +76,9 @@ sub main {
 		$newitem->makeDirectory()->
 			setText("Subcategories:\n\nAnswers in this category:\n");
 	}
-	$newitem->saveToFile(FAQ::OMatic::unallocatedItemName());
+	# passing $file as a name ensures that new child will have the
+	# same type of name as its parent. (such as a helpfile)
+	$newitem->saveToFile(FAQ::OMatic::unallocatedItemName($file));
 
 	# add that item to the (proud) parent item's catalog
 	$item->addSubItem($newitem->{'filename'});

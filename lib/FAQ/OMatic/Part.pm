@@ -329,13 +329,13 @@ sub displayPartEditor {
 		# this lets the submit script check that the whole POST was
 		# received.
 	$rt .= "</form>\n";
-	$rt .= FAQ::OMatic::button(
-			FAQ::OMatic::makeAref('-command'=>'faq',
-				'-params'=>$params,
-				'-changedParams'=>{'partnum'=>'',
-					'checkSequenceNumber'=>''}
-				),
-			'Cancel and return to FAQ');
+#	$rt .= FAQ::OMatic::button(
+#			FAQ::OMatic::makeAref('-command'=>'faq',
+#				'-params'=>$params,
+#				'-changedParams'=>{'partnum'=>'',
+#					'checkSequenceNumber'=>''}
+#				),
+#			'Cancel and return to FAQ');
 
 	return $rt;
 }

@@ -43,11 +43,11 @@ sub main {
 		FAQ::OMatic::commandName(), $cgi, 0);
 	if ($rd) { print $rd; exit 0; }
 
-	$html.= FAQ::OMatic::pageHeader();
+	$html.= FAQ::OMatic::pageHeader($params);
 	
 	$html .= FAQ::OMatic::Groups::displayHTML($group);
 	
-	$html.= FAQ::OMatic::pageFooter();
+	$html.= FAQ::OMatic::pageFooter($params);
 
 	print $html;
 }

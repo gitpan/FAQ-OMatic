@@ -41,7 +41,7 @@ sub main {
 	# Get the names of the recent files
 	my $matchset = FAQ::OMatic::Search::getRecentSet($params);
 	
-	my $rt = FAQ::OMatic::pageHeader();
+	my $rt = FAQ::OMatic::pageHeader($params);
 	if (scalar(@{$matchset})==0) {
 		$rt.="No items were modified in the last ".$params->{'_duration'}
 			." days.\n<br>\n";
@@ -66,7 +66,7 @@ sub main {
 		FAQ::OMatic::makeAref('faq', {}),
 		'Return to FAQ');
 
-	$rt .= FAQ::OMatic::pageFooter();
+	$rt .= FAQ::OMatic::pageFooter($params);
 
 	print $rt;
 

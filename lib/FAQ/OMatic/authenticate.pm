@@ -31,6 +31,7 @@ use CGI;
 use FAQ::OMatic::Item;
 use FAQ::OMatic;
 use FAQ::OMatic::Auth;
+use FAQ::OMatic::Help;
 
 sub main {
 	my $cgi = $FAQ::OMatic::dispatch::cgi;
@@ -84,16 +85,17 @@ sub main {
 			}
 		} elsif ($what eq 'editItem' or $what eq 'submitItem') {
 			if ($params->{'_xreason'} eq 'modOptions') {
-				$rt.="Moderator options can only be edited by $why.";
+				$rt.="The moderator options can only be edited by $why.";
 			} else {
-				$rt.="Item title and options can only be edited by $why.";
+				$rt.="The title and options for this item can only "
+					."be edited by $why.";
 			}
 		} elsif ($what eq 'moveItem' or $what eq 'submitMove') {
 			if ($why =~ m/moderator/) {
-				$rt.="Items can only be moved by someone who can edit both "
+				$rt.="This item can only be moved by someone who can edit both "
 					."the source and destination parent items.";
 			} else {
-				$rt.="Items can only be moved by $why.";
+				$rt.="This item can only be moved by $why.";
 			}
 		} elsif ($what eq 'install') {
 			$rt.="The FAQ-O-Matic can only be configured by $why.";
@@ -141,15 +143,17 @@ sub main {
 
 	# Give them the option of leaving whatever authentication they
 	# used to have intact, and giving up on "better" auth.
-	$rt .= FAQ::OMatic::button(FAQ::OMatic::makeAref(
-				'-command'=>'faq',
-				'-params'=>$params,
-				'-changedParams'=>{'partnum'=>'',
-					'checkSequenceNumber'=>''}
-				),
-			"Cancel and Return to FAQ");
+#	$rt .= FAQ::OMatic::button(FAQ::OMatic::makeAref(
+#				'-command'=>'faq',
+#				'-params'=>$params,
+#				'-changedParams'=>{'partnum'=>'',
+#					'checkSequenceNumber'=>''}
+#				),
+#			"Cancel and Return to FAQ");
 
-	$rt .= FAQ::OMatic::pageFooter();
+	$rt.=FAQ::OMatic::Help::helpFor($params, 'authenticate');
+
+	$rt .= FAQ::OMatic::pageFooter($params, ['help', 'faq']);
 
 	print $rt;
 }

@@ -76,7 +76,7 @@ sub main {
 	push @props, ('Operation-submitPart',	'CumOperation-submitPart');
 	push @titles, ('Submissions Per Day', 'Cumulative Submissions');
 
-	$rt.= FAQ::OMatic::pageHeader();
+	$rt.= FAQ::OMatic::pageHeader($params);
 	$rt.= "Please be patient ... the image files are generated dynamically, "
 		."and can take from 20 to 50 seconds to create.\n";
 	$rt.="<table>" if (!$simpleHTML);
@@ -136,7 +136,7 @@ sub main {
 	$rt.=FAQ::OMatic::button(FAQ::OMatic::makeAref('stats',
 		{'duration'=>'history'}), "History");
 
-	$rt .= FAQ::OMatic::pageFooter();
+	$rt .= FAQ::OMatic::pageFooter($params);
 	print $rt;
 }
 

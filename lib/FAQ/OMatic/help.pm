@@ -25,72 +25,63 @@
 #                                                                            #
 ##############################################################################
 
-package FAQ::OMatic::search;
+package FAQ::OMatic::help;
 
 use CGI;
-use FAQ::OMatic::Item;
+
 use FAQ::OMatic;
-use FAQ::OMatic::Search;
-use FAQ::OMatic::Appearance;
+use FAQ::OMatic::Item;
+use FAQ::OMatic::Help;
 
 sub main {
 	my $cgi = $FAQ::OMatic::dispatch::cgi;
 	
-	FAQ::OMatic::getParams($cgi);
-	my $params = \%FAQ::OMatic::theParams;
+	my $params = FAQ::OMatic::getParams($cgi);
 
-	# Convert user input into a set of searchable words
-	FAQ::OMatic::Search::convertSearchParams($params);
+	my $cmd = $params->{'_onCmd'} || '';
 
-	if (scalar(@{$params->{_searchArray}})==0) {
-		my $url = FAQ::OMatic::makeAref('faq', {}, 'url');
-		$cgi->redirect(FAQ::OMatic::urlBase($cgi).$url);
-	}
+	my $mainUrl = FAQ::OMatic::makeAref('-command'=>$cmd,
+		'-params'=>$params,
+		'-changedParams'=>{'help'=>1},
+		'-refType'=>'url',
+		'-saveTransients'=>1);
+	$helpUrl = FAQ::OMatic::Help::helpURL($params, $cmd);
+#	my $helpUrl = FAQ::OMatic::makeAref('-command'=>'faq',
+#		'-params'=>$params,
+#		'-changedParams'=>{'file'=>'help000'},
+#		'-refType'=>'url');
 
-	# Get the names of the matching files
-	my $matchset = FAQ::OMatic::Search::getMatchesForSet($params);
-	
-	my $rt = FAQ::OMatic::pageHeader();
-	if (scalar(@{$matchset})==0) {
-		$rt.="No items matched "
-			.$params->{'_minMatches'}." of these words: <i>"
-			.join(", ", @{$params->{'_searchArray'}})
-			."</i>.\n<br>\n";
-	} else {
-		$rt.="Search results for "
-			.($params->{'_minMatches'} eq 'all' ?
-				'all' : "at least ".$params->{'_minMatches'})
-			." of these words: <i>"
-			.join(", ", @{$params->{'_searchArray'}})
-			."</i>:<p>\n";
+	my $html=<<__EOF__;
+<HTML>
+<HEAD>
+<TITLE>FAQ-O-Matic</TITLE>
+</HEAD>
+<FRAMESET ROWS="*,200">
+	 <FRAME
+	       NAME="main-content"
+	       SRC="$mainUrl"
+	       MARGINWIDTH=1
+	       MARGINHEIGHT=1
+	       SCROLLING=yes>
+	 <FRAME
+	        NAME="help"
+	        SRC="$helpUrl"
+	        MARGINWIDTH=5
+	        MARGINHEIGHT=5
+			SCROLLING=yes>
+</FRAMESET>
 
-		my ($file, $item);
-		foreach $file (@{$matchset}) {
-			$item = new FAQ::OMatic::Item($file);
-			$rt .= FAQ::OMatic::Appearance::itemStart($params);
-			$rt .= $item->displaySearchContext($params);
-		}
-		$rt .= FAQ::OMatic::Appearance::itemEnd($params);
-	}
+<NOFRAMES>
+<BODY BGCOLOR="#ffffff">
+FAQ-O-Matic Context-Sensitive Help currently works only with
+frames. You can navigate the help text independently by following
+this link, if it were a link.
+</BODY>
+</NOFRAMES>
+</HTML>
+__EOF__
 
-	if (not -f "$FAQ::OMatic::Config::metaDir/freshSearchDBHint") {
-		$rt .= "<br>Results may be incomplete, because the search "
-			."index has not been refreshed since the most recent change "
-			."to the database.<p>\n";
-	}
-
-	$rt.=FAQ::OMatic::Help::helpFor($params,
-		'Search Tips', "<br>");
-
-#	$rt.=FAQ::OMatic::button(
-#		FAQ::OMatic::makeAref('faq', {'_minMatches'=>'','search'=>''}),
-#		'Return to FAQ');
-	
-	$rt .= FAQ::OMatic::pageFooter($params, ['search', 'faq']);
-
-	print $rt;
-
-	FAQ::OMatic::Search::closeWordDB();
+	print $cgi->header('-type'=>'text/html').$html;
 }
 
 1;

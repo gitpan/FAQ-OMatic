@@ -62,7 +62,7 @@ sub main {
 	# the user from making up some other module and getting it into
 	# our eval()).
 	%knownModules = map { $_ => $_ } (
-		'faq', 			'appearanceForm',
+		'faq', 			'help',				'appearanceForm',
 		'search',		'searchForm',		'recent',
 		'stats', 		'statgraph',
 		'authenticate',	'changePass',		'submitPass',

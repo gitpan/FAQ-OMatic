@@ -38,6 +38,7 @@ use FAQ::OMatic::Auth;
 use FAQ::OMatic::Appearance;
 use FAQ::OMatic::Groups;
 use FAQ::OMatic::Words;
+use FAQ::OMatic::Help;
 
 %itemCache = ();	# contains (filename => item ref) mappings
 
@@ -260,7 +261,7 @@ sub saveToFile {
 			my $staticHtml = FAQ::OMatic::pageHeader($params, 'suppressType')
 							.$self->displayHTML($params)
 							.basicURL($params)
-							.FAQ::OMatic::pageFooter($params, 'links');
+							.FAQ::OMatic::pageFooter($params, 'all');
 			if (not open(CACHEFILE, ">$staticFilename")) {
 				FAQ::OMatic::gripe('problem',
 					"Can't write $staticFilename: $!");
@@ -474,6 +475,14 @@ sub displayCoreHTML {
 						'-params'=>$params,
 						'-changedParams'=>{@fixfn}),
 					"Move $whatAmI")."\n";
+
+			# Trash it (same rules as for moving)
+			$rt .= FAQ::OMatic::button(
+					FAQ::OMatic::makeAref('-command'=>'submitMove',
+						'-params'=>$params,
+						'-changedParams'=>{@fixfn,
+							'_newParent'=>'trash'}),
+					"Trash $whatAmI")."\n";
 		}
 
 		# Create new children
@@ -577,11 +586,16 @@ sub displayHTML {
 
 	$rt.="</table>\n" if $useTable;
 
+	$rt.=FAQ::OMatic::Help::helpFor($params,
+		'How can I contribute to this FAQ?', "<br>");
+
 	return $rt;
 }
 
 sub basicURL {
 	my $params = shift;
+
+	return '' if ($params->{'file'} =~ m/^help/);
 	
 	my %killParams = %{$params};
 	delete $killParams{'file'};
@@ -768,11 +782,17 @@ sub displayItemEditor {
 		# this lets the submit script check that the whole POST was
 		# received.
 	$rt .= "</form>\n";
-	$rt .= FAQ::OMatic::button(
-			FAQ::OMatic::makeAref('-command'=>'faq',
-				'-params'=>$params,
-				'-changedParams'=>{'checkSequenceNumber'=>''}),
-			"Cancel and return to FAQ");
+#	$rt .= FAQ::OMatic::button(
+#			FAQ::OMatic::makeAref('-command'=>'faq',
+#				'-params'=>$params,
+#				'-changedParams'=>{'checkSequenceNumber'=>''}),
+#			"Cancel and return to FAQ");
+
+	$rt .= FAQ::OMatic::Help::helpFor($params, 'editItem', "<br>\n");
+	if ($showModOptions) {
+		$rt .= FAQ::OMatic::Help::helpFor($params, 'moderatorOptions',
+			"<br>\n");
+	}
 
 	return $rt;
 }
