@@ -33,24 +33,24 @@ use CGI;
 use FAQ::OMatic::Item;
 use FAQ::OMatic;
 use FAQ::OMatic::Auth;
+use FAQ::OMatic::I18N;
 
 sub main {
-	my $cgi = $FAQ::OMatic::dispatch::cgi;
+	my $cgi = FAQ::OMatic::dispatch::cgi();
 
 	my $params = FAQ::OMatic::getParams($cgi);
 
-	my $rt = FAQ::OMatic::pageHeader();
+	my $rt = FAQ::OMatic::pageHeader($params);
 	
 	my ($id,$aq) = FAQ::OMatic::Auth::getID();
 	$id =~ s/^anonymous$//;
 
-	$rt.="Please enter your username, and select a password.\n";
-	$rt.="<p>I will send a secret number to the email address you enter \n"
-		."to verify "
-		."that it is valid. If you prefer not to give your email address "
-		."to this web form, please contact $FAQ::OMatic::Config::adminEmail. "
-		."<p>Please <b>do not</b> use a password you use anywhere else, "
-		."as it will not be transferred or stored securely!\n";
+	$rt.=gettext("Please enter your username, and select a password.")."\n";
+	$rt.="<p>".gettext("I will send a secret number to the email address you enter")." \n"
+		.gettext("to verify that it is valid.")." "
+		.gettext("If you prefer not to give your email address to this web form, please contact")
+                ." $FAQ::OMatic::Config::adminEmail. <p>"
+		.gettext("Please <b>do not</b> use a password you use anywhere else, as it will not be transferred or stored securely!")."\n";
 
 	$rt.=FAQ::OMatic::makeAref('submitPass',
 			{'badPass'=>'',		# the gedID() call above may (will) set this
@@ -62,9 +62,9 @@ sub main {
 	}
 	$rt.="Email: "
 		."<input type=text name=\"_id\" value=\"$idDefault\" size=60>\n";
-	$rt.= "<br>Password: "
+	$rt.= "<br>".gettext("Password:")." "
 		."<input type=password name=\"_pass\" value=\"\" size=10>\n";
-	$rt.= "<p><input type=submit name=\"_submit\" value=\"Set Password\">\n";
+	$rt.= "<p><input type=submit name=\"_submit\" value=\"".gettext("Set Password")."\">\n";
 	$rt.= "</form>\n";
 
 	$rt .= FAQ::OMatic::pageFooter($params);
@@ -73,3 +73,9 @@ sub main {
 }
 
 1;
+
+
+
+
+
+

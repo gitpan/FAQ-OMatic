@@ -31,15 +31,16 @@ package FAQ::OMatic::searchForm;
 
 use CGI;
 use FAQ::OMatic;
+use FAQ::OMatic::I18N;
 
 sub main {
-	my $cgi = $FAQ::OMatic::dispatch::cgi;
+	my $cgi = FAQ::OMatic::dispatch::cgi();
 	
 	my $params = FAQ::OMatic::getParams($cgi);
 
 	my $page = '';
 
-	$page.=FAQ::OMatic::pageHeader();
+	$page.=FAQ::OMatic::pageHeader($params, ['help', 'faq']);
 
 	my $useTable = not $params->{'simple'};
 
@@ -47,36 +48,36 @@ sub main {
 	$page.="<tr><td valign=top align=right>\n" if $useTable;
 	$page .= FAQ::OMatic::makeAref('search', {}, 'GET');
 	$page .= "<input type=\"submit\" name=\"_submit\" "
-		."value=\"Search for\">\n";
+		."value=\"".gettext("Search for")."\">\n";
 	$page.="</td><td valign=top align=left>\n" if $useTable;
-	$page .= "<input type=\"text\" name=\"_search\"> matching\n";
+	$page .= "<input type=\"text\" name=\"_search\"> ".gettext("matching")."\n";
 	$page .= "<select name=\"_minMatches\">\n";
-	$page .= "<option value=\"\">all\n";
-	$page .= "<option value=\"1\">any\n";
-	$page .= "<option value=\"2\">two\n";
-	$page .= "<option value=\"3\">three\n";
-	$page .= "<option value=\"4\">four\n";
-	$page .= "<option value=\"5\">five\n";
+	$page .= "<option value=\"\">".gettext("all")."\n";
+	$page .= "<option value=\"1\">".gettext("any")."\n";
+	$page .= "<option value=\"2\">".gettext("two")."\n";
+	$page .= "<option value=\"3\">".gettext("three")."\n";
+	$page .= "<option value=\"4\">".gettext("four")."\n";
+	$page .= "<option value=\"5\">".gettext("five")."\n";
 	$page .= "</select>\n";
-	$page .= "words.\n";
+	$page .= gettext("words").".\n";
 	$page .= "</form>\n";
 	$page.="</td></tr>\n" if $useTable;
 
 	## Recent documents
 	$page.="<tr><td valign=top align=right>\n" if $useTable;
 	$page .= FAQ::OMatic::makeAref('recent',
-			{'showLastModified'=>'1'}, 'GET');
+			{'showLastModified'=>'show'}, 'GET');
 	$page .= "<input type=\"submit\" name=\"_submit\" "
-		."value=\"Show documents\">\n";
+		."value=\"".gettext("Show documents")."\">\n";
 	$page.="</td><td valign=top align=left>\n" if $useTable;
-	$page .= " modified in the last \n";
+	$page .= " ".gettext("modified in the last")." \n";
 	$page .= "<select name=\"_duration\">\n";
-	$page .= "<option value=\"1\">day.\n";
-	$page .= "<option value=\"2\">two days.\n";
-	$page .= "<option value=\"3\">three days.\n";
-	$page .= "<option value=\"7\" SELECTED>week.\n";
-	$page .= "<option value=\"14\">fortnight.\n";
-	$page .= "<option value=\"31\">month.\n";
+	$page .= "<option value=\"1\">".gettext("day").".\n";
+	$page .= "<option value=\"2\">".gettext("two days").".\n";
+	$page .= "<option value=\"3\">".gettext("three days").".\n";
+	$page .= "<option value=\"7\" SELECTED>".gettext("week").".\n";
+	$page .= "<option value=\"14\">".gettext("fortnight").".\n";
+	$page .= "<option value=\"31\">".gettext("month").".\n";
 	$page .= "</select>\n";
 	$page .= "</form>\n";
 	$page.="</td></tr></table>\n" if $useTable;

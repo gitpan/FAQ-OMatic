@@ -47,12 +47,11 @@ use FAQ::OMatic;
 
 my $reloadFrequency = 15;	# seconds
 my $tailSize = 20;			# lines
-my $slowfile;
 
 sub split {
-	my $cgi = $FAQ::OMatic::dispatch::cgi;
+	my $cgi = FAQ::OMatic::dispatch::cgi();
 
-	my $slowFile = "slow-output.$$";
+	my $slowFile = "slow-output.".FAQ::OMatic::nonce();
 	my $slowPath = $FAQ::OMatic::Config::metaDir."/".$slowFile;
 	my $url = FAQ::OMatic::makeAref('-command'=>'displaySlow',
 					'-changedParams' => { 'slowFile' => $slowFile },
@@ -66,15 +65,25 @@ sub split {
 		# and we'll let STDOUT go to the slow-output file, so we
 		# can watch what has been happening
 		open STDIN, "</dev/null";
-		open STDOUT, ">$slowPath";
-		open STDERR, ">&STDOUT";
+		open SLOWFILE, ">$slowPath";
+		open STDOUT, ">&SLOWFILE";	# redirect to $slowPath
+		open STDERR, ">&SLOWFILE";
+		# All "slow-capable" modules are expected to accept the filehandle
+		# we return, and print to that instead.
+		# This is because I thought mod_perl was somehow screwing up
+		# my prints to STDOUT. It turns out I was just never flushing
+		# them, and when the fork()ed child Apache::exit()ed, it went
+		# back to its main loop to handle web requests(!), and the
+		# file never got flushed. But this works pretty well, so we'll
+		# stick with it.
 
-		print STDERR "<p>\n";
+		print SLOWFILE "<p>\n";
+
+		return *SLOWFILE;
 	} else {
 		# parent
 		# should display results in slowFile
-		print $cgi->redirect($url);
-		exit 0;
+		FAQ::OMatic::redirect($cgi, $url);
 	}
 }
 
@@ -89,7 +98,7 @@ sub childDone {
 sub display {
 	my $params = shift;
 
-	if (not $params->{'slowFile'} =~ m/^(slow-output.\d+)$/) {
+	if (not $params->{'slowFile'} =~ m/^(slow-output.[p\d]+)$/) {
 		FAQ::OMatic::gripe('error',
 			"Taint check failed on ".$params->{'slowFile'});
 	}

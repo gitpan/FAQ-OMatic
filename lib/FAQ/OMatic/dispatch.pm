@@ -42,7 +42,9 @@ package FAQ::OMatic::dispatch;
 #	dynamically catch any compile errors and display them gracefully
 #	instead of giving an Infernal Server Error.
 
-use vars qw($meta $cgi);
+use vars qw($meta $cgi);	# to avoid mod_perl 'my' problem. But callers
+				# should access these using the corresponding accessor methods,
+				# not by accessing them directly.
 
 sub main {
 	$meta = shift;	# The single adjustable parameter in the actual CGI
@@ -56,6 +58,9 @@ sub main {
 	if (-f "$meta/config") {
 		# note config file is not subject to 'use strict,' since it is
 		# inside its own file.
+		delete $INC{"$meta/config"};	# cause mod_perl to re-read config
+			# TODO: this doesn't really work. mod_perl doesn't reread.
+			# TODO: Jon needs to re-read mod_perl's docs.
 		require "$meta/config";
 		if ($meta eq ($FAQ::OMatic::Config::metaDir||'')) {
 			$haveMeta = 1;
@@ -63,6 +68,10 @@ sub main {
 			print "Content-type: text/plain\n\n";
 			print "meta moved. jonh didn't really feel like dealing\n";
 			print "with this case. Mail him at jonh\@cs.dartmouth.edu .\n";
+
+			# This is a pretty uncommon case -- I think we can cope
+			# with killing off a mod_perl child process if this happens.
+			# (It beats trying to load FAQ::OMatic::myExit().)
 			exit 0;
 		}
 	} else {
@@ -126,7 +135,12 @@ sub main {
 		local $SIG{'__WARN__'} = sub { die $_[0] };
 
 		eval {
+			require FAQ::OMatic;
+			FAQ::OMatic::reset();	# reset the locals (for mod_perl)
+
 			require "FAQ/OMatic/$func.pm";
+				# require comes before VERSION test because VERSION test
+				# depends on having included FAQ::OMatic.
 
 			if (($FAQ::OMatic::Config::version || '') ne $FAQ::OMatic::VERSION
 				and not $versionSafeFunc{$func}) {
@@ -138,6 +152,7 @@ sub main {
 					."$FAQ::OMatic::Config::adminEmail.");
 			}
 
+			$^T = time();	# when running in mod_perl, -M's get stale w/o this
 			eval "FAQ::OMatic::".$func."::main();";
 			die $@ if ($@);	# pass internal errors out to next eval
 		};
@@ -152,13 +167,33 @@ sub main {
 		# 'use strict' message or -w warning.
 		# try a nice presentation, else fall back on text:
 		# (unfortunately, text errors don't get mailed to $faqAdmin.)
-		eval("require FAQ::OMatic; "
-			."FAQ::OMatic::gripe('abort', 'problem: '.\$problem);");
+		eval {
+			$SIG{'__WARN__'} = sub { die "x"; }; # warnings => something's amok
+			require FAQ::OMatic;
+			FAQ::OMatic::gripe('problem', 'problem: '.$problem);
+			# don't use 'abort', because in mod_perl that calls
+			# Apache::exit(), which looks like a die, which makes us
+			# think this eval failed.
+			# Squirt out the message:
+			print FAQ::OMatic::pageHeader();
+			print FAQ::OMatic::pageFooter();
+		};
 		if ($@) {
+			# can't use FAQ::OMatic::header() here because FAQ::OMatic
+			# isn't imported here.
 			print $cgi->header('-type'=>"text/html");
-			print "<tt>\n$problem\n</tt>\n";
+			print "<tt>\n$problem\n</tt><br><font color=blue>"
+				.($@ ne '')."</font>\n";
 		}
 	}
+}
+
+sub meta {
+	return $meta;
+}
+
+sub cgi {
+	return $cgi;
 }
 
 1;

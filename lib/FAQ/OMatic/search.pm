@@ -34,19 +34,19 @@ use FAQ::OMatic::Item;
 use FAQ::OMatic;
 use FAQ::OMatic::Search;
 use FAQ::OMatic::Appearance;
+use FAQ::OMatic::I18N;
 
 sub main {
-	my $cgi = $FAQ::OMatic::dispatch::cgi;
+	my $cgi = FAQ::OMatic::dispatch::cgi();
 	
-	FAQ::OMatic::getParams($cgi);
-	my $params = \%FAQ::OMatic::theParams;
+	my $params = FAQ::OMatic::getParams($cgi);
 
 	# Convert user input into a set of searchable words
 	FAQ::OMatic::Search::convertSearchParams($params);
 
 	if (scalar(@{$params->{_searchArray}})==0) {
 		my $url = FAQ::OMatic::makeAref('faq', {}, 'url');
-		$cgi->redirect(FAQ::OMatic::urlBase($cgi).$url);
+		FAQ::OMatic::redirect($cgi, $url);
 	}
 
 	# Get the names of the matching files
@@ -64,17 +64,17 @@ sub main {
 		}
 	}
 
-	my $rt = FAQ::OMatic::pageHeader();
+	my $rt = FAQ::OMatic::pageHeader($params, ['search', 'faq']);
 	if (scalar(@{$matchset})==0) {
-		$rt.="No items matched "
-			.$params->{'_minMatches'}." of these words: <i>"
+		$rt.= gettext("No items matched")." "
+			.gettext($params->{'_minMatches'})." ".gettext("of these words") . ": <i>"
 			.join(", ", @{$params->{'_searchArray'}})
 			."</i>.\n<br>\n";
 	} else {
-		$rt.="Search results for "
+		$rt.= gettext("Search results for")." "
 			.($params->{'_minMatches'} eq 'all' ?
-				'all' : "at least ".$params->{'_minMatches'})
-			." of these words: <i>"
+				gettext('all') : gettext("at least")." ".$params->{'_minMatches'})
+			." ".gettext("of these words").": <i>"
 			.join(", ", @{$params->{'_searchArray'}})
 			."</i>:<p>\n";
 
@@ -87,9 +87,9 @@ sub main {
 	}
 
 	if (not -f "$FAQ::OMatic::Config::metaDir/freshSearchDBHint") {
-		$rt .= "<br>Results may be incomplete, because the search "
-			."index has not been refreshed since the most recent change "
-			."to the database.<p>\n";
+		$rt .= "<br>"
+		       . FAQ::OMatic::I18N::gettext("Results may be incomplete, because the search index has not been refreshed since the most recent change to the database.")
+		       . "<p>\n";
 	}
 
 	$rt.=FAQ::OMatic::Help::helpFor($params,
@@ -107,3 +107,7 @@ sub main {
 }
 
 1;
+
+
+
+

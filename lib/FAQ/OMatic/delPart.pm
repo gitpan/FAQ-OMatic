@@ -35,35 +35,37 @@ use FAQ::OMatic;
 use FAQ::OMatic::Auth;
 
 sub main {
-	my $cgi = $FAQ::OMatic::dispatch::cgi;
+	my $cgi = FAQ::OMatic::dispatch::cgi();
 	
 	my $params = FAQ::OMatic::getParams($cgi);
 
 	FAQ::OMatic::mirrorsCantEdit($cgi, $params);
 
-	my $item = new FAQ::OMatic::Item($FAQ::OMatic::theParams{'file'});
+	my $item = new FAQ::OMatic::Item($params->{'file'});
 	if ($item->isBroken()) {
 		FAQ::OMatic::gripe('error', "The file (".
-			$FAQ::OMatic::theParams{'file'}.") doesn't exist.");
+			$params->{'file'}.") doesn't exist.");
 	}
 
-	my $rd = FAQ::OMatic::Auth::ensurePerm($item, 'PermEditPart',
-		FAQ::OMatic::commandName(), $cgi, 0);
-	if ($rd) { print $rd; exit 0; }
+	FAQ::OMatic::Auth::ensurePerm('-item'=>$item,
+		'-operation'=>'PermEditPart',
+		'-restart'=>FAQ::OMatic::commandName(),
+		'-cgi'=>$cgi,
+		'-failexit'=>1);
 
 	$item->checkSequence($params);
 	$item->incrementSequence();
 	
-	my $partnum = $FAQ::OMatic::theParams{'partnum'};
+	my $partnum = $params->{'partnum'};
 	my $part = $item->getPart($partnum);
 	if (not $part) {
 		FAQ::OMatic::gripe('error', "Part number $partnum in "
-			.$FAQ::OMatic::theParams{'file'}." doesn't exist.");
+			.$params->{'file'}." doesn't exist.");
 	}
 
 	if ($part->{'Type'} eq 'directory') {
 		FAQ::OMatic::gripe('error', "Part number $partnum in "
-			.$FAQ::OMatic::theParams{'file'}." can't be deleted.");
+			.$params->{'file'}." can't be deleted.");
 	}
 
 	my $oldtext = $item->getPart($partnum)->{'Text'};
@@ -73,7 +75,7 @@ sub main {
 
 	$item->saveToFile();
 
-	$oldtext =~ s/^/> /mg;
+	$oldtext = FAQ::OMatic::quoteText($oldtext, '> ');
 	$item->notifyModerator($cgi,
 		"deleted a part, which used to say:\n\n$oldtext\n");
 
@@ -82,7 +84,7 @@ sub main {
 				'-params'=>$params,
 				'-changedParams'=>{'partnum' => '', 'checkSequenceNumber'=>''},
 				'-refType'=>'url');
-	print $cgi->redirect(FAQ::OMatic::urlBase($cgi).$url);
+	FAQ::OMatic::redirect($cgi, $url);
 }
 
 1;

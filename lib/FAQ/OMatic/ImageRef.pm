@@ -39,8 +39,10 @@ package FAQ::OMatic::ImageRef;
 
 use FAQ::OMatic::Bags;
 
-my %img_type = ();     # type of each image
-my %img_prop = ();     # properties of each image
+my %img_type = ();		# type of each image. constant; no mod_perl
+						# cache problem
+my %img_prop = ();		# properties of each image. constant; no mod_perl
+						# cache problem
 
 sub getImage {
 	my $name = shift;
@@ -76,6 +78,8 @@ sub getType {
 sub getBagForImage {
 	my $name = shift;
 	my $typek = $img_type{$name};
+	die "undefined name" if (not defined $name);
+	die "undefined typek for img $name" if (not defined $typek);
 	return "$name.$typek";
 }
 
@@ -386,6 +390,12 @@ $img_type{'unchecked'} = 'gif';
 $img_prop{'unchecked'}{'SizeWidth'} = '16';
 $img_prop{'unchecked'}{'SizeHeight'} = '16';
 $img_prop{'unchecked'}{'SizeBytes'} = '79';
+
+$img_type{'cat-to-ans'} = 'gif';
+
+$img_prop{'cat-to-ans'}{'SizeWidth'} = '29';
+$img_prop{'cat-to-ans'}{'SizeHeight'} = '26';
+$img_prop{'cat-to-ans'}{'SizeBytes'} = '213';
 
 
 1;

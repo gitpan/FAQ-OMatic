@@ -33,9 +33,10 @@ use CGI;
 use FAQ::OMatic::Item;
 use FAQ::OMatic;
 use FAQ::OMatic::Auth;
+use FAQ::OMatic::I18N;
 
 sub main {
-	my $cgi = $FAQ::OMatic::dispatch::cgi;
+	my $cgi = FAQ::OMatic::dispatch::cgi();
 	
 	my $params = FAQ::OMatic::getParams($cgi);
 
@@ -47,9 +48,11 @@ sub main {
 		FAQ::OMatic::gripe('error', "The file ($file) doesn't exist.");
 	}
 
-	my $rd = FAQ::OMatic::Auth::ensurePerm($item, 'PermEditItem',
-		FAQ::OMatic::commandName(), $cgi, 0);
-	if ($rd) { print $rd; exit 0; }
+	FAQ::OMatic::Auth::ensurePerm('-item'=>$item,
+		'-operation'=>'PermAddItem',
+		'-restart'=>FAQ::OMatic::commandName(),
+		'-cgi'=>$cgi,
+		'-failexit'=>1);
 
 	my $duplicateFrom = $cgi->param('_duplicate');
 	my $newitem;
@@ -61,7 +64,7 @@ sub main {
 				$duplicateFrom.") is broken.");
 		}
 		$newitem = $source->clone();
-		$newitem->setProperty('Title', "Copy of ".$newitem->getTitle());
+		$newitem->setProperty("Title", gettext("Copy of")." ".$newitem->getTitle());
 	} else {
 		# create a new item in destination item file
 		$newitem = new FAQ::OMatic::Item();
@@ -79,8 +82,9 @@ sub main {
 	# make him feel better
 	if ($params->{'_insert'} eq 'category') {
 		$newitem->makeDirectory()->
-			setText("Subcategories:\n\n\nAnswers in this category:\n");
+			setText(gettext("Subcategories:\n\n\nAnswers in this category:\n"));
 	}
+
 	# passing $file as a name ensures that new child will have the
 	# same type of name as its parent. (such as a helpfile)
 	$newitem->saveToFile(FAQ::OMatic::unallocatedItemName($file));
@@ -89,8 +93,19 @@ sub main {
 	$item->addSubItem($newitem->{'filename'});
 	$item->saveToFile();
 
-	$item->notifyModerator($cgi, 'added a sub-item');
+	$item->notifyModerator($cgi, 'added a sub-item #'.$newitem->{'filename'});
 
+	if (FAQ::OMatic::getParam($params, 'isapi')) {
+		# caller is a program; doesn't want a redirect to an HTML file!
+		# provide textual results
+		print FAQ::OMatic::header($cgi, '-type'=>'text/plain')
+			."isapi=1\n"
+			."file=".$newitem->{'filename'}."\n"
+			."checkSequenceNumber=".$newitem->{'SequenceNumber'}."\n";
+		FAQ::OMatic::myExit(0);
+	}
+
+	# redirect user to the new page
 	my $url;
 	if ($duplicateFrom) {
 		$url = FAQ::OMatic::makeAref('editItem',
@@ -105,7 +120,7 @@ sub main {
 			'url');
 	}
 
-	print $cgi->redirect(FAQ::OMatic::urlBase($cgi).$url);
+	FAQ::OMatic::redirect($cgi, $url);
 }
 
 1;

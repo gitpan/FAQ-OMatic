@@ -35,7 +35,7 @@ use FAQ::OMatic::Auth;
 use FAQ::OMatic::Groups;
 
 sub main {
-	my $cgi = $FAQ::OMatic::dispatch::cgi;
+	my $cgi = FAQ::OMatic::dispatch::cgi();
 	my $params = FAQ::OMatic::getParams($cgi);
 
 	FAQ::OMatic::mirrorsCantEdit($cgi, $params);
@@ -44,9 +44,11 @@ sub main {
 
 	my $group = $params->{'group'};
 
-	my $rd = FAQ::OMatic::Auth::ensurePerm('', 'PermEditGroups',
-		FAQ::OMatic::commandName(), $cgi, 0);
-	if ($rd) { print $rd; exit 0; }
+	FAQ::OMatic::Auth::ensurePerm('-item'=>'',
+		'-operation'=>'PermEditGroups',
+		'-restart'=>FAQ::OMatic::commandName(),
+		'-cgi'=>$cgi,
+		'-failexit'=>1);
 
 	$html.= FAQ::OMatic::pageHeader($params);
 	

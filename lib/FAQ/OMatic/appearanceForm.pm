@@ -31,17 +31,18 @@ package FAQ::OMatic::appearanceForm;
 
 use CGI;
 use FAQ::OMatic;
+use FAQ::OMatic::I18N;
 
 sub main {
-	my $cgi = $FAQ::OMatic::dispatch::cgi;
+	my $cgi = FAQ::OMatic::dispatch::cgi();
 	
 	my $params = FAQ::OMatic::getParams($cgi);
 
 	my $page = '';
 
-	$page.=FAQ::OMatic::pageHeader();
+	$page.=FAQ::OMatic::pageHeader($params, ['help', 'faq']);
 	
-	$page.="<h3>Appearance Options</h3>";
+	$page.="<h3>".gettext("Appearance Options")."</h3>";
 
 # Data structure key:
 #		['parameterName',			# as resolved by $params->{'parameterName'}
@@ -51,35 +52,45 @@ sub main {
 
 	my $boxes = [
 #		['recurse',
-#			['', 'Show', 'Hide'],
+#			['', gettext("Show"), gettext("Hide")],
 #			['', '1', ''],
-#			'all categories and answers below current category'],
-		['showEditCmds',
-			['Show', 'Compact', 'Hide'],
-			['1', 'compact', ''],
-			'expert editing commands'],
+#			gettext("all categories and answers below current category")],
+		['editCmds',
+			[gettext("Show"), gettext("Compact"), gettext("Hide")],
+			['show', 'compact', 'hide'],
+			gettext("expert editing commands")],
 		['showModerator',
-			['', 'Show', 'Hide'],
-			['', '1', ''],
-			'name of moderator who organizes current category'],
-		($FAQ::OMatic::Config::showLastModifiedAlways||0)
-			? ['',
-				['', '', ''],
-				['', '', ''],
-				'<i>last modified date always shown</i>']
-			: ['showLastModified',
-				['', 'Show', 'Hide'],
-				['', '1', ''],
-				'last modified date']
-			,
+			['', gettext("Show"), gettext("Hide")],
+			['', 'show', 'hide'],
+			gettext("name of moderator who organizes current category")],
+		['showLastModified',
+			['', gettext("Show"), gettext("Hide")],
+			['', 'show', 'hide'],
+			gettext("last modified date")],
+# showLastModifiedAlways is now obsolete; that default will be handled
+# in the (new) standard way using OMatic::getParam().
+#		($FAQ::OMatic::Config::showLastModifiedAlways||0)
+#			? ['',
+#				['', '', ''],
+#				['', '', ''],
+#				'<i>last modified date always shown</i>']
+#			: ['showLastModified',
+#				['', 'Show', 'Hide'],
+#				['', '1', ''],
+#				'last modified date']
+#			,
 		['showAttributions',
-			['Show All', 'Default', 'Hide'],
-			['all', '', 'hide'],
-			'attributions'],
+			[gettext("Show All"), gettext("Default"), gettext("Hide")],
+			['all', 'default', 'hide'],
+			gettext("attributions")],
 		['render',
-			['', 'Simple', 'Fancy'],
+			['', gettext("Simple"), gettext("Fancy")],
 			['', 'simple', 'tables'],
-			'HTML']
+			'HTML'],
+		['textCmds',
+			['', gettext("Show"), gettext("Hide")],
+			['', 'show', 'hide'],
+			gettext("commands for generating text output")]
 	];
 
 	$page.=FAQ::OMatic::makeAref("faq",
@@ -111,7 +122,7 @@ sub main {
 		$page.="</tr>";
 	}
 	$page.="<tr><td></td><td></td><td></td><td align=left>"
-		."<input type=submit name=\"_fromAppearance\" value=\"Accept\">"
+		."<input type=submit name=\"_fromAppearance\" value=\"".gettext("Accept")."\">"
 		."</td></tr>\n";
 	$page.="</table></form>\n";
 

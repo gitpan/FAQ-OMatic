@@ -35,7 +35,7 @@ use FAQ::OMatic;
 use FAQ::OMatic::Auth;
 
 sub main {
-	my $cgi = $FAQ::OMatic::dispatch::cgi;
+	my $cgi = FAQ::OMatic::dispatch::cgi();
 	my $removed = 0;
 	
 	my $params = FAQ::OMatic::getParams($cgi);
@@ -51,8 +51,11 @@ sub main {
 	$item->checkSequence($params);
 	$item->incrementSequence();
 
-	FAQ::OMatic::Auth::ensurePerm($item, 'PermEditPart',
-		FAQ::OMatic::commandName(), $cgi, 0);
+	FAQ::OMatic::Auth::ensurePerm('-item'=>$item,
+		'-operation'=>'PermEditDirectory',
+		'-restart'=>FAQ::OMatic::commandName(),
+		'-cgi'=>$cgi,
+		'-failexit'=>1);
 
 	if ($item->isCategory()) {
 		# users would rarely see this message; they'd have to forge the URL.
@@ -82,7 +85,7 @@ sub main {
 				'-refType'=>'url');
 		# eliminate things that were in our input form that weren't
 		# automatically transient (_ prefix)
-	print $cgi->redirect(FAQ::OMatic::urlBase($cgi).$url);
+	FAQ::OMatic::redirect($cgi, $url);
 }
 
 1;

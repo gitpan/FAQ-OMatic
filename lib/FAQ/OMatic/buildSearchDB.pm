@@ -58,9 +58,13 @@ sub build {
 	## because of Unix' cool file semantics.
 
 	my %wordsdb;
-	dbmopen %wordsdb, "$FAQ::OMatic::Config::metaDir/search$$", 600;
-	open INDEXFILE, ">$FAQ::OMatic::Config::metaDir/search$$.index" or die ".index $!";
-	open WORDSFILE, ">$FAQ::OMatic::Config::metaDir/search$$.words" or die ".words $!";
+	my $searchFileName = 'search.'.FAQ::OMatic::nonce();
+	my $searchFilePath = $FAQ::OMatic::Config::metaDir.'/'.$searchFileName;
+	dbmopen %wordsdb, $searchFilePath, 600;
+	open(INDEXFILE, ">${searchFilePath}.index")
+		|| die "${searchFilePath}.index $!";
+	open(WORDSFILE, ">${searchFilePath}.words")
+		|| die "${searchFilePath}.words $!";
 
 	foreach my $i (@wordlist) {
 		## Write down in the hash the file pointer where we can find
@@ -84,16 +88,20 @@ sub build {
 	# Using wildcards lets us remain ignorant of dbm's extension(s), which
 	# vary machine to machine.
 	my @searchfiles = FAQ::OMatic::safeGlob($FAQ::OMatic::Config::metaDir,
-						"^search$$");
+						"^${searchFileName}");
 
 	foreach my $i (@searchfiles) {
 		chmod 0644, $i;
 	}
 
-	foreach my $i (@searchfiles) {
-		my $j = $i;
-		$j =~ s/$$//;
-		rename($i,$j) or FAQ::OMatic::gripe('debug', "rename($i,$j) failed");
+	# move temp files into place as the official search database
+	foreach my $from (@searchfiles) {
+		$from =~ m#${searchFileName}([^/]*)$#;
+		my $suffix = $1
+			|| die "$from !~ $searchFileName";
+		my $to = "${FAQ::OMatic::Config::metaDir}/search${suffix}";
+		rename($from,$to) ||
+			FAQ::OMatic::gripe('debug', "rename($from,$to) failed");
 	}
 
 	# create a freshSearchDBHint to let me know I don't need to do

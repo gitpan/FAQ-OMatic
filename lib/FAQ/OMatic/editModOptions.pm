@@ -35,26 +35,28 @@ use FAQ::OMatic;
 use FAQ::OMatic::Auth;
 
 sub main {
-	my $cgi = $FAQ::OMatic::dispatch::cgi;
+	my $cgi = FAQ::OMatic::dispatch::cgi();
 	my $rt = '';
 	
 	my $params = FAQ::OMatic::getParams($cgi);
 
 	FAQ::OMatic::mirrorsCantEdit($cgi, $params);
 	
-	$rt = FAQ::OMatic::pageHeader($params);
+	$rt = FAQ::OMatic::pageHeader($params, ['help', 'faq']);
 	
-	my $item = new FAQ::OMatic::Item($FAQ::OMatic::theParams{'file'});
+	my $item = new FAQ::OMatic::Item($params->{'file'});
 	if ($item->isBroken()) {
 		FAQ::OMatic::gripe('error', "The file (".
-			$FAQ::OMatic::theParams{'file'}.") doesn't exist.");
+			$params->{'file'}.") doesn't exist.");
 	}
 
-	my $rd = FAQ::OMatic::Auth::ensurePerm($item, 'PermModOptions',
-		FAQ::OMatic::commandName(), $cgi, 0);
-	if ($rd) { print $rd; exit 0; }
+	FAQ::OMatic::Auth::ensurePerm('-item'=>$item,
+		'-operation'=>'PermModOptions',
+		'-restart'=>FAQ::OMatic::commandName(),
+		'-cgi'=>$cgi,
+		'-failexit'=>1);
 
-	$rt .= $item->displayModOptionsEditor(\%FAQ::OMatic::theParams, $cgi);
+	$rt .= $item->displayModOptionsEditor($params, $cgi);
 
 	$rt .= FAQ::OMatic::pageFooter($params, ['help', 'faq']);
 

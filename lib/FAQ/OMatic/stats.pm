@@ -35,7 +35,7 @@ use FAQ::OMatic;
 use FAQ::OMatic::Log;
 
 sub main {
-	my $cgi = $FAQ::OMatic::dispatch::cgi;
+	my $cgi = FAQ::OMatic::dispatch::cgi();
 	my $rt = '';
 	
 	my $params = FAQ::OMatic::getParams($cgi);

@@ -2,8 +2,12 @@ LICENSE
 MANIFEST
 Makefile.PL
 README
+doc/code-layout.eps
+doc/code-layout.fig
+doc/code-layout.fig.bak
 fom.PL
 lib/FAQ/OMatic.pm
+lib/FAQ/OMatic/API.pm
 lib/FAQ/OMatic/Appearance.pm
 lib/FAQ/OMatic/Auth.pm
 lib/FAQ/OMatic/AuthLocal.pm
@@ -11,10 +15,11 @@ lib/FAQ/OMatic/Bags.pm
 lib/FAQ/OMatic/ColorPicker.pm
 lib/FAQ/OMatic/Groups.pm
 lib/FAQ/OMatic/Help.pm
+lib/FAQ/OMatic/I18N.pm
 lib/FAQ/OMatic/ImageData.pm
 lib/FAQ/OMatic/ImageRef.pm
-lib/FAQ/OMatic/Intl.pm
 lib/FAQ/OMatic/Item.pm
+lib/FAQ/OMatic/Language_de_iso8859_1.pm
 lib/FAQ/OMatic/Log.pm
 lib/FAQ/OMatic/Part.pm
 lib/FAQ/OMatic/Search.pm
@@ -57,3 +62,5 @@ lib/FAQ/OMatic/submitModOptions.pm
 lib/FAQ/OMatic/submitMove.pm
 lib/FAQ/OMatic/submitPart.pm
 lib/FAQ/OMatic/submitPass.pm
+t-informal/testapi.pl
+t-informal/testr.pl

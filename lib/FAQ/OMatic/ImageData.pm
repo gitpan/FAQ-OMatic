@@ -40,9 +40,8 @@ use strict;
 
 package FAQ::OMatic::ImageData;
 
-use vars qw(%img);	# 'import' var names so they're declared
-
-%img = ();		# actual image data
+use vars qw(%img);	# constant data; no mod_perl troubles
+%img = ();
 
 # to regenerate:
 #:.,$-2!(cd ../../../img; ../dev-bin/encodeBin.pl -data *)
@@ -445,5 +444,14 @@ $img{'unchecked'} = <<__EOF__;
 9117c041684aadaca92ab25100003b
 __EOF__
 
+$img{'cat-to-ans'} = <<__EOF__;
+4749463837611d001a00c20000ff00ff8c8a8cfffecbc0c0c0000000ffffff98
+00650000002c000000001d001a000003a208bad1be304a18c4b843b8377bc599
+208e41375563ba71a682ae4daab58c86ca2aed6a228889251da082f25d80c221
+2f45683a9d3a47ef422858af85262d66c154b3d82aa1c56582ab0ea8e736fa36
+0b0eeb386270c1025f6c585237b9f5727406831d626f1b598283841162608873
+0b8b7d12798089928b26837701980a9a1093837088579100a1a29397a7abaaa9
+8b4fb36a99a3a349afb88cb9b69494bd9bc109003b
+__EOF__
 
 1;

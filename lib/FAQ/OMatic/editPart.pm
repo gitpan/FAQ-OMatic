@@ -33,16 +33,17 @@ use CGI;
 use FAQ::OMatic::Item;
 use FAQ::OMatic;
 use FAQ::OMatic::Auth;
+use FAQ::OMatic::I18N;
 
 sub main {
-	my $cgi = $FAQ::OMatic::dispatch::cgi;
+	my $cgi = FAQ::OMatic::dispatch::cgi();
 	my $rt='';
 
 	my $params = FAQ::OMatic::getParams($cgi);
 
 	FAQ::OMatic::mirrorsCantEdit($cgi, $params);
 
-	$rt .= FAQ::OMatic::pageHeader($params);
+	$rt .= FAQ::OMatic::pageHeader($params, ['help', 'faq']);
 	
 	my $item = new FAQ::OMatic::Item($params->{'file'});
 	if ($item->isBroken()) {
@@ -113,39 +114,47 @@ sub main {
 	if ($part->{'Text'} =~ m/^\s*$/s) {
 		# if the part starts out empty, we're as good as adding, not
 		# editing existing content.
-		my $rd = FAQ::OMatic::Auth::ensurePerm($item, 'PermAddPart',
-			FAQ::OMatic::commandName(), $cgi, 0);
-		if ($rd) { print $rd; exit 0; }
+		# We let the item author add any new parts he wants.
+		FAQ::OMatic::Auth::ensurePerm('-item'=>$item,
+			'-operation'=>'PermAddPart',
+			'-restart'=>FAQ::OMatic::commandName(),
+			'-cgi'=>$cgi,
+			'-failexit'=>1);
 	} else {
-		my $rd = FAQ::OMatic::Auth::ensurePerm($item, 'PermEditPart',
-			FAQ::OMatic::commandName(), $cgi, 0);
-		if ($rd) { print $rd; exit 0; }
+		FAQ::OMatic::Auth::ensurePerm('-item'=>$item,
+			'-operation'=>'PermEditPart',
+			'-restart'=>FAQ::OMatic::commandName(),
+			'-cgi'=>$cgi,
+			'-failexit'=>1);
 
 		if ($part->{'Type'} eq 'html') {
 			# discourage unauthorized users from editing HTML parts which
 			# they won't later be able to submit.
-			$rd = FAQ::OMatic::Auth::ensurePerm($item, 'PermUseHTML',
-				FAQ::OMatic::commandName(), $cgi, 0, 'useHTML');
-			if ($rd) { print $rd; exit 0; }
+			FAQ::OMatic::Auth::ensurePerm('-item'=>$item,
+				'-operation'=>'PermUseHTML',
+				'-restart'=>FAQ::OMatic::commandName(),
+				'-cgi'=>$cgi,
+				'-xreason'=>'useHTML',
+				'-failexit'=>1);
 		}
 	}
 	
 	if ($params->{'_insertpart'}) {
 		my $insertHint = $params->{'_insert'} || '';
 		if ($insertHint eq 'answer') {
-			$rt .= "Enter the answer to <b>".$item->getTitle()."</b>\n";
+			$rt .= gettext("Enter the answer to")." <b>".$item->getTitle()."</b>\n";
 		} elsif ($insertHint eq 'category') {
-			$rt .= "Enter a description for <b>".$item->getTitle()."</b>\n";
+			$rt .= gettext("Enter a description for")." <b>".$item->getTitle()."</b>\n";
 		} elsif ($params->{'_duplicate'}) {
-			$rt .= "Edit duplicated text for <b>".$item->getTitle()."</b>\n";
+			$rt .= gettext("Edit duplicated text for")." <b>".$item->getTitle()."</b>\n";
 		} else {
-			$rt .= "Enter new text for <b>".$item->getTitle()."</b>\n";
+			$rt .= gettext("Enter new text for")." <b>".$item->getTitle()."</b>\n";
 		}
 	} else {
 		# little white lie -- user sees 1-based indices, but parts
 		# are stored 0-based. Is this bad?
-		$rt .= "Editing the "
-			.FAQ::OMatic::cardinal($partnum+1)." text part in <b>"
+		$rt .= gettext("Editing the")." "
+			.FAQ::OMatic::cardinal($partnum+1)." ".gettext("text part in")." <b>"
 			.$item->getTitle()."</b>\n";
 	}
 	$rt .= $part->displayPartEditor($item, $partnum, $params);
@@ -154,9 +163,30 @@ sub main {
 	$rt .= FAQ::OMatic::Help::helpFor($params, 'makingLinks', "<br>\n");
 	$rt .= FAQ::OMatic::Help::helpFor($params, 'seeAlso', "<br>\n");
 
+	# TODO: this will probably be unnecessary once there is a help system.
+	if (FAQ::OMatic::getParam($params, 'editCmds') eq 'hide') {
+		$rt .= "<p>If you later need to edit or delete this text, use the "
+			."[Appearance] page to turn on the expert editing commands.\n";
+	}
+
 	$rt .= FAQ::OMatic::pageFooter($params, ['help','faq']);
 
 	print $rt;
 }
 
 1;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -92,16 +92,18 @@ sub numericDate {
 }
 
 sub logEvent {
+	my $params = shift;
+
 	my $date = numericDate();
 	my $host = $ENV{'REMOTE_HOST'} || 'unknown-host';
 	$host = '-' if ($host eq '');
 	my $prog = FAQ::OMatic::commandName();
-	my $args = $FAQ::OMatic::theParams{'file'} || '';
+	my $args = $params->{'file'} || '';
 	my $browser = $ENV{'HTTP_USER_AGENT'} || 'unknown-agent';
 	$browser =~ s/\s//g;
 
-	$args .= "/".$FAQ::OMatic::theParams{'partnum'}
-		if (defined $FAQ::OMatic::theParams{'partnum'});
+	$args .= "/".$params->{'partnum'}
+		if (defined $params->{'partnum'});
 
 	my $logfile = $FAQ::OMatic::Config::metaDir."/".numericToday().".rawlog";
 	if (not open LOG, ">>$logfile") {
@@ -218,7 +220,7 @@ sub summarizeDay {
 	}
 
 	# compute derived stats
-	if ($item->{'CumUniqueHosts'} != 0) {
+	if (($item->{'CumUniqueHosts'}||0) != 0) {
 		$item->{'HitsPerHost'} = $item->{'CumHits'} / $item->{'CumUniqueHosts'};
 	} else {
 		$item->{'HitsPerHost'} = 0;

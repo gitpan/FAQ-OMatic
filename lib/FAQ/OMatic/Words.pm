@@ -85,9 +85,17 @@ sub getWords {
 	my $wordPattern = '[A-Za-z0-9\-]';
 	# for ISO-8859-1 char set, try
 	#my $wordPattern = '[A-Za-z0-9\-\300-\326\330-\366\370-\377]';
-	my @words = ($string =~ m/($wordPattern+)/gso);
 
-	@words;
+	#my @words = ($string =~ m/($wordPattern+)/gso);
+	# /gso seems to break in some circumstances. :v(
+	my @wordspl = split(/($wordPattern+)/, $string);
+	my @words=();
+	my $i;
+	for ($i=1; $i<@wordspl; $i+=2) {
+		push (@words, $wordspl[$i]);
+	}
+
+	return @words;
 }
 
 sub getPrefixes {

@@ -34,16 +34,12 @@ use FAQ::OMatic::Item;
 use FAQ::OMatic;
 
 sub main {
-	my $cgi = $FAQ::OMatic::dispatch::cgi;
+	my $cgi = FAQ::OMatic::dispatch::cgi();
 
 	my $params = FAQ::OMatic::getParams($cgi);
 	# supply some default parameters where necessary
 	$params->{'file'} = 1 if (not $params->{'file'});
 
-	my $html = '';
-	$html .= $cgi->header('text/html');
-		# pageHeader() supplied by item->getWholePage()
-	
 	# strip out null params from params array
 	if ($params->{'_fromAppearance'}) {
 		my $key;
@@ -56,11 +52,19 @@ sub main {
 	my $cacheUrl = FAQ::OMatic::getCacheUrl($params);
 	if ($cacheUrl) {
 		# Hey! We could just send this guy to the cached site!
-		print $cgi->redirect($cacheUrl);
-		exit(0);
+		FAQ::OMatic::redirect($cgi, $cacheUrl);
+		# (implicit exit)
 	}
 
-	if ($params->{'showEditCmds'}) {
+	my $render = FAQ::OMatic::getParam($params, 'render');
+	my $html = '';
+	if ($render eq 'text') {
+		$html .= FAQ::OMatic::header($cgi, '-type'=>'text/plain');
+	} else {
+		$html .= FAQ::OMatic::header($cgi, '-type'=>'text/html');
+	}
+	
+	if (FAQ::OMatic::getParam($params, 'editCmds') ne 'hide') {
 		FAQ::OMatic::mirrorsCantEdit($cgi, $params);
 	}
 

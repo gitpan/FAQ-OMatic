@@ -42,8 +42,10 @@ use FAQ::OMatic::Groups;
 use FAQ::OMatic::Words;
 use FAQ::OMatic::Help;
 use FAQ::OMatic::Versions;
+use FAQ::OMatic::Set;
+use FAQ::OMatic::I18N;
 
-my %itemCache = ();	# contains (filename => item ref) mappings
+my @monthMap;			# a constant array, no cache problem for mod_perl
 
 sub new {
 	my ($class) = shift;
@@ -54,8 +56,9 @@ sub new {
 	bless $item;
 
 	# if we have the item loaded already, use the in-core copy!
-	if ($arg and (defined $itemCache{$arg})) {
-		return $itemCache{$arg};
+	my $itemCache = FAQ::OMatic::getLocal('itemCache');
+	if ($arg and (defined $itemCache->{$arg})) {
+		return $itemCache->{$arg};
 	}
 
 	$item->{'class'} = $class;
@@ -64,10 +67,11 @@ sub new {
 	if ($arg) {
 		$item->loadFromFile($arg,$dir);
 		if ($item->{'filename'}) {
-			$itemCache{$item->{'filename'}} = $item;
+			$itemCache->{$item->{'filename'}} = $item;
+			FAQ::OMatic::setLocal('itemCache', $itemCache);
 		}
 	} else {
-		$item->setProperty('Title', 'New Item');
+		$item->setProperty('Title', gettext("New Item"));
 	}
 
 	# ensure every item has a sequence number.
@@ -137,22 +141,57 @@ sub loadFromFile {
 sub loadFromFileHandle {
 	my $self = shift;
 	my $fh = shift;
-	my $filename = shift || 'an item read from a filehandle';
+	my $debugFilename = shift;
+
+	return loadFromCodeClosure($self,
+		sub {
+			return <$fh>;	# read one line
+		},
+		$debugFilename);
+}
+
+sub loadFromString {
+	my $self = shift;
+	my $string = shift;
+	my $debugFilename = shift;
+
+	my @lines = split("\n", $string);
+	splice(@lines, scalar(@lines)-1);	# hack off last empty string
+
+	return loadFromCodeClosure($self,
+		sub {
+			# read one line
+			my $line = shift(@lines);
+			$line .= "\n" if (defined $line);
+			return $line;
+		},
+		$debugFilename);
+}
+
+sub loadFromCodeClosure {
+	my $self = shift;
+	my $closure = shift;	# a sub that returns one line of the file
+	my $debugFilename = shift || 'an item read from a filehandle';
 
 	# process item headers
-	while (<$fh>) {
+	while ($_ = &{$closure}) {
 		chomp;
 		my ($key,$value) = FAQ::OMatic::keyValue($_);
 		if ($key eq 'Part') {
 			my $newPart = new FAQ::OMatic::Part;
-			$newPart->loadFromFile($fh, $self->{'filename'}, $self,
+			$newPart->loadFromCodeClosure($closure, $self->{'filename'}, $self,
 					scalar @{$self->{'Parts'}});	# partnum
 			push @{$self->{'Parts'}}, $newPart;
 		} elsif ($key eq 'LastModified') {
-			# Transparently update older items with LastModified keys
+			# LEGACY: Transparently update older items with LastModified keys
 			# to use new LastModifiedSecs key.
 			my $secs = compactDateToSecs($value);	# turn back into seconds
 			$self->{'LastModifiedSecs'} = $secs;
+		} elsif ($key eq 'PermEditItem') {
+			# Replace this old permission descriptor with the new ones
+			$self->{'PermEditTitle'} = $value;
+			$self->{'PermEditDirectory'} = $value;
+			$self->{'PermAddItem'} = $value;
 		} elsif ($key =~ m/-Set$/) {
 			if (not defined($self->{$key})) {
 				$self->{$key} = new FAQ::OMatic::Set;
@@ -162,8 +201,8 @@ sub loadFromFileHandle {
 			$self->setProperty($key, $value);
 		} else {
 			FAQ::OMatic::gripe('problem',
-				"FAQ::OMatic::Item::loadFromFileHandle was confused by this "
-				."header in $filename: \"$_\"");
+				"FAQ::OMatic::Item::loadFromCodeClosure was confused by this "
+				."header in $debugFilename: \"$_\"");
 			# this marks the item "broken" so that the save routine will
 			# refuse to save this corrupted file out and lose more data.
 			delete $self->{'Title'};
@@ -192,7 +231,7 @@ sub getPart {
 	return $self->{'Parts'}->[$num];
 }
 
-my @monthMap =( 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+@monthMap =( 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
 				'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec' );
 
 # a human-readable date/time format. Currently used for the
@@ -201,17 +240,24 @@ sub compactDate {
 	my ($forsecs) = shift;	# optional; default is now
 	$forsecs = time() if (not $forsecs);
 	my ($sec,$min,$hr,$day,$mo,$yr,$wday,$yday,$isdst) = localtime($forsecs);
-	# TODO: should we really be storing times in GMT, since it's not
-	# TODO: like time zones mean much here?
-	my $ampm = "am";
-	if ($hr >= 12) {
-		$hr -= 12;
-		$ampm = "pm";
-	}
-	$hr = 12 if ($hr == 0);
 
-	return sprintf("%04d-%03s-%02d %2d:%02d%s",
-			$yr+1900, $monthMap[$mo], $day, $hr, $min, $ampm);
+	my $df = $FAQ::OMatic::Config::dateFormat||'';
+	my $time;
+	if ($df eq '24') {
+		# THANKS: to Jan Ornstedt for suggesting 24-hour "European" dates
+		$time = sprintf("%02d:%02d%s", $hr, $min);
+	} else {
+		my $ampm = "am";
+		if ($hr >= 12) {
+			$hr -= 12;
+			$ampm = "pm";
+		}
+		$hr = 12 if ($hr == 0);
+		$time = sprintf("%2d:%02d%s", $hr, $min, $ampm);
+	}
+
+	return sprintf("%04d-%03s-%02d %s",
+			$yr+1900, $monthMap[$mo], $day, $time);
 }
 
 # undo the previous transformation
@@ -251,8 +297,12 @@ sub saveToFile {
 									# 'noChange' is allowed; used when
 									# regenerating files (mod date hasn't
 									# really changed.).
-	my $updateAllDependencies = shift || '';	# optional. only specified
+	my $updateAllDependencies = shift || '';	# optional. specified
 						# by maintenance when regenerating all dependencies.
+	my $noRecomputeDependencies = shift || '';	# optional, used by
+						# mirrorClient to prevent trying to follow
+						# forward references.
+
 # TODO: I don't think maintenance.pm really needs to actually write the
 # TODO: item files when regenerating dependencies/HTML cache files.
 # TODO: If not, that part of saveToFile should be factored out, so we're
@@ -274,7 +324,8 @@ sub saveToFile {
 		$self->{'filename'} = $filename;
 	}
 
-	if ($dir eq $FAQ::OMatic::Config::itemDir) {
+	if ($dir eq $FAQ::OMatic::Config::itemDir
+		and not $noRecomputeDependencies) {
 		# compute new IDependOn-Set -- the items whose titles we depend
 		# on.
 		# copy old list first, so we have something to compare new list to
@@ -477,7 +528,15 @@ sub updateAllChildren {
 	my $filei;
 	foreach $filei ($self->getChildren()) {
 		my $itemi = new FAQ::OMatic::Item($filei);
-		$itemi->writeCacheCopy();
+#		$itemi->writeCacheCopy();
+# jonh: only writing the cache copy isn't enough -- if $itemi's set of
+# siblings has changed, then its IDependOns have changed, too. Those
+# are stored in the item file itself.
+		$itemi->saveToFile('', '', 'noChange');
+			# The contents of the item itself haven't changed.
+			# The 'noChange' prevents us from updating the LastModifiedSecs
+			# property, so that this item doesn't show up in 'recent'
+			# searches even though it hasn't actually changed.
 	}
 }
 
@@ -551,10 +610,12 @@ sub getWholePage {
 	my $params = shift;
 	my $isCached = shift || '';
 
-	return FAQ::OMatic::pageHeader($params, 'suppressType')
+	return FAQ::OMatic::pageHeader($params,
+			FAQ::OMatic::Appearance::allLinks(), 'suppressType')
 		.$self->displayHTML($params)
 		.basicURL($params)
-		.FAQ::OMatic::pageFooter($params, 'all', $isCached);
+		.FAQ::OMatic::pageFooter($params,
+			FAQ::OMatic::Appearance::allLinks(), $isCached);
 }
 
 sub display {
@@ -565,7 +626,7 @@ sub display {
 	my $key;
 	foreach $key (sort keys %$self) {
 		if ($key eq 'Parts') {
-			$rt .= "<li>Parts\n";
+			$rt .= "<li>".gettext("Parts")."\n";
 			my $part;
 			foreach $part (@{$self->{$key}}) {
 				$rt .=  $part->display();
@@ -635,6 +696,15 @@ sub getParentChain {
 		push @filenames, $item1->{'filename'};	# I can guess what this is :v)
 	}
 
+	# Massage undefined data; this happens when writing the HTML cache for
+	# a mirrored item that has a forward reference to another item that
+	# hasn't been mirrored yet. Once the new item arrives, dependencies
+	# will cause us to rewrite the HTML file correctly.
+	# TODO: a regression test should 'grep undefinedFilename item/*' to
+	# see if any of these stay in the item or cache directories after a
+	# mirror is complete.
+	@titles = map { $_ || 'undefinedTitle' } @titles;
+	@filenames = map { $_ || 'undefinedFilename' } @filenames;
 	return (\@titles, \@filenames);
 }
 
@@ -675,8 +745,8 @@ sub displaySiblings {
 		} else {
 			$rt.="<br>\n";
 		}
-		$rt.="Previous: ";
-		$rt.="</td><td valign=top align=left>\n" if $useTable;
+		$rt.=gettext("Previous");
+		$rt.=": </td><td valign=top align=left>\n" if $useTable;
 		$rt.=FAQ::OMatic::makeAref('-command'=>'faq',
 							'-params'=>$params,
 							'-changedParams'=>{"file"=>$prevs})
@@ -693,8 +763,8 @@ sub displaySiblings {
 		} else {
 			$rt.="<br>\n";
 		}
-		$rt.="Next: ";
-		$rt.="</td><td valign=top align=left>\n" if $useTable;
+		$rt.=gettext("Next");
+		$rt.=": </td><td valign=top align=left>\n" if $useTable;
 		$rt.=FAQ::OMatic::makeAref('-command'=>'faq',
 							'-params'=>$params,
 							'-changedParams'=>{"file"=>$nexts})
@@ -724,6 +794,7 @@ sub displayCoreHTML {
 	my $self = shift;
 	my $params = shift;	# ref to hash of display params
 	my $whatAmI = $self->whatAmI();
+	my $render = FAQ::OMatic::getParam($params, 'render');
 
 	# we'll pass this to makeAref to get file param right in links
 	my @fixfn =('file'=>$self->{'filename'});
@@ -736,45 +807,55 @@ sub displayCoreHTML {
 
 	# create the title
 	{
-		my $titlebox .= "<a name=\"file_"
+		my $titlebox = '';
+		if ($render ne 'text') {
+			$titlebox .= "<a name=\"file_"
 				.$self->{'filename'}."\">\n";	# link for internal refs
+		}
 	
 		# prefix item title with a path back to the root, so that user
 		# can find his way back up. (This replaces the old "Up to:" line.)
 		my ($titles,$filenames) = $self->getParentChain();
 		my ($thisTitle) = shift @{$titles};
 		my ($thisFilename) = shift @{$filenames};
-		my (@parentTitles) = reverse @{$titles};
+#		my (@parentTitles) = reverse @{$titles};
 		my (@parentFilenames) = reverse @{$filenames};
-		my $i;
-		for ($i=0; $i<@parentTitles; $i++) {
-			# all parent icons are necessarily categories, duh. :v)
-			$titlebox.=
-				FAQ::OMatic::makeAref('-command'=>'faq',
-					'-params'=>$params,
-					'-changedParams'=>{"file"=>$parentFilenames[$i]})
-				.FAQ::OMatic::ImageRef::getImageRef('cat-small',
-					'border=0', $params)
-				.$parentTitles[$i]
-				."</a> : \n";
+		$titlebox.=
+			join(" : ",
+				map { FAQ::OMatic::faqomaticReference($params, "$_") }
+					@parentFilenames
+			);
+		if (@parentFilenames) {
+			$titlebox.=" :\n";
+			if ($render ne 'text'
+				and not ($FAQ::OMatic::Config::nolanTitles || '')) {
+				$titlebox.="<br>";
+			}
 		}
-		$titlebox.="<br>" if (@parentTitles);
 		# THANKS: to Jim Adler <jima@sr.hp.com> who suggested this graphical
 		# improvement: larger type to make the titles stand out.
-		# TODO: make things like this admin-tweakable.
-		$titlebox.="<font size=+1><b>$thisTitle</b></font>";
+		if ($render eq 'text') {
+			$titlebox.=$thisTitle;
+		} else {
+			if ($FAQ::OMatic::Config::nolanTitles || '') {
+				# John Nolan <jnolan@cdnow.com> likes it better this way:
+				$titlebox.= FAQ::OMatic::ImageRef::getImageRefCA('-small',
+					'border=0', $self->isCategory(), $params);
+				$titlebox.="<b>$thisTitle</b>";
+			} else {
+				$titlebox.="<font size=+1><b>$thisTitle</b></font>";
+			}
+		}
 		push @rowboxes, { 'type'=>'wide', 'text'=>$titlebox,
 			'id'=>'title' };
 	}
 
-	if ($params->{'showModerator'}) {
+	if (FAQ::OMatic::getParam($params, 'showModerator') eq 'show') {
 		my $mod = FAQ::OMatic::Auth::getInheritedProperty($self, 'Moderator');
 		my $brt = '';
-		#$brt .= $FAQ::OMatic::Appearance::otherStart;
-		$brt .= "Moderator: ".FAQ::OMatic::mailtoReference($mod);
+		$brt .= "Moderator: ".FAQ::OMatic::mailtoReference($params, $mod);
 		$brt .= " <i>(inherited from parent)</i>" if (not $self->{'Moderator'});
 		$brt .= "\n";
-		#$brt .= $FAQ::OMatic::Appearance::otherEnd;
 		push @rowboxes, { 'type'=>'wide', 'text'=>$brt,
 			'id'=>'showModerator' };
 	}
@@ -782,13 +863,13 @@ sub displayCoreHTML {
 	## Edit commands:
 	my $aoc = $self->isCategory ? 'cat' : 'ans';
 
-	if ($params->{'showEditCmds'}) {
+	if (FAQ::OMatic::getParam($params, 'editCmds') ne 'hide') {
 		my $editrow = [];
 		push @$editrow, {'text'=>FAQ::OMatic::button(
 			FAQ::OMatic::makeAref('-command'=>'editItem',
 					'-params'=>$params,
 					'-changedParams'=>{@fixfn}),
-			"Edit $whatAmI Title and Options",
+			gettext($whatAmI)." ".gettext("Title and Options"),
 			"$aoc-title", $params),
 				'size'=>'edit'};
 			# TODO: just edit title. Options is only part order; need
@@ -798,12 +879,12 @@ sub displayCoreHTML {
 			FAQ::OMatic::makeAref('-command'=>'editModOptions',
 					'-params'=>$params,
 					'-changedParams'=>{@fixfn}),
-			"Edit $whatAmI Permissions",
+			gettext("Edit")." ".gettext($whatAmI)." ".gettext("Permissions"),
 			"$aoc-opts", $params),
 				'size'=>'edit'};
 
 		push @rowboxes, { 'type'=>'multirow', 'cells'=>$editrow,
-			'id'=>'title, perms' };
+			'id'=>'title, perms', 'isEdit'=>'true' };
 		$editrow = [];
 
 		# These don't make sense if we're in a special-case item file, such
@@ -814,13 +895,13 @@ sub displayCoreHTML {
 		# TODO: help system. This will matter more when the help system
 		# TODO: is implemented. :v)
 		# THANKS: to Doug Becker <becker@foxvalley.net> for
-		# accidentally making a 'trasi' item (perl incremented 'trash' :v)
+		# accidentally making a 'trasi' item (perl incrsemented 'trash' :v)
 		# and discovering this problem.
 		if ($self->ordinaryItem()) {
 			# Duplicate it
-			my $dupTitle = ($whatAmI eq 'Answer')
-						? "Duplicate Answer"
-						: "Duplicate Category as Answer";
+			my $dupTitle = $whatAmI eq "Answer"
+						? gettext("Duplicate Answer")
+						: gettext("Duplicate Category as Answer");
 			push @$editrow, {'text'=>FAQ::OMatic::button(
 				FAQ::OMatic::makeAref('-command'=>'addItem',
 						'-params'=>$params,
@@ -838,7 +919,7 @@ sub displayCoreHTML {
 						FAQ::OMatic::makeAref('-command'=>'moveItem',
 							'-params'=>$params,
 							'-changedParams'=>{@fixfn}),
-						"Move $whatAmI"),
+						gettext("Move")." ".gettext($whatAmI)),
 							'size'=>'edit'};
 	
 				# Trash it (same rules as for moving)
@@ -847,7 +928,7 @@ sub displayCoreHTML {
 							'-params'=>$params,
 							'-changedParams'=>{@fixfn,
 								'_newParent'=>'trash'}),
-						"Trash $whatAmI"),
+						gettext("Trash")." ".gettext($whatAmI)),
 							'size'=>'edit'};
 			}
 	
@@ -863,7 +944,7 @@ sub displayCoreHTML {
 							'-changedParams'=>{
 							  'checkSequenceNumber'=>$self->{'SequenceNumber'},
 							  @fixfn}),
-						"Convert to Answer",
+						gettext("Convert to Answer"),
 						'cat-to-ans', $params),
 							'size'=>'edit'};
 			} elsif (not $self->isCategory()) {
@@ -873,7 +954,7 @@ sub displayCoreHTML {
 							'-changedParams'=>{
 							  'checkSequenceNumber'=>$self->{'SequenceNumber'},
 							  @fixfn}),
-						"Convert to Category",
+						gettext("Convert to Category"),
 						"$aoc-to-cat", $params),
 							'size'=>'edit'};
 			}
@@ -889,21 +970,21 @@ sub displayCoreHTML {
 					FAQ::OMatic::makeAref('-command'=>'addItem',
 							'-params'=>$params,
 							'-changedParams'=>{'_insert'=>'answer', @fixfn}),
-						"New Answer in \"$title\"",
+						gettext("New Answer in")." \"$title\"",
 						'cat-new-ans', $params),
 							'size'=>'edit'};
 				push @$editrow, {'text'=>FAQ::OMatic::button(
 					FAQ::OMatic::makeAref('-command'=>'addItem',
 							'-params'=>$params,
 							'-changedParams'=>{'_insert'=>'category', @fixfn}),
-						"New Subcategory of \"$title\"",
+						gettext("New Subcategory of")." \"$title\"",
 						'cat-new-cat', $params),
 							'size'=>'edit'};
 			}
 		}
 
 		push @rowboxes, { 'type'=>'multirow', 'cells'=>$editrow,
-			'id'=>'dup, trash, etc' };
+			'id'=>'dup, trash, etc', 'isEdit'=>'true' };
 		$editrow = [];
 
 		# Allow user to insert a part before any other
@@ -922,7 +1003,7 @@ sub displayCoreHTML {
 							'checkSequenceNumber'=>$self->{'SequenceNumber'},
 							@fixfn}
 						),
-					"Insert Text Here",
+					gettext("Insert Text Here"),
 					"$aoc-ins-part", $params),
 						'size'=>'edit'};
 			push @$editrow, {'text'=>
@@ -935,24 +1016,30 @@ sub displayCoreHTML {
 							'checkSequenceNumber'=>$self->{'SequenceNumber'},
 							@fixfn}
 						),
-					"Insert Uploaded Text Here",
+					gettext("Insert Uploaded Text Here"),
 					"$aoc-ins-part", $params),
 						'size'=>'edit'};
 			push @rowboxes, { 'type'=>'multirow', 'cells'=>$editrow,
-				'id'=>'insert before other parts' };
+				'id'=>'insert before other parts', 'isEdit'=>'true' };
 		}
 	}
 
 	my $partnum = 0;
-	my @authorList = ();	# for AttributionsTogether
+	my $authorSet = new FAQ::OMatic::Set('keepordered');
+			# for AttributionsTogether
 	my $part;
 	foreach $part (@{$self->{'Parts'}}) {
-		push @rowboxes, $part->displayHTML($self, $partnum, $params);
-		push @authorList, $part->{'Author-Set'}->getList();
+		if ($render eq 'text') {
+			push @rowboxes, $part->displayText($self, $partnum, $params);
+		} else {
+			push @rowboxes, $part->displayHTML($self, $partnum, $params);
+		}
+		$authorSet->insert($part->{'Author-Set'}->getList());
 		++$partnum;
 	}
 
-	if (not $FAQ::OMatic::Config::hideEasyEdits) {
+	if ((not $FAQ::OMatic::Config::hideEasyEdits)
+		and ($render ne 'text')) {
 		if ($self->isCategory()) {
 			# Categories: offer a way to insert a new answer
 			# TODO: does this link belong just below the directory
@@ -963,7 +1050,7 @@ sub displayCoreHTML {
 					FAQ::OMatic::makeAref('-command'=>'addItem',
 							'-params'=>$params,
 							'-changedParams'=>{'_insert'=>'answer', @fixfn}),
-					"Add a New Answer in \"$title\"",
+					gettext("Add a New Answer in") . " \"$title\"",
 					'cat-new-ans', $params),
 				'size'=>'edit',
 				'id'=>'easy edit insert answer'};
@@ -979,7 +1066,7 @@ sub displayCoreHTML {
 							'checkSequenceNumber'=>$self->{'SequenceNumber'},
 							@fixfn}
 						),
-					"Append to This Answer",
+					gettext("Append to This Answer"),
 					"$aoc-ins-part", $params),
 				'size'=>'edit',
 				'id'=>'easy edit append to answer'};
@@ -989,32 +1076,24 @@ sub displayCoreHTML {
 	# AttributionsTogether displays all attributions for any part in
 	# this item together at the bottom of the item to reduce clutter.
 	my $attributionsTogether = $self->{'AttributionsTogether'} || '';
-	my $showAttributions = $params->{'showAttributions'} || '';
+	my $showAttributions = FAQ::OMatic::getParam($params, 'showAttributions');
 	if ($attributionsTogether and 
-		($showAttributions ne 'hide') and
-		($showAttributions ne 'all')) {
-		my %authorHash = map { ($_,1) } (@authorList);
-		my $brt = '';
-		# $brt .= $FAQ::OMatic::Appearance::otherStart;
-		$brt .= "<i>"
-			.join(", ", map { FAQ::OMatic::mailtoReference($_) }
-				(sort keys %authorHash))
-			."</i><br>\n";
-		# $brt .= $FAQ::OMatic::Appearance::otherEnd;
+		($showAttributions eq 'default')) {
+		my @authors = $authorSet->getList();
+		my $brt = FAQ::OMatic::authorList($params, \@authors);
 		push @rowboxes, { 'type'=>'wide', 'text'=>$brt,
 			'id'=>'attributionsTogether' };
 	}
 
-	my $showLastModified = $params->{'showLastModified'};
-	my $lastModified = $self->{'LastModifiedSecs'};
 	# THANKS: Config::showLastModifiedAlways feature was requested by
 	# THANKS: parker@austx.tandem.com
-	if ($lastModified and
-		($showLastModified or $FAQ::OMatic::Config::showLastModifiedAlways)) {
+	# (but it's now handled as a standard default parameter.)
+	my $showLastModified =
+		FAQ::OMatic::getParam($params, 'showLastModified') eq 'show';
+	my $lastModified = $self->{'LastModifiedSecs'};
+	if ($lastModified and $showLastModified) {
 		my $brt = '';
-		# $brt .= $FAQ::OMatic::Appearance::otherStart;
 		$brt .= "<i>".compactDate($self->{'LastModifiedSecs'})."</i>\n";
-		# $brt .= $FAQ::OMatic::Appearance::otherEnd;
 		push @rowboxes, { 'type'=>'wide', 'text'=>$brt,
 			'id'=>'lastModified' };
 	}
@@ -1054,7 +1133,6 @@ sub displayHTML {
 	}
 
 	my $itemboxes = $self->displayCoreHTML($params);
-	#$rt .= $self->displayCoreHTML($params);
 	$rt = FAQ::OMatic::Appearance::itemRender($params, $itemboxes);
 
 	# turn #internal links off after the items are displayed.
@@ -1062,14 +1140,17 @@ sub displayHTML {
 	# (is there a general way to solve that problem?)
 	delete $params->{'_recurseRoot'};
 
-	# $rt .= FAQ::OMatic::Appearance::itemEnd($params);
-
-	my $useTable = FAQ::OMatic::getParam($params, 'render') eq 'tables';
-	$rt.="\n";
-	$rt.="<table>" if $useTable;
-	$rt.="<!-- Sibling links -->\n";
-	$rt.= $self->displaySiblings($params);
-	$rt.="</table>\n" if $useTable;
+	# Sibling links
+	if ((FAQ::OMatic::getParam($params, 'render') ne 'text')
+		and not ($FAQ::OMatic::Config::hideSiblings || '')) {
+		my $useTable = FAQ::OMatic::getParam($params, 'render') eq 'tables';
+		$rt.="\n";
+		$rt.="<table>" if $useTable;
+		$rt.="<!-- Sibling links -->\n";
+		$rt.= $self->displaySiblings($params);
+		$rt.="</table>\n" if $useTable;
+		$rt.="<p>\n" if not $useTable;
+	}
 
 	$rt.=FAQ::OMatic::Help::helpFor($params,
 		'How can I contribute to this FAQ?', "<br>");
@@ -1100,15 +1181,16 @@ sub basicURL {
 				'-thisDocIs'=>1,
 				'-refType'=>'url');
 
-	return "This document is: <i>$url</i><br>\n";
+	if (FAQ::OMatic::getParam($params, 'render') ne 'text') {
+		return gettext("This document is:") . " <a href=\"$url\">$url</a><br>\n";
+	} else {
+		return gettext("This document is at:") . " $url\n";
+	}
 }
 
 sub permissionBox {
 	my $self = shift;
 	my $perm = shift;
-
-	my $rt = "<select name=\"_$perm\">\n";
-	my $i;
 
 	my @permNum = (7);
 	push @permNum, FAQ::OMatic::Groups::getGroupCodeList();
@@ -1117,28 +1199,27 @@ sub permissionBox {
 	my @permDesc = map { nameForPerm($_); } @permNum;
 
 	push @permNum, ('');
-	if ($self->{'filename'} eq '1') {
-		push @permDesc, '(System default) '
-			.nameForPerm(FAQ::OMatic::Auth::getDefaultProperty($perm));
-	} else {
-		push @permDesc, 'Whoever can for my parent,';
-	}
+	push @permDesc, 'Inherit';
 
-	#'Because I never ask, people are anonymous when they',
-	# mode 1 (allowing anonymous) always succeeds, and therefore never
-	# even prompts the user for an ID (to bump them at least to level 3),
-	# so there's no way for a user to offer their ID at all! (Unless they
-	# try to do some more-protected thing first.) Therefore, I've hidden
-	# that option, since it almost never makes sense (unless your site
-	# would rather not have to even ask, at the expense of any useful
-	# info in the attributions fields.)
+	return popup($perm, \@permNum, \@permDesc, $self->{$perm}||'');
+}
 
-	for ($i=0; $i<@permNum; $i++) {
-		$rt .= "<option value=\"$permNum[$i]\"";
-		$rt .= " SELECTED" if (($self->{$perm}||'') eq $permNum[$i]);
-		$rt .= ">$permDesc[$i]\n";
+sub popup {
+	my $name = shift;
+	my $values = shift;			# ary ref
+	my $descary = shift;		# ary ref; 1:1 with $values
+	my $curvalue = shift;		# one of @{$values}
+
+	$curvalue = '' if (not defined $curvalue);
+
+	my $rt = '';
+	$rt.="<select name=\"_$name\">\n";
+	for (my $i=0; $i<@{$values}; $i++) {
+		$rt .= "<option value=\"".$values->[$i]."\"";
+		$rt .= " SELECTED" if ($values->[$i] eq $curvalue);
+		$rt .= ">".$descary->[$i]."\n";
 	}
-	$rt .= "</select>\n";
+	$rt.="</select>\n";
 	return $rt;
 }
 
@@ -1147,7 +1228,7 @@ sub nameForPerm {
 	my $perm = shift;
 
 	if ($perm =~ m/^6 (.*)$/) {
-		return "Group $1";
+		return 'Group'." $1";
 	}
 
 	my %map = (
@@ -1167,11 +1248,12 @@ sub displayItemEditor {
 
 	my $insertHint = $params->{'_insert'} || '';
 	if ($insertHint eq 'category') {
-		$rt .= "New Category\n";
-	} elsif ($insertHint eq 'answer') {
-		$rt .= "New Answer\n";
+		$rt .= gettext("New Category")."\n";
+	} elsif ($insertHint eq gettext("answer")) {
+		$rt .= gettext("New Answer")."\n";
 	} else {
-		$rt .= "Editing ".$self->whatAmI()." <b>".$self->getTitle()."</b>\n";
+		$rt .= gettext("Editing")." "
+			.gettext($self->whatAmI())." <b>".$self->getTitle()."</b>\n";
 	}
 	$rt .= FAQ::OMatic::makeAref('-command'=>'submitItem',
 			'-params'=>$params,
@@ -1197,12 +1279,12 @@ sub displayItemEditor {
 			.$self->{'SequenceNumber'}."\">\n";
 
 	# Title
-	$rt .= "<br>Title:<br><input type=text name=\"_Title\" value=\""
+	$rt .= "<br>".gettext("Title:")."<br><input type=text name=\"_Title\" value=\""
 			.$self->getTitle()."\" size=60>\n";
 
 	# Reorder parts
 	if ($self->numParts() > 1) {
-		$rt .= "<p>New Order for Text Parts:";
+		$rt .= gettext("<p>New Order for Text Parts:");
 		$rt .= "<br><input type=text name=\"_partOrder\" value=\"";
 		my $i;
 		for ($i=0; $i<$self->numParts(); $i++) {
@@ -1214,7 +1296,7 @@ sub displayItemEditor {
 	# AttributionsTogether
 	$rt .= "<p><input type=checkbox name=\"_AttributionsTogether\"";
 	$rt .= " CHECKED" if $self->{'AttributionsTogether'};
-	$rt .= "> Show attributions from all parts together at bottom\n";
+	$rt .= "> ".gettext("Show attributions from all parts together at bottom")."\n";
 
 # TODO: delete this block. superseded by submitAnsToCat
 #	if ((not defined $self->{'directoryHint'})
@@ -1227,8 +1309,8 @@ sub displayItemEditor {
 #	}
 
 	# Submit
-	$rt .="<br><input type=submit name=\"_submit\" value=\"Submit Changes\">\n";
-	$rt .= "<input type=reset name=\"_reset\" value=\"Revert\">\n";
+	$rt .="<br><input type=submit name=\"_submit\" value=\"".gettext("Submit Changes")."\">\n";
+	$rt .= "<input type=reset name=\"_reset\" value=\"".gettext("Revert")."\">\n";
 	$rt .= "<input type=hidden name=\"_zzverify\" value=\"zz\">\n";
 		# this lets the submit script check that the whole POST was
 		# received.
@@ -1244,14 +1326,48 @@ sub displayItemEditor {
 	return $rt;
 }
 
+sub permissionsInfo {
+	my $permissionsInfo = {
+
+	'01' => { 'name'=>'PermAddPart', 'desc'=>
+			gettext("Who can add a new text part to this item:") },
+	'02' => { 'name'=>'PermAddItem', 'desc'=>
+			gettext("Who can add a new answer or category to this category:") },
+	'03' => { 'name'=>'PermEditPart', 'desc'=>
+			gettext("Who can edit or remove existing text parts from this item:") },
+	'04' => { 'name'=>'PermEditDirectory', 'desc'=>
+			gettext("Who can move answers or subcategories from this category;").' '
+			.gettext("or turn this category into an answer or vice versa:") },
+	'05' => { 'name'=>'PermEditTitle', 'desc'=>
+			gettext("Who can edit the title and options of this answer or category:") },
+	'06' => { 'name'=>'PermUseHTML', 'desc'=>
+			gettext("Who can use untranslated HTML when editing the text of").' '
+			.gettext("this answer or category:") },
+	'07' => { 'name'=>'PermModOptions', 'desc'=>
+			gettext("Who can change these moderator options and permissions:") },
+	'08' => { 'name'=>'PermEditGroups', 'global'=>1, 'desc'=>
+			gettext("Who can use the group membership pages:") },
+	'09' => { 'name'=>'PermNewBag', 'global'=>1, 'desc'=>
+			gettext("Who can create new bags:") },
+	'10' => { 'name'=>'PermReplaceBag', 'global'=>1, 'desc'=>
+			gettext("Who can replace existing bags:") },
+	};
+		# TODO: The global permissions should probably appear
+		# TODO: on a different page. As-is, the administrator must
+		# TODO: give away control over these permissions to give
+		# TODO: away moderatorship of the root item.
+	return $permissionsInfo;
+}
+
 sub displayModOptionsEditor {
 	my $self = shift;
 	my $params = shift;
 	my $cgi = shift;
 	my $rt = ""; 	# return text
 
-	$rt .= "Moderator options for "
-			.$self->whatAmI()." <b>".$self->getTitle()."</b>:\n"
+	$rt .= gettext("Moderator options for")." "
+			.gettext($self->whatAmI())
+			." <b>".$self->getTitle()."</b>:\n"
 			."<p>\n";
 
 	$rt .= FAQ::OMatic::makeAref('-command'=>'submitModOptions',
@@ -1263,79 +1379,81 @@ sub displayModOptionsEditor {
 			.$self->{'SequenceNumber'}."\">\n";
 
 	# Moderator
-	$rt .= "<p>Moderator: <i>(leave blank to inherit from parent item)</i>"
-			."<br><input type=text name=\"_Moderator\" value=\""
-			.($self->{'Moderator'}||'')."\" size=60>\n";
+	# THANKS to John Nolan for suggesting a better permissions layout.
+	$rt .= "<table border=1>\n";
+	$rt .=	"<tr>\n"
+			."  <th>".gettext("Name & Description")."</th>\n"
+			."  <th>".gettext("Setting")."</th>\n"
+			."  <th>".gettext("Setting if Inherited")."</th>\n"
+			."</tr>\n";
 
-	$rt .= "<br>Send mail to the moderator "
-			."<select name=\"_MailModerator\">\n";
-	$rt .= "<option value=\"1\"";
-	$rt .= " SELECTED" if (defined($self->{'MailModerator'})
-							and ($self->{'MailModerator'} eq '1'));
-	$rt .= "> whenever someone modifies this item.\n";
-	$rt .= "<option value=\"0\"";
-	$rt .= " SELECTED" if (defined($self->{'MailModerator'})
-							and ($self->{'MailModerator'} eq '0'));
-	$rt .= "> never.\n";
-	$rt .= "<option value=\"\"";
-	$rt .= " SELECTED" if (not defined $self->{'MailModerator'});
-	if ($self->{'filename'} eq '1') {
-		$rt .= "> (System default) "
-			.(FAQ::OMatic::Auth::getDefaultProperty('MailModerator')
-				? "whenever someone modifies this item."
-				: "never")
-			.".\n";
-	} else {
-		$rt .= "> whenever my parent would.\n";
-	}
-	$rt .= "</select>\n";
+	# Moderator
+#	$rt .= "<tr><td colspan=3 align=center><b>".gettext("Moderator")."</b>"
+#			."</td></tr>\n";
+	my $inherited = $self->getInheritance($params, 'Moderator', '<br>',
+		sub {shift;});
+	$rt .= "<tr><td colspan=2 align=left><b>".gettext("Moderator")."</b>\n"
+			."<br>".gettext("(will inherit if empty)")."\n";
+	$rt .= "<br>"
+			."<input type=text name=\"_Moderator\" value=\""
+			.($self->{'Moderator'}||'')."\" size=60></td>\n";
+	$rt .= "<td>$inherited"
+			."</td></tr>\n";
+
+	# ModeratorMail
+	$rt .= "<tr>"
+			."<td><b>MailModerator</b>"
+			."<br>".gettext("Send mail to the moderator when someone other than the moderator edits this item:")."</td>\n";
+	$rt .= "<td>\n";
+	$rt .= popup('MailModerator', [1, 0, ''], ['Yes', 'No', 'Inherit'],
+			$self->{'MailModerator'});
+	$inherited =
+		$self->getInheritance($params, 'MailModerator', '<br>',
+			sub {('No', 'Yes')[shift()] || 'undefined'});
+	$rt .= "<td>$inherited</td>\n";
+	$rt .= "</tr>\n";
 
 	# Permission info
-	$rt .= "<p>Permissions:";
+	$rt .= "<tr><th colspan=3>".gettext("Permissions")."</th></tr>\n";
 
-	$rt .= "<br>";
-	$rt .= $self->permissionBox('PermAddPart');
-	$rt .= " may add new text parts to this page.\n";
-
-	$rt .= "<br>";
-	$rt .= $self->permissionBox('PermUseHTML');
-	$rt .= " may use HTML in my parts.\n";
-
-	$rt .= "<br>";
-	$rt .= $self->permissionBox('PermEditPart');
-	$rt .= " may edit and delete existing parts from this page.\n";
-
-	$rt .= "<br>";
-	$rt .= $self->permissionBox('PermEditItem');
-	$rt .= " may edit my item configuration, "
-		."including adding and moving answers and subcategories.\n";
-
-	$rt .= "<br>";
-	$rt .= $self->permissionBox('PermModOptions');
-	$rt .= " may edit these Moderator options.\n";
-
-	if ($self->{'filename'} eq '1') {
-		$rt .= "<p>System-wide moderator options:\n";
-
-		$rt .= "<br>";
-		$rt .= $self->permissionBox('PermNewBag');
-		$rt .= " may upload new bags.\n";
-
-		$rt .= "<br>";
-		$rt .= $self->permissionBox('PermReplaceBag');
-		$rt .= " replace the contents of existing bags.\n";
-
-		$rt .= "<br>";
-		$rt .= $self->permissionBox('PermEditGroups');
-		$rt .= " can change group memberships.\n";
-		# TODO: These global permissions should probably appear
-		# TODO: on a different page. As-is, the administrator must
-		# TODO: give away control over these permissions to give
-		# TODO: away moderatorship of the root item.
+	my $permissionsInfo = permissionsInfo();
+	foreach my $key (sort keys %{$permissionsInfo}) {
+		my $ph = $permissionsInfo->{$key};	# permission descriptor hash
+		next if ($ph->{'global'} and $self->{'filename'} ne '1');
+			# only display global permissions for item 1, where they are set
+		my $pname = $ph->{'name'};
+		my $inherited =
+			$self->getInheritance($params, $pname, '<br>', \&nameForPerm);
+		$rt.="<tr><!-- $pname -->\n";
+		$rt.="  <td><b>$pname</b>"
+			."<br>".$ph->{'desc'}."</td>\n";	# Perm description column
+		$rt.="  <td>".$self->permissionBox($ph->{'name'})."</td>\n";
+												# popup choice column
+		$rt.="  <td>$inherited</td>\n";			# inherited value column
+		$rt.="</tr>\n";
 	}
 
-	$rt .="<p><input type=submit name=\"_submit\" value=\"Submit Changes\">\n";
-	$rt .= "<input type=reset name=\"_reset\" value=\"Revert\">\n";
+	# RelaxChildPerms
+	$rt .= "<tr>"
+			."<td><b>".gettext("RelaxChildPerms")."</b>"
+			."<br>".gettext("Blah")." "
+			.gettext("blah")."</td>\n";
+	$rt .= "<td>\n";
+	$rt .= popup('RelaxChildPerms',
+			['relax', 'norelax', ''],
+			['Relax', 'Don\'t Relax', 'Inherit'],
+			$self->{'RelaxChildPerms'});
+	$inherited =
+		$self->getInheritance($params, 'RelaxChildPerms', '<br>',
+			sub {{'relax'=>'Relax', 'norelax'=>'Don\'t Relax'}->{shift()}
+				|| 'undefined'});
+	$rt .= "<td>$inherited</td>\n";
+	$rt .= "</tr>\n";
+
+	$rt .= "</table>\n";
+
+	$rt .="<p><input type=submit name=\"_submit\" value=\"".gettext("Submit Changes")."\">\n";
+	$rt .= "<input type=reset name=\"_reset\" value=\"".gettext("Revert")."\">\n";
 	$rt .= "<input type=hidden name=\"_zzverify\" value=\"zz\">\n";
 		# this lets the submit script check that the whole POST was
 		# received.
@@ -1344,6 +1462,37 @@ sub displayModOptionsEditor {
 	$rt .= FAQ::OMatic::Help::helpFor($params, 'editModOptions', "<br>\n");
 
 	return $rt;
+}
+
+sub getInheritance {
+	my $self = shift;
+	my $params = shift;
+	my $pname = shift;
+	my $separator = shift;
+	my $namecode = shift;
+
+	my $val;
+	my $whered;
+	if ($self->getParent() eq $self) {
+		$val = FAQ::OMatic::Auth::getDefaultProperty($pname);
+		$whered = gettext("(system default)");
+	} else {
+		my ($pset,$where) = FAQ::OMatic::Auth::getInheritedProperty(
+			$self->getParent(), $pname);
+		if (defined $where) {
+			$val = $pset;
+			$whered = "(".gettext("defined in")." \""
+				.FAQ::OMatic::makeAref('-command'=>'editModOptions',
+					'-params'=>$params,
+					'-changedParams'=>{'file'=>$where->{'filename'}})
+				.$where->getTitle()
+				."</a>\")";
+		} else {
+			$val = $pset;
+			$whered = gettext("(system default)");
+		}
+	}
+	return ("<i>".&{$namecode}($val)."</i>".$separator.$whered);
 }
 
 sub setProperty {
@@ -1409,7 +1558,7 @@ sub addSubItem {
 
 	my $subitem = new FAQ::OMatic::Item($subfilename);
 	if ($subitem->isBroken()) {
-		FAQ::OMatic::gripe('problem', "File $subfilename seems broken.");
+		FAQ::OMatic::gripe('problem', gettext("File $subfilename seems broken."));
 	}
 
 	$self->makeDirectory()->mergeDirectory($subfilename);
@@ -1601,6 +1750,13 @@ sub notifyModerator {
 	my $msg = '';
 	my ($id,$aq) = FAQ::OMatic::Auth::getID();
 
+	if ($id eq $moderator
+		and $didWhat =~ m/moderator options/) {
+		return;
+		# moderator doesn't need to get mail about his own edits
+		# THANKS to Bernhard Scholz <scholz@peanuts.org> for the suggestion
+	}
+
 	$msg .= "[This is a message about the Faq-O-Matic items you moderate.]\n\n";
 	$msg .= "Who:      $id\n";
 	$msg .= "Item:     ".$self->getTitle()."\n";
@@ -1617,9 +1773,8 @@ sub notifyModerator {
 
 	if (defined $changedPart) {
 		$msg .= "New text:\n";
-		my $newtext = $self->getPart($changedPart)->{'Text'};
-		$newtext =~ s/^/> /mg;
-		$msg .= "$newtext\n";
+		$msg .= FAQ::OMatic::quoteText($self->getPart($changedPart)->{'Text'},
+			'> ');
 	}
 
 	$msg .= "\nAs always, thanks for your help maintaining the FAQ.\n";
@@ -1657,10 +1812,14 @@ sub isCategory {
 }
 
 sub whatAmI {
+	# do not translate here; translate just before output.
+	# (There is code that tests for string equality based on the
+	# output of this function. Maybe that's stupid.)
 	my $self = shift;
+
 	return ($self->isCategory())
-			? 'Category'
-			: 'Answer';
+			? "Category"
+			: "Answer";
 }
 
 sub updateDirectoryHint {

@@ -35,18 +35,21 @@ use FAQ::OMatic;
 use FAQ::OMatic::Auth;
 
 sub main {
-	my $cgi = $FAQ::OMatic::dispatch::cgi;
+	my $cgi = FAQ::OMatic::dispatch::cgi();
 	my $rt = '';
 	
 	my $params = FAQ::OMatic::getParams($cgi);
 
 	FAQ::OMatic::mirrorsCantEdit($cgi, $params);
 
-	my $rd = FAQ::OMatic::Auth::ensurePerm('', 'PermReplaceBag',
-		FAQ::OMatic::commandName(), $cgi, 0, 'replace');
-	if ($rd) { print $rd; exit 0; }
+	FAQ::OMatic::Auth::ensurePerm('-item'=>'',
+		'-operation'=>'PermReplaceBag',
+		'-restart'=>FAQ::OMatic::commandName(),
+		'-cgi'=>$cgi,
+		'-xreason'=>'replace',
+		'-failexit'=>1);
 	
-	$rt = FAQ::OMatic::pageHeader($params);
+	$rt = FAQ::OMatic::pageHeader($params, ['help', 'faq']);
 	
 	my @bagList = ();	# list to choose from
 	my $file = $params->{'file'};
@@ -61,11 +64,6 @@ sub main {
 		@bagList = grep { not m/\.desc$/ }
 			FAQ::OMatic::getAllItemNames($FAQ::OMatic::Config::bagsDir);
 	}
-
-	# TODO: presumably need a new Perm... for bags
-	#my $rd = FAQ::OMatic::Auth::ensurePerm($item, 'PermEditItem',
-	#	FAQ::OMatic::commandName(), $cgi, 0);
-	#if ($rd) { print $rd; exit 0; }
 
 	$rt .= "<h3>Replace which bag?</h3>\n";
 

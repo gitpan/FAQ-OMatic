@@ -35,7 +35,7 @@ use FAQ::OMatic;
 use FAQ::OMatic::Auth;
 
 sub main {
-	my $cgi = $FAQ::OMatic::dispatch::cgi;
+	my $cgi = FAQ::OMatic::dispatch::cgi();
 	my $removed = 0;
 	
 	my $params = FAQ::OMatic::getParams($cgi);
@@ -142,11 +142,17 @@ sub main {
 			# write the _newText out to a file, instead of passing through
 			# as a variable, since we don't trust browsers not to abuse it.
 			# And it could make a very big URL.
-			for ($fn = $$; -f "$FAQ::OMatic::Config::metaDir/submitTmp.$fn"; $fn++) {}
+			for ($fn = FAQ::OMatic::nonce();
+				-f "$FAQ::OMatic::Config::metaDir/submitTmp.$fn";
+				$fn++) {}	# skip until we find an unused filename
 			if (not open(TMPF, ">$FAQ::OMatic::Config::metaDir/submitTmp.$fn")) {
 				# shoot -- this trick isn't working! Just send the
-				# user through the usual channels, and they'll have to type.
-				FAQ::OMatic::Auth::ensurePerm($item, $perm, 'editPart', $cgi, 0);
+				# user through the usual channels, and they'll have to retype.
+				FAQ::OMatic::Auth::ensurePerm('-item'=>$item,
+					'-operation'=>$perm,
+					'-restart'=>'editPart',
+					'-cgi'=>$cgi,
+					'-failexit'=>1);
 			}
 			print TMPF $params->{'_newText'};
 			close TMPF;
@@ -164,8 +170,7 @@ sub main {
 		my $url = FAQ::OMatic::makeAref('authenticate',
 			{'_restart'=>FAQ::OMatic::commandName(), '_reason'=>$authFailed},
 			'url');
-		print $cgi->redirect(FAQ::OMatic::urlBase($cgi).$url);
-		exit 0;
+		FAQ::OMatic::redirect($cgi, $url);
 	}
 
 	# check for args coming from an authentication detour, and convert
@@ -179,8 +184,7 @@ sub main {
 			killS_Params($params);
 			my $url = FAQ::OMatic::makeAref('editPart', {},
 				'url');
-			print $cgi->redirect(FAQ::OMatic::urlBase($cgi).$url);
-			exit 0;
+			FAQ::OMatic::redirect($cgi, $url);
 		}
 		my @lines = <TMPF>;
 		close TMPF;
@@ -222,13 +226,6 @@ sub main {
 		# the new directory passes the test
 		$part->setText($params->{'_newText'});
 
-# TODO: delete this block. superseded by submitCatToAns
-#		# delete the directory if user asked to and it's empty
-#		if ($params->{'_removeDirectory'}) {
-#			$item->removeSubItem();
-#			$removed = 1 if (not defined $item->{'directoryHint'});
-#		}
-
 		# all the children in the list may now have different siblings,
 		# which means we need to recompute their dependencies and
 		# regenerate their cached html.
@@ -240,7 +237,7 @@ sub main {
 		$part->setText($params->{'_newText'});
 		$part->setProperty('Type', $params->{'_Type'} || '');
 	}
-	$part->setProperty('DateOfPart', &FAQ::OMatic::Item::compactDate);
+	$part->touch();	# update modification date
 
 	# in any case, the user has co-authored the document
 	my ($id,$aq) = FAQ::OMatic::Auth::getID();
@@ -257,13 +254,23 @@ sub main {
 		$item->notifyModerator($cgi, 'edited a part', $partnum);
 	}
 
+	if (FAQ::OMatic::getParam($params, 'isapi')) {
+		# caller is a program; doesn't want a redirect to an HTML file!
+		# provide textual results
+		print FAQ::OMatic::header($cgi, '-type'=>'text/plain')
+			."isapi=1\n"
+			."file=".$item->{'filename'}."\n"
+			."checkSequenceNumber=".$item->{'SequenceNumber'}."\n";
+		FAQ::OMatic::myExit(0);
+	}
+
 	my $url = FAQ::OMatic::makeAref('-command'=>'faq',
 				'-params'=>$params,
 				'-changedParams'=>{'partnum'=>'', 'checkSequenceNumber'=>''},
 				'-refType'=>'url');
 		# eliminate things that were in our input form that weren't
 		# automatically transient (_ prefix)
-	print $cgi->redirect(FAQ::OMatic::urlBase($cgi).$url);
+	FAQ::OMatic::redirect($cgi, $url);
 }
 
 # when auth fails between editPart and submitPart, we call through

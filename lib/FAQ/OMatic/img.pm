@@ -40,12 +40,13 @@ package FAQ::OMatic::img;
 use FAQ::OMatic::ImageRef;
 
 sub main {
-	my $cgi = $FAQ::OMatic::dispatch::cgi;
+	my $cgi = FAQ::OMatic::dispatch::cgi();
 	my $name = $cgi->param('name') || 'unchecked';
 
 	my $data = FAQ::OMatic::ImageRef::getImage($name);
 
-	print $cgi->header('-type'=>"image/".FAQ::OMatic::ImageRef::getType($name),
+	print FAQ::OMatic::header($cgi,
+			'-type'=>"image/".FAQ::OMatic::ImageRef::getType($name),
 			'-expires'=>24*30*3);	# cache those suckers for a good season
 	print $data;
 }

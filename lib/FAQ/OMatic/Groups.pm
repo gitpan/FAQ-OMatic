@@ -36,8 +36,12 @@ package FAQ::OMatic::Groups;
 
 use FAQ::OMatic;
 
-my $groupCache = undef;	# my idea of "declaring" a package-scope var in Perl
 sub readGroups {
+	# groups are cached per CGI invocation so we don't have to read
+	# the groups file from the filesystem multiple times.
+	# We store the cache in the s/getLocal() mechanism so that it
+	# doesn't persist across invocations on a mod_perl child.
+	my $groupCache = FAQ::OMatic::getLocal('groupCache');
 	return $groupCache if (defined $groupCache);
 
 	if (not open GROUPS, "$FAQ::OMatic::Config::metaDir/groups") {
@@ -56,12 +60,14 @@ sub readGroups {
 	# loaded hash, but ensures Perl creates a hash for this group.
 	delete $groupCache->{'Administrators'}{''};
 
+	FAQ::OMatic::setLocal('groupCache', $groupCache);
 	return $groupCache;
 }
 
 sub writeGroups {
 	my $groups = shift;
-	$groupCache = $groups if ($groups);
+	my $groupCache = readGroups();
+	$groupCache = $groups if (defined $groups);	# allow caller to overwrite
 
 	if (not open GROUPS, ">$FAQ::OMatic::Config::metaDir/groups") {
 		FAQ::OMatic::gripe('abort',
@@ -77,7 +83,7 @@ sub writeGroups {
 }
 
 sub getGroupNameList {
-	readGroups();
+	my $groupCache = readGroups();
 	return sort keys %{$groupCache};
 }
 
@@ -101,6 +107,7 @@ sub checkMembership {
 	my $code = shift;
 	my $id = shift;
 
+	my $groupCache = readGroups();
 	return 1 if ($id eq $FAQ::OMatic::Config::adminAuth);
 
 	readGroups();
@@ -128,7 +135,7 @@ sub displayHTML {
 	my $group = shift;
 	my $html = '';
 
-	readGroups();
+	my $groupCache = readGroups();
 
 	if (not $group) {
 		$html.="Select a group to edit:<dl>\n";
@@ -203,7 +210,7 @@ sub addMember {
 	my $group = shift;
 	my $member = shift;
 
-	readGroups();
+	my $groupCache = readGroups();
 	$groupCache->{$group}{$member} = 1;
 	writeGroups();
 }
@@ -212,7 +219,7 @@ sub removeMember {
 	my $group = shift;
 	my $member = shift;
 
-	readGroups();
+	my $groupCache = readGroups();
 	delete $groupCache->{$group}{$member};
 	writeGroups();
 }

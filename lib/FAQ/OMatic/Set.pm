@@ -59,7 +59,13 @@ sub insert {
 	while (scalar(@_) > 0) {
 		my $arg = shift;
 
-		if (not $self->{'Hash'}->{$arg}) {	# arg not in set yet
+		# TODO debug block, delete
+		if (not defined $arg) {
+			my @cl = caller();
+			die "caller was: <b>".join("/", @cl)."</b>";
+		}
+
+		if (not exists $self->{'Hash'}->{$arg}) {	# arg not in set yet
 			$self->{'Hash'}->{$arg} = 1;
 			if ($self->{'keepOrdered'}) {
 				push @{$self->{'List'}}, $arg;

@@ -33,48 +33,64 @@ use CGI;
 use FAQ::OMatic::Item;
 use FAQ::OMatic;
 use FAQ::OMatic::Auth;
+use FAQ::OMatic::I18N;
+
 
 sub main {
-	my $cgi = $FAQ::OMatic::dispatch::cgi;
+	my $cgi = FAQ::OMatic::dispatch::cgi();
 	
-	FAQ::OMatic::getParams($cgi);
-	my $params = \%FAQ::OMatic::theParams;
+	my $params = FAQ::OMatic::getParams($cgi);
 
 	FAQ::OMatic::mirrorsCantEdit($cgi, $params);
 
 	my $item = new FAQ::OMatic::Item($params->{'file'});
 	if ($item->isBroken()) {
-		FAQ::OMatic::gripe('error', "The file (".
-			$params->{'file'}.") doesn't exist.");
+		FAQ::OMatic::gripe('error', gettext("The file")." (".
+			$params->{'file'}.") ".gettext("doesn't exist."));
 	}
 
-	my $rd = FAQ::OMatic::Auth::ensurePerm($item, 'PermEditItem', 'editItem', $cgi, 1);
-	if ($rd) { print $rd; exit 0; }
+	FAQ::OMatic::Auth::ensurePerm('-item'=>$item,
+		'-operation'=>'PermEditTitle',
+		'-restart'=>'editItem',
+		'-cgi'=>$cgi,
+		'-extraTime'=>1,
+		'-failexit'=>1);
 	
 	# verify that an evil cache hasn't truncated a POST
 	if ($params->{'_zzverify'} ne 'zz') {
 		FAQ::OMatic::gripe('error',
-			"Your browser or WWW cache has truncated your POST.");
+			gettext("Your browser or WWW cache has truncated your POST."));
 	}
 
 	$item->checkSequence($params);
 	$item->incrementSequence();
 
-	if (defined $params->{'_Title'}) {
-		$item->setProperty('Title', $params->{'_Title'})
+	my $titleMessage = '';
+	if (FAQ::OMatic::getParam($params, '_Title') ne '') {
+		my $oldTitle = $item->getProperty('Title');
+		my $newTitle = FAQ::OMatic::getParam($params, '_Title');
+		if ($oldTitle ne $newTitle) {
+			$titleMessage = " ".gettext("Changed the item title, was")." \"$oldTitle\"";
+		}
+		$item->setProperty('Title', $newTitle); 
 	}
 	if (defined $params->{'_partOrder'}) {
 		# get the user's new ordering for the parts
-		my @newOrder = ($params->{'_partOrder'} =~
-							m/([^\s,]+)/sg);
+		#my @newOrder = ($params->{'_partOrder'} =~
+		#					m/([^\s,]+)/sg);
+		# for some reason the previous construct doesn't extract more
+		# than one item from the list on some Perls.
+		# THANKS to Matthew Enger <menger@dhs.org>
+		# for reporting the problem.
+		my @newOrder = split(/[\s,]+/, $params->{'_partOrder'} || '');
 
 		# verify that there are as many items in the new order as the old:
 		if (scalar @newOrder != $item->numParts()) {
-			FAQ::OMatic::gripe('error', "Your part order list ("
+			FAQ::OMatic::gripe('error', gettext("Your part order list")." ("
 				.join(", ", @newOrder)
-				.") doesn't have the same number of parts ("
+				.") ".gettext("doesn't have the same number of parts")." ("
 				.$item->numParts()
-				.") as the original item.");
+				.") ".gettext("as the original item."));
 		}
 
 		# verify now that every number 0 .. numParts()-1 appears exactly
@@ -83,9 +99,9 @@ sub main {
 		my $i;
 		for ($i=0; $i<$item->numParts(); $i++) {
 			if (not $newOrderHash{$i}) {
-				FAQ::OMatic::gripe('error', "Your part order list ("
+				FAQ::OMatic::gripe('error', gettext("Your part order list")." ("
 					.join(", ", @newOrder)
-					.") doesn't say what to do with part $i.");
+					.") ".gettext("doesn't say what to do with part")." $i.");
 			}
 		}
 
@@ -102,15 +118,20 @@ sub main {
 	$item->setProperty('AttributionsTogether',
 		defined $params->{'_AttributionsTogether'} ? 1 : '');
 
-# TODO: delete this block. superseded by submitAnsToCat.
-#	if ($params->{'_addDirectory'}) {
-#		$item->makeDirectory()->
-#			setText("Subcategories:\n\nAnswers in this category:\n");
-#	}
-
 	$item->saveToFile();
 
-	$item->notifyModerator($cgi, 'edited the item configuration');
+	$item->notifyModerator($cgi, 'edited the item configuration.'
+		.$titleMessage);
+
+	if (FAQ::OMatic::getParam($params, 'isapi')) {
+		# caller is a program; doesn't want a redirect to an HTML file!
+		# provide textual results
+		print FAQ::OMatic::header($cgi, '-type'=>'text/plain')
+			."isapi=1\n"
+			."file=".$item->{'filename'}."\n"
+			."checkSequenceNumber=".$item->{'SequenceNumber'}."\n";
+		FAQ::OMatic::myExit(0);
+	}
 
 	my $url;
 	if ($params->{'_insert'}) {
@@ -130,7 +151,12 @@ sub main {
 			'-refType'=>'url');
 	}
 
-	print $cgi->redirect(FAQ::OMatic::urlBase($cgi).$url);
+	FAQ::OMatic::redirect($cgi, $url);
 }
 
 1;
+
+
+
+
+

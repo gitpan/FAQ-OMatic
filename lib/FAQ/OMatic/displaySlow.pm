@@ -34,7 +34,7 @@ use FAQ::OMatic;
 use FAQ::OMatic::Slow;
 
 sub main {
-	my $cgi = $FAQ::OMatic::dispatch::cgi;
+	my $cgi = FAQ::OMatic::dispatch::cgi();
 	FAQ::OMatic::Slow::display(FAQ::OMatic::getParams($cgi));
 }
 

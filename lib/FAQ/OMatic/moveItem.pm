@@ -34,24 +34,28 @@ use FAQ::OMatic::Item;
 use FAQ::OMatic;
 use FAQ::OMatic::Auth;
 use FAQ::OMatic::Help;
+use FAQ::OMatic::I18N;
 
 sub main {
-	my $cgi = $FAQ::OMatic::dispatch::cgi;
+	my $cgi = FAQ::OMatic::dispatch::cgi();
 	
 	my $params = FAQ::OMatic::getParams($cgi);
 
 	FAQ::OMatic::mirrorsCantEdit($cgi, $params);
 	
-	my $rt = FAQ::OMatic::pageHeader($params);
+	my $rt = FAQ::OMatic::pageHeader($params, ['help', 'faq']);
 	
-	my $item = new FAQ::OMatic::Item($FAQ::OMatic::theParams{'file'});
+	my $item = new FAQ::OMatic::Item($params->{'file'});
 	if ($item->isBroken()) {
 		FAQ::OMatic::gripe('error', "The file (".
-			$FAQ::OMatic::theParams{'file'}.") doesn't exist.");
+			$params->{'file'}.") doesn't exist.");
 	}
 
-	my $rd = FAQ::OMatic::Auth::ensurePerm($item, 'PermEditItem', 'moveItem', $cgi, 0);
-	if ($rd) { print $rd; exit 0; }
+	FAQ::OMatic::Auth::ensurePerm('-item'=>$item,
+		'-operation'=>'PermEditDirectory',
+		'-restart'=>'moveItem',
+		'-cgi'=>$cgi,
+		'-failexit'=>1);
 
 	my $anyPermProblems = 0;	# so we can make a note later
 	my $authFailed;
@@ -70,14 +74,15 @@ sub main {
 		$itemi = new FAQ::OMatic::Item($filei);
 
 		# Can't move to a descendent, or we'd break the tree apart.
-		next if ($itemi->hasParent($FAQ::OMatic::theParams{'file'}));
+		next if ($itemi->hasParent($params->{'file'}));
 
 		# Don't show items with no other kids already unless asked
-		next if ((not $FAQ::OMatic::theParams{'showBarrenItems'})
+		next if ((not $params->{'showBarrenItems'})
 				and (not defined $itemi->{'directoryHint'})
 				and (not $itemi->{'filename'} eq 'trash'));
 
-		$authFailed = FAQ::OMatic::Auth::checkPerm($itemi,'PermEditItem');
+		$authFailed = FAQ::OMatic::Auth::checkPerm($itemi,'PermAddItem');
+			# need only the weaker PermAddItem for destination category
 		if ($authFailed) {
 			$anyPermProblems = 1;
 			$clickable = 0;
@@ -105,32 +110,29 @@ sub main {
 	}
 
 	if (scalar %itemSet) {
-		$rt .= "Make <b>".$item->getTitle()
-			."</b> belong to which other item?<p>\n";
+		$rt .= gettext("Make")." <b>".$item->getTitle()
+			."</b> ".gettext("belong to which other item?")."<p>\n";
 		$rt .= join("\n", map {$itemSet{$_}} (sort keys (%itemSet)));
-	} elsif (not $FAQ::OMatic::theParams{'showBarrenItems'}) {
-		$rt .= "No item that already has sub-items can become the parent "
-			."of <b>".$item->getTitle()."</b>.\n";
+	} elsif (not $params->{'showBarrenItems'}) {
+		$rt .= gettext("No item that already has sub-items can become the parent of")." <b>".$item->getTitle()."</b>.\n";
 	} else {
-		$rt .= "No item can become the parent of <b>"
+		$rt .= gettext("No item can become the parent of")." <b>"
 			.$item->getTitle()."</b>.\n";
 	}
 	if ($anyPermProblems) {
-		$rt.= "<p>Some destinations are not available (not clickable) "
-			."because you do "
-			."not have permission to edit them as currently authorized.\n";
+		$rt.= "<p>".gettext("Some destinations are not available (not clickable) because you do not have permission to edit them as currently authorized.")."\n";
 		$rt.=FAQ::OMatic::makeAref('authenticate',
 			{'_restart'=>FAQ::OMatic::commandName(), '_reason'=>$authFailed});
-		$rt.="Click here</a> to provide better authentication.\n";
+		$rt.=gettext("Click here</a> to provide better authentication.")."\n";
 	}
 
 	$rt .= "<p>";
-	if ($FAQ::OMatic::theParams{'showBarrenItems'}) {
+	if ($params->{'showBarrenItems'}) {
 		$rt .= FAQ::OMatic::button(FAQ::OMatic::makeAref('moveItem',
-			{'showBarrenItems'=>''}), "Hide answers, show only categories")."\n";
+			{'showBarrenItems'=>''}), gettext("Hide answers, show only categories"))."\n";
 	} else {
 		$rt .= FAQ::OMatic::button(FAQ::OMatic::makeAref('moveItem',
-			{'showBarrenItems'=>'1'}), "Show both categories and answers")."\n";
+			{'showBarrenItems'=>'1'}), gettext("Show both categories and answers"))."\n";
 	}
 	$rt.="<br>\n";
 #	$rt .= FAQ::OMatic::button(FAQ::OMatic::makeAref('faq', {}),
@@ -144,3 +146,24 @@ sub main {
 }
 
 1;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

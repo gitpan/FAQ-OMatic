@@ -54,34 +54,19 @@ use FAQ::OMatic::Versions;
 use FAQ::OMatic::ImageRef;
 use FAQ::OMatic::Slow;
 
-my $metaDir = $FAQ::OMatic::Config::metaDir;
-
-# global
-my $html = '';
-
-my %taskUntaint = map {$_=>$_}
-	( 'writeMaintenanceHint', 'trimUHDB', 'trimSubmitTmps',
-	 'buildSearchDB', 'trim', 'cookies', 'errors', 'logSummary',
-	 'rebuildAllSummaries', 'rebuildCache', 'expireBags', 'bagAllImages',
-	 'mirrorClient', 'trimSlowOutput');
+my $badKeyMessage = 'Bad maintenance key.';
 
 sub main {
-	my $cgi = $FAQ::OMatic::dispatch::cgi;
+	my $cgi = FAQ::OMatic::dispatch::cgi();
 
 	## Demand a secret key from the caller, so that we don't have
 	## Joe Q. Random firing up umpteen copies of the mainenance script
 	## and slowing things down. With the hints that keep it from doing
 	## much very often, this probably doesn't matter, but anyway.
 	if ($cgi->param('secret') ne $FAQ::OMatic::Config::maintenanceSecret) {
-		print $cgi->header("-type"=>"text/plain");
-		print "Bad maintenance key.\n";
+		print FAQ::OMatic::header($cgi, '-type'=>"text/plain");
+		print "$badKeyMessage\n";
 		return;
-	}
-
-	my %schedules = ('month'=>1,'week'=>1,'day'=>1,'hour'=>1);
-	my @tasks = split(',', ($cgi->param('tasks')||''));
-	if ((@tasks == 0) or ((@tasks == 1) and $schedules{$tasks[0]})) {
-		@tasks = periodicTasks($tasks[0] || '');
 	}
 
 	my $slow = '';
@@ -90,49 +75,81 @@ sub main {
 		and $tasks ne 'rebuildCache') {
 		# (don't force out the header for Slow processes, which need
 		# to be able to redirect.)
-		print $cgi->header("-type"=>"text/html");
-		print "<title>FAQ-O-Matic Maintenance</title>\n";
-		FAQ::OMatic::flush('STDOUT');
+		hprint(FAQ::OMatic::header($cgi, '-type'=>'text/html'));
+		hprint("<title>FAQ-O-Matic Maintenance</title>\n");
+		hflush();
 			# just in case some other junk sneaks out on the fd
 	} else {
 		$slow = '-slow';	# tell task to run interactively
 	}
 
-	$html.="<pre>\n";
+	my %schedules = ('month'=>1,'week'=>1,'day'=>1,'hour'=>1);
+	my @tasks = split(',', ($cgi->param('tasks')||''));
+	if ((@tasks == 0) or ((@tasks == 1) and $schedules{$tasks[0]})) {
+		@tasks = periodicTasks($tasks[0] || '');
+	}
+
+	my %taskUntaint = map {$_=>$_}
+		( 'writeMaintenanceHint', 'trimUHDB', 'trimSubmitTmps',
+		 'buildSearchDB', 'trim', 'cookies', 'errors', 'logSummary',
+		 'rebuildAllSummaries', 'rebuildCache', 'expireBags', 'bagAllImages',
+		 'mirrorClient', 'trimSlowOutput');
+
+	hprint("<pre>\n");
 	foreach my $i (sort @tasks) {
 		$i =~ s/\d+ //;
 		if (defined $taskUntaint{$i}) {
 			$i = $taskUntaint{$i};
-			$html.= "--- $i($slow)\n";
+			hprint("--- $i($slow)\n");
 			if (not eval "$i($slow); return 1;") {
-				$html.= "*** Task $i failed\n    Error: $@\n";
+				hprint("*** Task $i failed\n    Error: $@\n");
 			}
 		} else {
-			$html.="*** Task $i undefined\n";
+			hprint("*** Task $i undefined\n");
 		}
 	}
 
 	# output results
-	print $html."\n</pre>\n";
+	hprint("\n</pre>\n");
 
 	# provide a link to the install page, just for kicks
 	FAQ::OMatic::getParams($cgi);
-	print FAQ::OMatic::button(
+	hprint(FAQ::OMatic::button(
 			FAQ::OMatic::makeAref('install', {}, ''),
-			"Go To Install/Configuration Page");
+			"Go To Install/Configuration Page"));
 
+	hflush();
+}
+
+sub hSetFilehandle {
+	my $filehandle = shift;
+	FAQ::OMatic::setLocal('maintenance-fh', $filehandle);
+}
+
+sub hprint {
+	# I have no idea why I thought this should be a separate
+	# function. I think because I wanted to have the output appear
+	# as it was generated, but didn't want to have 'print' calls to
+	# weed out if I ever changed how I did printing.
+	my $html = FAQ::OMatic::getLocal('maintenance-html') || '';
+	$html .= join('', @_);
+	FAQ::OMatic::setLocal('maintenance-html', $html);
+	# we don't flush until explicitly asked to. That way, if a routine
+	# decides to Slow::split, it can get its redirect out before we
+	# send out a header.
+}
+
+sub hflush {
+	my $html = FAQ::OMatic::getLocal('maintenance-html') || '';
+	my $filehandle = FAQ::OMatic::getLocal('maintenance-fh') || \*STDOUT;
+	print $filehandle $html;
+	FAQ::OMatic::flush($filehandle);
+	FAQ::OMatic::setLocal('maintenance-html', '');
 }
 
 sub periodicTasks {
 	my $arg = shift || '';
-	my $lastMaintenance;
-	if (open LMHINT, "$metaDir/lastMaintenance") {
-		<LMHINT> =~ m/^(\d+)/;
-		$lastMaintenance = int($1);
-		close LMHINT;
-	} else {
-		$lastMaintenance = 0;
-	}
+	my $lastMaintenance = readMaintenanceHint();
 
 	my @thenTime = localtime($lastMaintenance);
 	my @nowTime = localtime($^T);
@@ -177,11 +194,11 @@ sub periodicTasks {
 		) if $newWeek;
 	push @tasks, '98 writeMaintenanceHint';
 
-	$html.= 'Executing schedules:'
+	hprint('Executing schedules:'
 		.($newHour	? ' Hourly'	:'')
 		.($newDay	? ' Daily'	:'')
 		.($newWeek	? ' Weekly'	:'')
-		."\n\n";
+		."\n\n");
 
 	my %tasks = map { ($_,1) } @tasks;
 	return keys %tasks;
@@ -195,15 +212,25 @@ sub periodicTasks {
 # 	}
 # }
 
-# set of files to trim in trim()
-my %trimset = ();
+sub readMaintenanceHint {
+	my $lastMaintenance;
+	if (open LMHINT, "$FAQ::OMatic::Config::metaDir/lastMaintenance") {
+		<LMHINT> =~ m/^(\d+)/;
+		$lastMaintenance = defined($1) ? int($1) : 0;
+			# THANKS Michael Gerdts <gerdts@cae.wisc.edu> for the defined() test
+		close LMHINT;
+	} else {
+		$lastMaintenance = 0;
+	}
+	return $lastMaintenance;
+}
 
 ############################################################################
 ########  Task definitions  ################################################
 ############################################################################
 
 sub writeMaintenanceHint {
-	if (open LMHINT, ">$metaDir/lastMaintenance") {
+	if (open LMHINT, ">$FAQ::OMatic::Config::metaDir/lastMaintenance") {
 		print LMHINT $^T."  ".scalar localtime($^T)."\n";
 		close LMHINT;
 	}
@@ -211,23 +238,29 @@ sub writeMaintenanceHint {
 }
 
 sub trimUHDB {
-	$trimset{'uhdb'} = 1;
+	my $trimset = FAQ::OMatic::getLocal('trimset') || {};
+	$trimset->{'uhdb'} = 1;
+	FAQ::OMatic::setLocal('trimset', $trimset);
 }
 
 sub trimSubmitTmps {
-	$trimset{'submitTmp'} = 1;
+	my $trimset = FAQ::OMatic::getLocal('trimset') || {};
+	$trimset->{'submitTmp'} = 1;
+	FAQ::OMatic::setLocal('trimset', $trimset);
 }
 
 sub trimSlowOutput {
-	$trimset{'slow'} = 1;
+	my $trimset = FAQ::OMatic::getLocal('trimset') || {};
+	$trimset->{'slow'} = 1;
+	FAQ::OMatic::setLocal('trimset', $trimset);
 }
 
 sub buildSearchDB {
-	if ((not -f "$metaDir/freshSearchDBHint")
-		or (-M "$metaDir/freshSearchDBHint" > 1/24)) {
+	if ((not -f "$FAQ::OMatic::Config::metaDir/freshSearchDBHint")
+		or (-M "$FAQ::OMatic::Config::metaDir/freshSearchDBHint" > 1/24)) {
 		FAQ::OMatic::buildSearchDB::build();
 	} else {
-		$html.= "    (not needed)\n";
+		hprint("    (not needed)\n");
 	}
 }
 
@@ -236,12 +269,13 @@ sub rebuildAllSummaries {
 }
 
 sub trim {
-	if (not opendir NEWLOGDIR, $metaDir) {
-		$html.= "*** Couldn't scan $metaDir.";
+	if (not opendir NEWLOGDIR, $FAQ::OMatic::Config::metaDir) {
+		hprint("*** Couldn't scan $FAQ::OMatic::Config::metaDir.");
 		return;
 	}
 
-	$html.= "trimming: ".join(' ', sort keys %trimset)."\n";
+	my $trimset = FAQ::OMatic::getLocal('trimset') || {};
+	hprint("trimming: ".join(' ', sort keys %{$trimset})."\n");
 
 	my $daybefore = FAQ::OMatic::Log::adddays(FAQ::OMatic::Log::numericToday(), -2);
 	while (defined(my $file = readdir(NEWLOGDIR))) {
@@ -251,7 +285,7 @@ sub trim {
 		$file = $1;
 
 		# uhdb's (unique host databases, part of the access log)
-		if ($trimset{'uhdb'} and ($file =~ m/^[\d-]+.uhdb./)) {
+		if ($trimset->{'uhdb'} and ($file =~ m/^[\d-]+.uhdb./)) {
 			my @dates = ($file =~ m/^([\d-]+)/);
 			my $date = $dates[0];
 
@@ -267,26 +301,26 @@ sub trim {
 			# file, not the mod date, since it could have been
 			# generated today by a regenerateSmrys.
 			if ($date lt $daybefore) {
-				$html.= "removing $file\n";
-				unlink "$metaDir/$file";
+				hprint("removing $file\n");
+				unlink "$FAQ::OMatic::Config::metaDir/$file";
 			}
 		}
 
 		# submitTmp
-		if ($trimset{'submitTmp'} and ($file =~ m/^submitTmp\./)) {
+		if ($trimset->{'submitTmp'} and ($file =~ m/^submitTmp\./)) {
 			# only trim files older than a day
-			if (-M "$metaDir/$file" > 1.0) {
-				$html.= "removing $file\n";
-				unlink "$metaDir/$file";
+			if (-M "$FAQ::OMatic::Config::metaDir/$file" > 1.0) {
+				hprint("removing $file\n");
+				unlink "$FAQ::OMatic::Config::metaDir/$file";
 			}
 		}
 
 		# slow
-		if ($trimset{'slow'} and ($file =~ m/^slow-output\./)) {
+		if ($trimset->{'slow'} and ($file =~ m/^slow-output\./)) {
 			# only trim files older than a day
-			if (-M "$metaDir/$file" > 1.0) {
-				$html.= "removing $file\n";
-				unlink "$metaDir/$file";
+			if (-M "$FAQ::OMatic::Config::metaDir/$file" > 1.0) {
+				hprint("removing $file\n");
+				unlink "$FAQ::OMatic::Config::metaDir/$file";
 			}
 		}
 	}
@@ -295,12 +329,12 @@ sub trim {
 
 sub cookies {
 	# throw away old cookies
-	if (not open COOKIES, "$metaDir/cookies") {
-		$html.= "no cookie file.\n";
+	if (not open COOKIES, "$FAQ::OMatic::Config::metaDir/cookies") {
+		hprint("no cookie file.\n");
 		return;
 	}
-	if (not open NEWCOOKIES, ">$metaDir/cookies.new") {
-		$html.= "can't create $metaDir/cookies.new.\n";
+	if (not open NEWCOOKIES, ">$FAQ::OMatic::Config::metaDir/cookies.new") {
+		hprint("can't create $FAQ::OMatic::Config::metaDir/cookies.new.\n");
 		return;
 	}
 	while (<COOKIES>) {
@@ -316,32 +350,33 @@ sub cookies {
 	}
 	close COOKIES;
 	close NEWCOOKIES;
-	unlink "$metaDir/cookies";
-	if (not rename("$metaDir/cookies.new","$metaDir/cookies")) {
-		$html.=
-			"Couldn't rename $metaDir/cookies.new to $metaDir/cookies\n"
-			."because $!\n";
+	unlink "$FAQ::OMatic::Config::metaDir/cookies";
+	if (not rename("$FAQ::OMatic::Config::metaDir/cookies.new","$FAQ::OMatic::Config::metaDir/cookies")) {
+		hprint ("Couldn't rename $FAQ::OMatic::Config::metaDir/cookies.new "
+			."to $FAQ::OMatic::Config::metaDir/cookies\n"
+			."because $!\n");
 	}
 }
 
 sub errors {
 	if (not $FAQ::OMatic::Config::maintSendErrors) {
-		$html.="    Config says don't mail errors.\n";
+		hprint("    Config says don't mail errors.\n");
 		return;
 	}
 
-	my $size = (-s "$metaDir/errors") || 0;
+	my $size = (-s "$FAQ::OMatic::Config::metaDir/errors") || 0;
 	if ($size == 0) {
-		$html.="    No ($size) errors to mail.\n";
+		hprint("    No ($size) errors to mail.\n");
 		return;
 	}
 
 	my $msg = "Errors from ".FAQ::OMatic::fomTitle()
 		." (v. $FAQ::OMatic::VERSION):\n\n";
-	if (not open(ERRORS, "$metaDir/errors")) {
-		$html.="   Couldn't read $metaDir/errors because $!; not truncating\n";
+	if (not open(ERRORS, "$FAQ::OMatic::Config::metaDir/errors")) {
+		hprint("   Couldn't read $FAQ::OMatic::Config::metaDir/errors "
+			."because $!; not truncating\n");
 	} else {
-		$html.="   Sending errors...\n";
+		hprint("   Sending errors...\n");
 		my @errs = <ERRORS>;
 		close ERRORS;
 		FAQ::OMatic::sendEmail($FAQ::OMatic::Config::adminEmail,
@@ -349,7 +384,7 @@ sub errors {
 					$msg.join('', @errs));
 
 		# truncate errorfile
-		open ERRORS, ">$metaDir/errors";
+		open ERRORS, ">$FAQ::OMatic::Config::metaDir/errors";
 		close ERRORS;
 	}
 }
@@ -358,6 +393,26 @@ sub logSummary {
 	my $yesterday = FAQ::OMatic::Log::adddays(FAQ::OMatic::Log::numericToday(), -1);
 
 	FAQ::OMatic::Log::summarizeDay($yesterday);
+}
+
+sub cronInvoke {
+	# special version to be called from cron to alert user to errors
+	my @reply = invoke(@_);
+	my $reply = join('', @reply);
+
+	# if the cron job fails to run, we should print a message out,
+	# so that the user knows to fix it. (most crons mail the message
+	# to the user.)
+	my ($proto,$code,@rest) = split(' ', $reply[0]);
+	if ($code != '200') {
+		print "Unable to invoke maintenance task; HTTP reply follows:\n\n";
+		print $reply;
+	}
+	if ($reply =~ m/$badKeyMessage/) {
+		print "$badKeyMessage\n";
+		print "Admin must access the install page and\n"
+			."click \"Set up the maintenance cron job.\"\n";
+	}
 }
 
 sub invoke {
@@ -381,7 +436,7 @@ sub invoke {
 	close $httpsock;
 
 	if ($verbose) {
-		print join('', @reply);
+		hprint(join('', @reply));
 	}
 	return @reply if wantarray();
 }
@@ -403,22 +458,20 @@ sub rebuildCache {
 				or ($FAQ::OMatic::Config::cacheDir eq ''));
 	
 	if ($slow) {
-		FAQ::OMatic::Slow::split();
+		my $fh = FAQ::OMatic::Slow::split();
+		hSetFilehandle($fh);
 		# from now on, our output goes into the slow-output file
-		# to be periodically loaded by the browser. We should
-		# flush STDOUT pretty often.
+		# to be periodically loaded by the browser.
 	}
 
 	my $itemName;
 	foreach $itemName (FAQ::OMatic::getAllItemNames()) {
-		$html.="<br>Updating $itemName\n";
+		hprint( "<br>Updating $itemName\n");
 		my $item = new FAQ::OMatic::Item($itemName);
 		$item->saveToFile('', '', 'noChange', 'updateAllDependencies');
 
 		# flush stdout
-		print STDOUT $html;
-		FAQ::OMatic::flush('STDOUT');
-		$html = '';
+		hflush();
 	}
 
 	FAQ::OMatic::Versions::setVersion('CacheRebuild');
@@ -435,7 +488,7 @@ sub expireBags {
 		FAQ::OMatic::getAllItemNames($FAQ::OMatic::Config::bagsDir);
 	my $bagName;
 	foreach $bagName (@bagList) {
-		#$html.="<br>Checking $bagName\n";
+		#hprint("<br>Checking $bagName\n");
 		my @dependents = FAQ::OMatic::Item::getDependencies("bags.".$bagName);
 		if (scalar(@dependents) == 0) {
 			# don't declare system-supplied bags invalid
@@ -444,14 +497,14 @@ sub expireBags {
 			next if (FAQ::OMatic::ImageRef::validImage($prefix));
 
 			if (not $anyMessages) {
-				$html .= "The following suggestion(s) are based on "
+				hprint("The following suggestion(s) are based on "
 					."dependency files.\n You might run rebuildCache first "
-					."if you want to be certain that they are valid.\n\n";
+					."if you want to be certain that they are valid.\n\n");
 			}
 			$anyMessages = 1;
 			my $msg = "Consider removing bag $bagName; it is not linked from "
 				."any item in the FAQ.";
-			$html.="<br>$msg\n";
+			hprint "<br>$msg\n";
 			# TODO: in a future version, we could actually just unlink
 			# TODO: the unreferenced bags. (garbage collection).
 			# The comment above about rebuildCache would apply.
@@ -477,17 +530,20 @@ sub mirrorClient {
 
 	if ((not defined $url)
 		or ($url eq '')) {
-		$html.="mirrorClient() exiting silently because this is "
-			."not a mirror.\n";
+		hprint("mirrorClient() exiting silently because this is "
+			."not a mirror.\n");
 		return;
 	}
 
 	if ($slow) {
-		FAQ::OMatic::Slow::split();
+		my $fh = FAQ::OMatic::Slow::split();
+		hSetFilehandle($fh);
 		# from now on, our output goes into the slow-output file
-		# to be periodically loaded by the browser. We should
-		# flush STDOUT pretty often.
+		# to be periodically loaded by the browser.
 	}
+
+	hprint("<p>Querying master site for item and bag modification times.<p>\n");
+	hflush();
 
 	my $limit = -1;	# Set to a small number for debugging, so you don't
 					# have to wait for the whole mirror to complete.
@@ -523,7 +579,7 @@ sub mirrorClient {
 			."mirrorServer data version 1.0; received $version.";
 	}
 
-	#$html = join("\n", @reply);
+	#hprint  join("\n", @reply);
 
 	my @itemURL = grep { m/^itemURL\s/ } @reply;
 	my $itemURL = ($itemURL[0] =~ m/^itemURL\s+(.*)$/)[0];
@@ -534,7 +590,7 @@ sub mirrorClient {
 	my @configs = grep { m/^config\s/ } @reply;
 	my $config;
 	my $map = FAQ::OMatic::install::readConfig();
-	$html .= "configs supplied: ".scalar(@configs)."\n";
+	hprint("configs supplied: ".scalar(@configs)."\n");
 	foreach $config (@configs) {
 		my ($left,$right) =
 			($config =~ m/config (\$\S+) = (.+)$/);
@@ -542,13 +598,14 @@ sub mirrorClient {
 			# unless the config line is buggy, as can happen when
 			# the mirrorServer FAQ is running 2.618 :v(, update our config
 			$map->{$left} = $right;
-			$html.="$left => $right\n";
+			hprint("<br>$left => $right\n");
 		}
 	}
 	FAQ::OMatic::install::writeConfig($map);
 	# now make sure that config takes effect for all the cache
 	# files we're about to write
 	FAQ::OMatic::install::rereadConfig();
+	hflush();
 
 	my $count = 0;
 	my @items = grep { m/^item\s/ } @reply;
@@ -557,29 +614,27 @@ sub mirrorClient {
 		my ($file,$lms) =
 			($line =~ m/item\s+(\S+)\s+(\S+)/);
 		if (not defined $file || $file eq '') {
-			$html .= "<br>Can't parse: $line\n";
+			hprint("<br>Can't parse: $line\n");
 			next;
 		}
 		my $item = new FAQ::OMatic::Item($file);
 		my $existingLms = $item->{'LastModifiedSecs'} || -1;
 		if ($lms != $existingLms) {
-			$html .= "<br>$file ".$item->getTitle().": item needs update\n";
+			hprint("<br>$file ".$item->getTitle().": item needs update\n");
 			mirrorItem($host, $port, $itemURL."$file", $file, '');
 			$count++;	# each net access counts 1, whether or not it takes
 		} else {
-			# $html .= "<br>Already have: $file ".$item->getTitle()."\n";
+			# hprint "<br>Already have: $file ".$item->getTitle()."\n";
 			# Benign output supressed so you can see which items you
 			# don't have.
 		}
 
 		if ($limit>=0 && $count >= $limit) {
-			$html .= "<p>stopping because count = limit ($limit)\n";
+			hprint("<p>stopping because count = limit ($limit)\n");
 			return;
 		}
-		# flush stdout
-		print STDOUT $html;
-		FAQ::OMatic::flush('STDOUT');
-		$html = '';
+		# flush output
+		hflush();
 	}
 
 	my @bagsURL = grep { m/^bagsURL\s/ } @reply;
@@ -594,7 +649,7 @@ sub mirrorClient {
 			($line =~ m/bag\s+(\S+)\s+(\S+)/);
 		$file = FAQ::OMatic::Bags::untaintBagName($file);
 		if ($file eq '') {
-			$html .= "<br>Tainted bag name in '$line'\n";
+			hprint("<br>Tainted bag name in '$line'\n");
 			next;
 		}
 
@@ -604,7 +659,7 @@ sub mirrorClient {
 		my $existingLms = $descItem->{'LastModifiedSecs'} || -1;
 
 		if ($lms != $existingLms) {
-			$html .= "<br>${file}: bag needs update\n";
+			hprint("<br>${file}: bag needs update\n");
 			# transfer bag byte-for-byte to my bags dir
 			mirrorBag($host, $port, $bagsURL."$file", $file);
 			# transfer the .desc file, using same item mirroring code as above
@@ -614,17 +669,15 @@ sub mirrorClient {
 			FAQ::OMatic::Bags::updateDependents($file);
 			$count += 2;
 		} else {
-			# $html .= "<br>Already have: $file\n";
+			# hprint "<br>Already have: $file\n";
 		}
 
 		if ($limit>=0 && $count >= $limit) {
-			$html .= "<p>stopping because count = limit ($limit)\n";
+			hprint("<p>stopping because count = limit ($limit)\n");
 			return;
 		}
-		# flush stdout
-		print STDOUT $html;
-		FAQ::OMatic::flush('STDOUT');
-		$html = '';
+		# flush output
+		hflush();
 	}
 }
 
@@ -653,8 +706,8 @@ sub mirrorItem {
 	chomp $httpstatus;
 	my ($statusNum) = ($httpstatus =~ m/\s(\d+)\s/);
 	if ($statusNum != 200) {
-		$html .= "<br>Request '$request' for $itemFilename from "
-			."$host:$port failed: ($statusNum) $httpstatus\n";
+		hprint("<br>Request '$request' for $itemFilename from "
+			."$host:$port failed: ($statusNum) $httpstatus\n");
 		close($httpsock);
 		return;
 	}
@@ -670,7 +723,8 @@ sub mirrorItem {
 	$item->{'titleChanged'} = 'true';
 		# since we just mirrored this guy, the title may very well
 		# have changed, so we need to be sure to rewrite dependent items.
-	$item->saveToFile($itemFilename, $itemDir, 'noChange', 'updateAllDeps');
+	$item->saveToFile($itemFilename, $itemDir, 'noChange', 'updateAllDeps',
+		'noRecomputeDependencies');
 		# notice we're passing in a filename we got from that
 		#	web server -- an insidious master might try to pass
 		#	off bogus item filenames with '..'s in them. But saveToFile()
@@ -681,8 +735,12 @@ sub mirrorItem {
 		#	saveToFile only adds those dependencies that are "new" to
 		#	this item -- but we only have the item, not the .dep file,
 		#	so we need to always regenerate all deps.
-	$html.="<br>$itemFilename (".$item->getTitle()."): "
-		."item mirrored successfully\n";
+		# 'noRecomputeDependencies' prevents Item.pm from trying to
+		#	resolve forward references to nonexistent items. For example, an
+		#	item can have a parent that hasn't been reached yet in the
+		#	mirroring.
+	hprint("<br>$itemFilename (".$item->getTitle()."): "
+		."item mirrored successfully\n");
 }
 
 sub mirrorBag {
@@ -708,8 +766,8 @@ sub mirrorBag {
 	chomp $httpstatus;
 	my ($statusNum) = ($httpstatus =~ m/\s(\d+)\s/);
 	if ($statusNum != 200) {
-		$html .= "<br>Request '$request' for $bagFilename from "
-			."$host:$port failed: ($statusNum) $httpstatus\n";
+		hprint("<br>Request '$request' for $bagFilename from "
+			."$host:$port failed: ($statusNum) $httpstatus\n");
 		close($httpsock);
 		return;
 	}
@@ -719,7 +777,7 @@ sub mirrorBag {
 
 	# input looks good at this point -- open output bag file
 	if (not open(BAGFILE, ">".$FAQ::OMatic::Config::bagsDir.$bagFilename)) {
-		$html .= "<br>open of $bagFilename failed: $!\n";
+		hprint("<br>open of $bagFilename failed: $!\n");
 		close $httpsock;
 		return;
 	}
@@ -741,11 +799,11 @@ sub mirrorBag {
 	}
 
 	if ($sizeBytes == 0) {
-		$html .= "<br><b>Uh oh, I read no bytes for $bagFilename.</b>\n";
+		hprint("<br><b>Uh oh, I read no bytes for $bagFilename.</b>\n");
 		return;
 	}
 
-	$html.="<br>${bagFilename}: bag mirrored successfully\n";
+	hprint("<br>${bagFilename}: bag mirrored successfully\n");
 }
 
 sub mtime {

@@ -40,36 +40,41 @@ package FAQ::OMatic;
 use FAQ::OMatic::Item;
 use FAQ::OMatic::Log;
 use FAQ::OMatic::Appearance;
-use FAQ::OMatic::Intl;
 use FAQ::OMatic::Bags;
+use FAQ::OMatic::I18N;
 
-# use vars lets us leave these variables globally-visible (when
-# fully qualified) without getting a gripe from 'use strict'.
-use vars qw($VERSION $authorAddress %theParams $userGripes);
+use vars	# these are mod_perl-safe
+	# effectively constants
+	qw($VERSION $authorAddress $USE_MOD_PERL),
+	# variables that get reset on every invocation
+	qw($theParams $theLocals);
 
-$VERSION = '2.621';
+$VERSION = '2.702';
 
 $authorAddress = 'jonh@cs.dartmouth.edu';
 	# This is never used to automatically send mail to (that's authorEmail),
 	# but when we need to report the author's address, we use this constant:
-%theParams=();		# the parameters for this invocation (hash ref)
-$userGripes = '';	# accumulated warnings and error messages
 
 sub pageHeader {
-	my $params = shift || \%theParams;
+	my $params = shift || $theParams;
+	my $showLinks = shift;
 	my $suppressType = shift;
-	return FAQ::OMatic::Appearance::cPageHeader($params, $suppressType);
+
+	return FAQ::OMatic::Appearance::cPageHeader($params,
+		$showLinks, $suppressType);
 }
 
 sub pageFooter {
-	my $params = shift;			# arg passed to Apperance::cPageFooter
-	my $showLinks = shift;		# arg passed to Apperance::cPageFooter
-	my $isCached = shift || '';	# don't put gripes in the cached copies
+	my $params = shift;				# arg passed to Apperance::cPageFooter
+	my $showLinks = shift || [];	# arg passed to Apperance::cPageFooter
+	my $isCached = shift || '';		# don't put gripes in the cached copies
 
 	my $page = '';
+	my $userGripes = getLocal('userGripes') || '';
 	if (not $isCached and $userGripes ne '') {
-		$page.="<hr><h3>Warnings:</h3>\n".$userGripes."<hr>\n";
+		$page.="<hr><h3>".gettext("Warnings:")."</h3>\n".$userGripes."<hr>\n";
 	}
+	push @{$showLinks}, 'faqomatic-home';
 	$page.=FAQ::OMatic::Appearance::cPageFooter($params, $showLinks);
 	return $page;
 }
@@ -102,13 +107,29 @@ sub pageDesc {
 		if (($cmd eq 'editPart') and ($params->{'_insertpart'}));
 
 	my $file = $params->{'file'} || '1';
-	my $item = new FAQ::OMatic::Item($params->{'file'});
+	my $item = new FAQ::OMatic::Item($params->{'file'}||'1');
 	my $title = $item->getTitle();
-	my $whatAmI = $item->whatAmI();
+	my $whatAmI = gettext($item->whatAmI());
 
-	my $desc = $FAQ::OMatic::Intl::pageDesc{$cmd};
-	if ($desc) {
-		$rt = eval($desc);
+	my $pageDescs = {
+		'authenticate' => 'Log In',
+		'changePass' => 'Change Password',
+		'editItem' => 'Edit Title of %0 %1',
+		'insertItem' => 'New %0',	# special case -- varies editItem
+		'editPart' => 'Edit Part in %0 %1',
+		'insertPart' => 'Insert Part in %0 %1',
+		'faq' => $file eq "1" ? "" : '%1',
+		'moveItem' => 'Move %0 %1',
+		'search' => 'Search',
+		'stats' => 'Access Statistics',
+		'submitPass' => 'Validate',
+		'editModOptions' => '%0 Permissions for %1',
+		'editBag' => 'Upload bag for %0 %1'
+	};
+
+	my $pd = $pageDescs->{$cmd};
+	if ($pd) {
+		$rt = gettexta($pd, $whatAmI, $title);
 	} else {
 		$rt = "$cmd page";
 	}
@@ -124,29 +145,16 @@ sub keyValue {
 
 # returns the name of the currently executing command module (was CGI)
 sub commandName {
-	my $params = shift || \%theParams;
+	my $params = shift || $theParams;
 	return ($params->{'cmd'} || 'faq');
 }
 
 # returns the end of the URL (the CGI name)
 sub cgiName {
-	my $cgi = $FAQ::OMatic::dispatch::cgi;
+	my $cgi = FAQ::OMatic::dispatch::cgi();
 	my $url = $cgi->url();
 	my $cgiName = ($url =~ m#([^/]*)$#)[0];
 	return $cgiName;
-}
-
-# returns the URL base (including the final /) of this faqomatic
-sub urlBase {
-	return '';
-	# since all makeArefs are now always absolute, we don't want to
-	# insert this before redirects (or before $secreturl in submitPass.pm).
-	# TODO: hack out all code referring to urlBase.
-
-#	my $cgi = $FAQ::OMatic::dispatch::cgi;
-#	my $url = $cgi->url();
-#	$url =~ s#/[^/]*$#/#;
-#	return $url;
 }
 
 sub shortdate {
@@ -167,7 +175,7 @@ sub gripe {
 	my $severity = shift || 'problem';
 	my $msg = shift || '[gripe with no msg: '.join(':',caller()).']';
 	my $mailguys = '';
-	my $id = $FAQ::OMatic::Auth::trustedID || $theParams{'id'} || '(noID)';
+	my $id = $FAQ::OMatic::Auth::trustedID || $theParams->{'id'} || '(noID)';
 
 	# mail someone
 	if ($severity eq 'panic') {
@@ -195,20 +203,33 @@ sub gripe {
 
 	# tell user
 	if ($severity ne 'note') {
+		my $userGripes = getLocal('userGripes');
 		$userGripes .= "<li>$msg\n";
+		setLocal('userGripes', $userGripes);
 	}
 
 	# log to file
 	open ERRORFILE, ">>$FAQ::OMatic::Config::metaDir/errors";
-	print ERRORFILE FAQ::OMatic::Log::numericDate()." $severity ".commandName()
+	print ERRORFILE FAQ::OMatic::Log::numericDate()
+		." $FAQ::OMatic::VERSION $severity "
+		.commandName()
 		." $$ <$id> $msg\n";
 	close ERRORFILE;
 
 	# abort
 	if ($severity eq 'error' or $severity eq 'panic' or $severity eq 'abort') {
-		print FAQ::OMatic::pageHeader();
-		print FAQ::OMatic::pageFooter();
-		exit 0;
+		if (getParam($theParams, 'isapi')) {
+			# client expects easy-to-parse data
+			my $userGripes = getLocal('userGripes') || '';
+			my $cgi = FAQ::OMatic::dispatch::cgi();
+			print FAQ::OMatic::header($cgi, '-type'=>'text/plain')
+				."isapi=1\n"
+				."errors=".CGI::escape($userGripes)."\n";
+		} else {
+			print FAQ::OMatic::pageHeader();
+			print FAQ::OMatic::pageFooter();
+		}
+		myExit(0);
 	}
 }
 
@@ -221,8 +242,8 @@ sub lockFile {
 	if (-e $lockname) {
 		sleep 10;
 		if (-e $lockname) {
-			gripe 'problem',
-				"$filename.lck has been there 10 seconds. Failing.";
+			gripe 'problem', "Lockfile $lockname for $filename has "
+				."been there 10 seconds. Failing.";
 			return 0;
 		}
 	}
@@ -245,9 +266,19 @@ sub unlockFile {
 
 # turns faqomatic:file references into HTML links with pleasant titles.
 sub faqomaticReference {
+	my $params = $_[0];
+	if (($params->{'render'}||'') eq 'text') {
+		return faqomaticReferenceText(@_);
+	} else {
+		return faqomaticReferenceRich(@_);
+	}
+}
+
+sub faqomaticReferenceRich {
 	my $params = shift;
 	my $filename = shift;
-	my $which = shift;		# '-small' (children) or '-also' (see-also links)
+	my $which = shift || '-small';
+		# '-small' (children) or '-also' (see-also links)
 
 	my $item = new FAQ::OMatic::Item($filename);
 	my $title = FAQ::OMatic::ImageRef::getImageRefCA($which,
@@ -258,6 +289,14 @@ sub faqomaticReference {
 					'-params'=>$params,
 					'-changedParams'=>{"file"=>$filename})
 			."$title</a>";
+}
+
+sub faqomaticReferenceText {
+	my $params = shift;
+	my $filename = shift;
+
+	my $item = new FAQ::OMatic::Item($filename);
+	return $item->getTitle();
 }
 
 sub baginlineReference {
@@ -306,11 +345,12 @@ sub baglinkReference {
 		."</a>";
 }
 
-my @hapCache;
 sub hostAndPath {
-	return @hapCache if (scalar(@hapCache)==2);
+	if (defined getLocal('hapCache')) {
+		return @{getLocal('hapCache')};
+	}
 
-	my $cgi = $FAQ::OMatic::dispatch::cgi;	# TODO ugly global for $cgi
+	my $cgi = FAQ::OMatic::dispatch::cgi();
 	my $cgiUrl = $cgi->url();
 	my ($urlRoot,$urlPath) = $cgiUrl =~ m#^(https?://[^/]+)/(.*)$#;
 	if (not defined $urlRoot or not defined $urlPath) {
@@ -339,7 +379,9 @@ sub hostAndPath {
 		}
 		FAQ::OMatic::gripe('problem', "Can't parse my own URL: $cgiUrl");
 	}
-	return @hapCache = ($urlRoot, $urlPath);
+	my @hap = ($urlRoot, $urlPath);
+	setLocal('hapCache', \@hap);
+	return @hap;
 }
 
 sub relativeReference {
@@ -369,7 +411,9 @@ sub relativeReference {
 # THANKS: to steevATtiredDOTcom for suggesting the ability to mangle
 # or disable attributions to reduce the potential for spam address harvesting.
 sub mailtoReference {
+	my $params = shift||{};
 	my $addr = shift || '';
+	my $isText = getParam($params, 'render') eq 'text';
 
 	$addr =~ s/^mailto://;	# strip off mailto prefix if it's there
 	$addr = entify($addr);
@@ -381,7 +425,7 @@ sub mailtoReference {
 	} elsif ($how eq 'hide') {
 		$addr = 'address-suppressed';
 	}
-	return "<a href=\"mailto:$addr\">$addr</a>";
+	return $isText ? $addr : "<a href=\"mailto:$addr\">$addr</a>";
 }
 
 # turns link-looking things into actual HTML links, but also turns
@@ -404,13 +448,28 @@ sub insertLinks {
 	    $arg =~ s#(gopher://[^\s"]*[^\s.,)\?!])#<a href=\"$1\">$1</a>#sg;
 	    $arg =~ s#(telnet://[^\s"]*[^\s.,)\?!])#<a href=\"$1\">$1</a>#sg;
 	    $arg =~ s#(news:[^\s"]*[^\s.,)\?!])#<a href=\"$1\">$1</a>#sg;
-	    $arg =~ s#(mailto:\S+@\S*[^\s.,)\?!])#mailtoReference($1)#sge;
+	    $arg =~ s#(mailto:\S+@\S*[^\s.,)\?!])#mailtoReference($params,$1)#sge;
 	}
 	# THANKS: njl25@cam.ac.uk for pointing out the absence of the news: regex
 
 	$arg =~ s#faqomatic:(\S*[^\s.,)\?!])#faqomaticReference($params,$1,$sa)#sge;
 	$arg =~ s#baginline:(\S*[^\s.,)\?!])#baginlineReference($params,$1)#sge;
 	$arg =~ s#baglink:(\S*[^\s.,)\?!])#baglinkReference($params,$1)#sge;
+
+	return $arg;
+}
+
+# no entifying; only faqomatic: and mailto: links are massaged.
+sub insertLinksText {
+	my $params = shift;
+	my $arg = shift;
+	my $ishtml = shift || 0;
+	my $isdirectory = shift || 0;
+
+	$arg =~ s#faqomatic:(\S*[^\s.,)\?!])#"(*) ".faqomaticReferenceText($params,$1)#sge;
+	# TODO: baginlines could map to the stored "alt" tag, if we start
+	# storing one. :v)
+	$arg =~ s#(mailto:\S+@\S*[^\s.,)\?!])#"(*) ".mailtoReference($params,$1)#sge;
 
 	return $arg;
 }
@@ -441,17 +500,40 @@ sub entify {
 	return $arg;
 }
 
+# can't figure out how to get file-scoped variables in mod_perl, so
+# we ensure that they're all file scoped by reseting them in dispatch.
+sub reset {
+	$theParams = {};
+	$theLocals = {};
+}
+
+sub getLocal {
+	my $localname = shift;
+	return $theLocals->{$localname};
+}
+
+sub setLocal {
+	my $localname = shift;
+	my $localvalue = shift;
+	$theLocals->{$localname} = $localvalue;
+}
+
 # returns ref to %theParams
 sub getParams {
+	if (not defined $_[0]) {
+		return $theParams;
+	}
+
 	my $cgi = shift;
 	my $dontLog = shift;	# so statgraph requests don't count as hits
 	my $i;
+
 	foreach $i ($cgi->param()) {
-		$theParams{$i} = $cgi->param($i);
+		$theParams->{$i} = $cgi->param($i);
 	}
 
 	# Log this access
-	FAQ::OMatic::Log::logEvent() if (not $dontLog);
+	FAQ::OMatic::Log::logEvent($theParams) if (not $dontLog);
 
 	# set up DIEs to panic and WARNs to note in log.
 	# grep log for "Perl" to see if this is happening.
@@ -462,26 +544,46 @@ sub getParams {
 	# are the right way.
 	# $SIG{__DIE__} = sub { gripe('panic', "Perl died: ".$_[0]); };
 
-	return \%theParams;
+	return $theParams;
 }
 
 # if a param is equal to the default interpretation, we can just
 # delete the param. This keeps urls short, and helps us identify
 # when the user can be sent over to the cache for faster service.
-# TODO: implementations of these defaults are scattered all over
-# the code; the various "|| 'default'" clauses should actually
-# point to this hash. When that happens, there will also be a
-# straightforward mechanism for letting admins change the defaults.
-my $defaultParams = {
-	'cmd' => 'faq',
-	'render' => 'tables'
-};
+# Plus, it lets admins configure site defaults that override the
+# shipped defaults.
+
+sub defaultParams {
+	# This is a local, not a constant, so that mod_perl admins aren't
+	# confused when they rewrite the *Default admin parameters (this
+	# way they don't get stuck in the mod_perl cache).
+	my $defaultParams = getLocal('defaultParams');
+	if (not defined $defaultParams) {
+		$defaultParams = {
+			'cmd' => 'faq',
+			'render' =>
+				$FAQ::OMatic::Config::renderDefault || 'tables',
+			'editCmds' =>
+				$FAQ::OMatic::Config::editCmdsDefault || 'hide',
+			'showModerator' =>
+				$FAQ::OMatic::Config::showModeratorDefault || 'hide',
+			'showLastModified' =>
+				$FAQ::OMatic::Config::showLastModifiedDefault || 'hide',
+			'showAttributions' =>
+				$FAQ::OMatic::Config::showAttributionsDefault || 'default',
+			'textCmds' =>
+				$FAQ::OMatic::Config::textCmdsDefault || 'hide',
+		};
+		setLocal('defaultParams', $defaultParams);
+	}
+	return $defaultParams;
+}
 
 sub getParam {
 	my $params = shift;
 	my $key = shift;
 	return $params->{$key} if defined($params->{$key});
-	return $defaultParams->{$key} if defined($defaultParams->{$key});
+	return defaultParams()->{$key} if defined(defaultParams()->{$key});
 	return '';
 }
 
@@ -491,7 +593,7 @@ sub makeAref {
 	my $refType = '';
 	my $saveTransients = '';
 	my $blastAll = '';
-	my $params = \%theParams;	# default to global params (not preferred, tho)
+	my $params = $theParams;	# default to global params (not preferred, tho)
 	my $target = '';			# <a TARGET=""> tag
 	my $thisDocIs = '';			# prevent conversion to a cache URL
 	my $urlBase = '';			# use included params, but specified urlBase
@@ -578,8 +680,8 @@ sub makeAref {
 
 	# delete keys where values are equal to defaults
 	foreach $i (sort keys %newParams) {
-		if (defined($defaultParams->{$i})
-			and ($newParams{$i} eq $defaultParams->{$i})) {
+		if (defined(defaultParams()->{$i})
+			and ($newParams{$i} eq defaultParams()->{$i})) {
 			delete $newParams{$i};
 		}
 	}
@@ -590,8 +692,9 @@ sub makeAref {
 	# the same links work in the cache, or when the cache file
 	# is copied for use elsewhere. It also means that pointing
 	# at a mirror version of the CGI should be a minor tweak.
-	# V2.610: Answer -- people like
-	# THANKS: Mark Nagel need server-relative references, because
+	# Answer: (V2.610) people like
+	# THANKS: Mark Nagel
+	# need server-relative references, because
 	# absolute references won't work -- at their site, servers are
 	# accessed through a ssh forwarder. (Why not just use https?)
 
@@ -601,10 +704,19 @@ sub makeAref {
 	} elsif (not $thisDocIs and
 		($FAQ::OMatic::Config::useServerRelativeRefs || 0)) {
 		# return a server-relative path (starts with /)
-		$cgiName = $FAQ::OMatic::dispatch::cgi->script_name();
+		$cgiName = FAQ::OMatic::dispatch::cgi()->script_name();
 	} else {
 		# return an absolute URL (including protocol and server name)
-		$cgiName = $FAQ::OMatic::dispatch::cgi->url();
+		$cgiName = FAQ::OMatic::dispatch::cgi()->url();
+		# TODO: the $cgi->url() call uses the host name *supplied by the
+		# client*. That means if the client uses a local abbreviation
+		# ("sitka" instead of "sitka.cs.dartmouth.edu"), then the "absolute"
+		# URL won't really work for anyone in the world. A fix would be
+		# to replace the hostname with $ENV{'SERVER_NAME'} (or, to get
+		# CGI.pm to do it for us, we'd delete $ENV{'HTTP_Host'}). The
+		# risk there is that FAQ-O-Matics on IP-masqueraded servers might
+		# generate the wrong hostname. Probably not, since that name comes
+		# from the web server, but I don't have the means to test it.
 	}
 
 	# collect args in $rt in appropriate form -- hidden fields for
@@ -853,7 +965,7 @@ sub notACGI {
 
 	print "Content-type: text/plain\n\n";
 	print "This script (".commandName().") may not be run as a CGI.\n";
-	exit 0;
+	myExit(0);
 }
 
 sub binpath {
@@ -877,6 +989,8 @@ sub sendEmail {
 	my $subj = shift;
 	my $mesg = shift;
 
+	return if (not $FAQ::OMatic::Config::mailCommand);
+
 	# untaint $to address
 	if (ref $to) {
 		$to = join(" ", map {validEmail($_)||''} @{$to});
@@ -886,6 +1000,10 @@ sub sendEmail {
 	return 'problem' if ($to =~ m/^\s*$/);
 		# found no valid email addresses
 
+	# THANKS Jason R <jasonr@austin.rr.com>.
+	# need $PATH to be untainted.
+	my $pathSave = $ENV{'PATH'};
+	$ENV{'PATH'} = '/bin';
 	if ($FAQ::OMatic::Config::mailCommand =~ m/sendmail/) {
 		my $to2 = $to;
 		$to2 =~ s/ /, /g;
@@ -905,6 +1023,7 @@ sub sendEmail {
 		print MAILX $mesg;
 		close MAILX;
 	}
+	$ENV{'PATH'} = $pathSave;	# not sure if it's crucial to hang onto this
 	return 0;	# no problem
 }
 
@@ -962,12 +1081,17 @@ sub concatDir {
 	return canonDir(canonDir($dir1).canonDir($dir2));
 }
 
-sub cardinal {
+sub cardinal_en {
 	my $num = shift;
 	my %numsuffix=('0'=>'th', '1'=>'st', '2'=>'nd', '3'=>'rd', '4'=>'th',
 				   '5'=>'th', '6'=>'th', '7'=>'th', '8'=>'th', '9'=>'th');
 	my $suffix = ($num>=11 and $num<=19) ? 'th' : $numsuffix{substr($num,-1,1)};
 	return $num."<sup>".$suffix."</sup>";
+}
+
+sub cardinal {
+        my $num = shift;
+        return $num.".";
 }
 
 sub describeSize {
@@ -1026,9 +1150,14 @@ sub mySystem {
 			close STDERR;
 			open STDERR, ">&WRITEPIPE";
 			close STDIN;		# don't let child dangle on stdin
+			$ENV{'PATH'} = '/bin';	# THANKS Jason R <jasonr@austin.rr.com>.
 			exec $cmd;
 			die "mySystem($cmd) failed: $!\n";
-			exit -1;			# be DARN sure child exits
+			CORE::exit(-1);		# be sure child exits; don't go back
+								# and try to be a web server again (in the
+								# mod_perl case).
+			# TODO: the preceding die will probably result in myExit()
+			# getting called, and hence mod_perl continuing to run. Hmmph.
 		} elsif (($count < 5) && $! =~ /No more process/) {
 			# EAGAIN, supposedly recoverable fork error
 			sleep(5);
@@ -1072,9 +1201,151 @@ sub mirrorsCantEdit {
 		my $url = makeAref('-command' => commandName(),
 			'-urlBase'=>$FAQ::OMatic::Config::mirrorURL,
 			'-refType'=>'url');
-		print $cgi->redirect($url);
-		exit 0;
+		FAQ::OMatic::redirect($cgi, $url);
 	}
+}
+
+sub authorList {
+	my $params = shift;
+	my $listRef = shift;
+	my $render = getParam($params, 'render');
+
+	my $rt = '';
+	if ($render ne 'text') {
+		$rt .= "<i>";
+	} else {
+		$rt .= "[";
+	}
+	$rt .= join(", ", map { FAQ::OMatic::mailtoReference($params, $_) }
+			@{$listRef});
+	if ($render ne 'text') {
+		$rt .= "</i><br>";
+	} else {
+		$rt .= "]";
+	}
+	$rt .= "\n";
+	return $rt;
+}
+
+# inspired by mod_perl docs: dynamically detect mod_perl and adjust
+# exit() strategy.
+BEGIN {
+	# Auto-detect if we are running under mod_perl or CGI.
+	$USE_MOD_PERL = ( (exists $ENV{'GATEWAY_INTERFACE'}
+			and $ENV{'GATEWAY_INTERFACE'} =~ /CGI-Perl/)
+		or exists $ENV{'MOD_PERL'} ) ? 1 : 0;
+}
+
+sub myExit {
+	# "Select the correct exit way"
+	my $arg = shift;
+	if ($USE_MOD_PERL) {
+		# Apache::exit(-2) will cause the server to exit gracefully,
+		# once logging happens and protocol, etc (-2 == Apache::Constants::DONE)
+		# in any case, I don't think we want it.
+		Apache::exit(0);
+	} else {
+		CORE::exit($arg);
+	}
+}
+
+sub nonce {
+	# return a string that's "pretty unique". We do this by returning
+	# the time concatenated with the process ID. That's unlikely to repeat.
+	# It would require a single process (say a mod_perl apache child proc
+	# serving two requests) calling this function twice in a second.
+	# TODO: that's not really that unreasonable. It would be better if we
+	# could add some other source of uniqueness here.
+	return time().'p'.$$;
+}
+
+# only seed once per invocation, to avoid resetting to the
+# same not-very-random seed location. (i.e. let the pseudo
+# random number generator do some of the work.)
+sub seedRand {
+	# camel book, 2 ed, p 223
+	# TODO: this random seeder isn't very tricky -- in mod_perl,
+	# $$ doesn't change except among some limited number of httpd children. :v(
+	if (not getLocal('seeded')) {
+		srand(time() ^ ($$ + ($$ << 15)) );
+		setLocal('seeded', 1);
+	}
+}
+
+sub stripnph {
+	my $hdr = shift;
+
+	# strip off the HTTP/1.0 header line, because we're not
+	# really an nph script
+	$hdr =~ s#^HTTP/[^\n]*\n##s;
+	return $hdr;
+}
+
+sub header {
+	my $cgi = shift;
+	my $hdr = stripnph($cgi->header(@_, '-nph'=>1));
+	return $hdr;
+}
+
+sub redirect {
+	my $cgi = shift;
+	my $url = shift || die 'no argument to redirect';
+	my $asString = shift || '';
+
+	# pretend to be nph to work around what I think is a bug in CGI.pm
+	# wherein if we're not nph, it sends the header immediately rather
+	# than returning it.
+	my $rd = stripnph($cgi->redirect('-url'=>$url, '-nph'=>1));
+		# -nph is true to prevent mod_perl version of CGI from attempting
+		# to squirt out the header itself. (CGI.pm 2.49)
+
+	if ($asString) {
+		return $rd;
+	} else {
+		print $rd;
+		flush('STDOUT');
+		myExit(0);
+	}
+}
+
+sub rearrange {
+	# inspired by CGI.pm
+	my ($order, @p) = @_;
+
+	if (defined $p[0]
+		and substr($p[0],0,1) eq '-') {
+		my %posh = ();
+		my @outary = ();
+		for (my $i=0; $i<@{$order}; $i++) {
+			$posh{$order->[$i]} = $i;
+		}
+		while (@p) {
+			my $k = shift @p;
+			my $v = shift @p;
+			if (not defined $v) {
+				die "key $k with no value";
+			}
+			$k =~ s/^\-//;
+			if (exists $posh{$k}) {
+				$outary[$posh{$k}] = $v;
+			} else {
+				gripe('abort', "unexpected key ($k) received in rearrange");
+			}
+		}
+		return @outary;
+	} else {
+		return @p;
+	}
+}
+
+sub quoteText {
+	my $text = shift;
+	my $prefix = shift;
+
+	# not sure why s/^/> /mg gives a "Substitution loop" error from some Perls.
+	# this is a workaround.
+
+	return join('', map { $prefix.$_."\n" } split(/\n/, $text));
 }
 
 'true';

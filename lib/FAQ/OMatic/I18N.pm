@@ -27,34 +27,81 @@
 
 use strict;
 
-##
-## Intl.pm
-##
-## This file will contain data that assists in the internationalization
-## of Faq-O-Matic. That way, all the user-visible text can be translated
-## in one place (here), and when you upgrade Faq-O-Matic, you don't have
-## to re-translate (much).
-##
+###
+### I18N.pm
+###
+### Internationalization support routines
+###
+# huge THANKS: to Dirk Hansen and Okke Timm, who did the first translation
+# (to German), which involved weaving gettext() calls all over the code.
 
-package FAQ::OMatic::Intl;
+package FAQ::OMatic::I18N;
+#use Locale::PGetText;
 
-use vars qw(%pageDesc);
+use FAQ::OMatic;
 
-# evaluated in the lexical context of Appearance::pageDesc. Eeeew.
-%pageDesc = (
-	'authenticate' => '"Log In"',
-	'changePass' => '"Change Password"',
-	'editItem' => '"Edit Title of $whatAmI $title"',
-	'insertItem' => '"New $whatAmI"',	# special case -- varies editItem
-	'editPart' => '"Edit Part in $whatAmI $title"',
-	'insertPart' => '"Insert Part in $whatAmI $title"',
-	'faq' => '$file eq "1" ? "" : "$title"',
-	'moveItem' => '"Move $whatAmI $title"',
-	'search' => '"Search"',
-	'stats' => '"Access Statistics"',
-	'submitPass' => '"Validate"',
-	'editModOptions' => '"$whatAmI Permissions for $title"',
-	'editBag' => '"Upload bag for $whatAmI $title"'
-);
+BEGIN {
+    use Exporter   ();
+    use vars       qw(@ISA @EXPORT);
+    @ISA         = qw(Exporter);
+    @EXPORT      = qw(&gettext &gettexta);
+}
+
+sub new {
+	my $force = shift;
+
+	my $tx = FAQ::OMatic::getLocal('i18n');
+	if ($force or not defined $tx) {
+		$tx = {};
+		bless $tx;
+		$tx->load();
+		FAQ::OMatic::setLocal('i18n', $tx);
+	}
+	return $tx;
+}
+
+sub reload {
+	# force next gettext() to reload
+	my $tx = new FAQ::OMatic::I18N('force');
+}
+
+sub language {
+	return $FAQ::OMatic::Config::language || 'en';
+}
+
+sub load {
+	my $self = shift;
+	if ($self->language() ne 'en') {
+		my $kit = "FAQ/OMatic/Language_".$self->language().".pm";
+		eval {
+			require $kit;
+		};
+		translations($self);
+	}
+}
+
+sub gettext {
+	my $text = shift;
+	my $tx = new FAQ::OMatic::I18N();
+	my $translated = $tx->{$text} || $text;
+	if (language() ne 'en'
+		and not exists $tx->{$text}) {
+		FAQ::OMatic::gripe('debug', "No \""
+			.$tx->language()."\" translation for \"$text\"");
+	}
+	return $translated;
+}
+
+sub gettexta {
+	# a slower version that plugs in arguments.
+	# (if perl were partially evaluated, we'd only have this
+	# sub, and gettext would be the curried version. :v)
+
+	my $translated = gettext(shift);
+	my $arg;
+	my $i=0;
+	$translated =~ s/\%(\d+)/$_[$1]/sge;
+	return $translated;
+}
 
 1;

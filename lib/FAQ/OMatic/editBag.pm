@@ -33,29 +33,35 @@ use CGI;
 use FAQ::OMatic::Item;
 use FAQ::OMatic;
 use FAQ::OMatic::Auth;
+use FAQ::OMatic::I18N;
 
 sub main {
-	my $cgi = $FAQ::OMatic::dispatch::cgi;
+	my $cgi = FAQ::OMatic::dispatch::cgi();
 	my $rt = '';
 	
 	my $params = FAQ::OMatic::getParams($cgi);
 
 	FAQ::OMatic::mirrorsCantEdit($cgi, $params);
 	
-	$rt = FAQ::OMatic::pageHeader($params);
+	$rt = FAQ::OMatic::pageHeader($params, ['help', 'faq']);
 	
 	my $bagName = $params->{'_target'} || '';	# no bag name => upload new.
 
 	if ($bagName) {
 		# bag exists
-		my $rd = FAQ::OMatic::Auth::ensurePerm('', 'PermReplaceBag',
-			FAQ::OMatic::commandName(), $cgi, 0, 'replace');
-		if ($rd) { print $rd; exit 0; }
+		FAQ::OMatic::Auth::ensurePerm('-item'=>'',
+			'-operation'=>'PermReplaceBag',
+			'-restart'=>FAQ::OMatic::commandName(),
+			'-cgi'=>$cgi,
+			'-xreason'=>'replace',
+			'-failexit'=>1);
 	} else {
 		# new bag name
-		my $rd = FAQ::OMatic::Auth::ensurePerm('', 'PermNewBag',
-			FAQ::OMatic::commandName(), $cgi, 0);
-		if ($rd) { print $rd; exit 0; }
+		FAQ::OMatic::Auth::ensurePerm('-item'=>'',
+			'-operation'=>'PermNewBag',
+			'-restart'=>FAQ::OMatic::commandName(),
+			'-cgi'=>$cgi,
+			'-failexit'=>1);
 	}
 
 	my $bagDescName = $bagName.".desc";
@@ -66,15 +72,15 @@ sub main {
 	my $sizeHeight = $bagDesc->{'SizeHeight'} || '';
 
 	if ($bagName ne '') {
-		$rt .= "<h3>Replace bag <i>$bagName</i>:</h3>\n";
+		$rt .= "<h3>".gettext("Replace bag")." <i>$bagName</i>:</h3>\n";
 	} else {
 		my $item = new FAQ::OMatic::Item($params->{'file'});
 		my $itemTitle = $item->getTitle();
 		my $partnum = $params->{'partnum'};
 		$partnum = -1 if (not defined $partnum);
-		$rt .= "Upload new bag to show in the "
+		$rt .= gettext("Upload new bag to show in the")." "
 			.FAQ::OMatic::cardinal($partnum+1)
-			." part in <b>$itemTitle</b>.\n";
+			." ".gettext("part in")." <b>$itemTitle</b>.\n";
 	}
 
 	$rt .= "<table>\n";
@@ -87,34 +93,29 @@ sub main {
 		$rt .= 
 		"<input type=hidden name=\"_bagName\" value=\"$bagName\" size=30>\n";
 	} else {
-		$rt .= "<tr><td align=right valign=top>Bag name:</td><td valign=top>"
+		$rt .= "<tr><td align=right valign=top>".gettext("Bag name:")."</td><td valign=top>"
 			."<input type=text name=\"_bagName\" value=\"\" size=30>"
-			."<br><i>The bag name is used as a filename, so it is restricted "
-			."to only contain letters, "
-            ."numbers, underscores (_), hyphens (-), and periods (.). "
-			."It should also carry a meaningful extension (such as .gif) so "
-			."that web browsers will know what to do with the data."
+			."<br><i>".gettext("The bag name is used as a filename, so it is restricted to only contain letters, numbers, underscores (_), hyphens (-), and periods (.). It should also carry a meaningful extension (such as .gif) so that web browsers will know what to do with the data.")
 			."</td></tr>\n";
 	}
-	$rt .= "<tr><td align=right>Bag data:</td><td>"
+	$rt .= "<tr><td align=right>".gettext("Bag data:")."</td><td>"
 			."<input type=file name=\"_bagData\">";
 	if ($bagName ne '') {
-			$rt .= " (Leave blank to keep original bag data and "
-				."change only the associated information below.)";
+			$rt .= " ".gettext("(Leave blank to keep original bag data and change only the associated information below.)");
 	}
 	$rt .= "</td></tr>\n";
 
 	$rt .= "<tr><td colspan=2>"
-		."If this bag is an image, fill in its dimensions.</td></tr>\n"
-		."<td align=right>Width:</td><td align=left>"
+		.gettext("If this bag is an image, fill in its dimensions.")."</td></tr>\n"
+		."<td align=right>".gettext("Width:")."</td><td align=left>"
 		."<input type=text name=\"_sizeWidth\" value=\"$sizeWidth\" size=6>\n"
-		."Height: "
+		.gettext("Height:")." "
 		."<input type=text name=\"_sizeHeight\" value=\"$sizeHeight\" size=6>"
 		."</td></tr>\n";
 
 	$rt .= "<tr><td></td><td>"
-			."<input type=submit name=\"_submit\" value=\"Submit Changes\">\n";
-	$rt .= "<input type=reset name=\"_reset\" value=\"Revert\">\n"
+			."<input type=submit name=\"_submit\" value=\"".gettext("Submit Changes")."\">\n";
+	$rt .= "<input type=reset name=\"_reset\" value=\"".gettext("Revert")."\">\n"
 			."</td></tr>\n";
 	$rt .= "</form>\n";
 	$rt .= "</table>\n";
@@ -125,3 +126,10 @@ sub main {
 }
 
 1;
+
+
+
+
+
+
+

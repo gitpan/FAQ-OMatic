@@ -36,7 +36,7 @@ use FAQ::OMatic::Item;
 use FAQ::OMatic::Help;
 
 sub main {
-	my $cgi = $FAQ::OMatic::dispatch::cgi;
+	my $cgi = FAQ::OMatic::dispatch::cgi();
 	
 	my $params = FAQ::OMatic::getParams($cgi);
 
@@ -83,7 +83,8 @@ this link, if it were a link.
 </HTML>
 __EOF__
 
-	print $cgi->header('-type'=>'text/html').$html;
+	print FAQ::OMatic::header($cgi, '-type'=>'text/html')
+		.$html;
 }
 
 1;

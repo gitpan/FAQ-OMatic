@@ -36,7 +36,7 @@ package FAQ::OMatic::Help;
 
 use FAQ::OMatic;
 
-my $helpIndex = {};
+my $helpIndex = {};		# constant; no mod_perl cache problems
 
 sub hr {
 	my $fileName = shift;
@@ -81,7 +81,7 @@ sub helpFor {
 	return FAQ::OMatic::button(
 		FAQ::OMatic::makeAref('-params'=>$params,
 			'-changedParams'=>{'file'=>$helpFile,
-				'showEditCmds'=>''},
+				'editCmds'=>'hide'},
 			'-target'=>'help'),
 		"HELP: $helpName")
 		.$punctuation
@@ -96,7 +96,7 @@ sub helpURL {
 
 	return FAQ::OMatic::makeAref('-params'=>$params,
 		'-changedParams'=>{'file'=>$file,
-			'showEditCmds'=>''},
+			'editCmds'=>'hide'},
 		'-target'=>'help',
 		'-refType'=>'url');
 }

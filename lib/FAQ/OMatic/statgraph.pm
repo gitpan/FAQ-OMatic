@@ -36,11 +36,10 @@ use FAQ::OMatic;
 use FAQ::OMatic::Item;
 use FAQ::OMatic::Log;
 
-my $width;
-my $height;
+use vars qw($width $height
+	$minx $rangex $basex $sizex
+	$miny $rangey $basey $sizey);	# file scope, for mod_perl
 
-my ($minx, $rangex, $basex, $sizex);
-my ($miny, $rangey, $basey, $sizey);
 sub calcx {
 	my ($arg) = shift;
 	return int($basex+min((($arg-($minx))/$rangex)*$sizex,$sizex));
@@ -71,7 +70,7 @@ sub emptygraph {
 	$image->filledRectangle(0, 0, $width, $height, $white);
 	$image->string(gdSmallFont, 0, 0, $message, $red);
 	print $image->gif;
-	exit 0;
+	FAQ::OMatic::myExit(0);
 }
 
 #given a range value, returns a nice round interval
@@ -130,14 +129,15 @@ sub rerange {
 }
 
 sub main {
-	my $cgi = $FAQ::OMatic::dispatch::cgi;
+	my $cgi = FAQ::OMatic::dispatch::cgi();
 
-	$cgi->cache('NO');	# recommend that netscape not cache this images
-	print $cgi->header(-type => "image/gif",
-					-expires => 0.000000001);
+	$cgi->cache('NO');	# recommend that netscape not cache this image
+	print FAQ::OMatic::header($cgi, 
+							'-type' => "image/gif",
+							 '-nph' => 1,
+						 '-expires' => 0.000000001);
 
-	FAQ::OMatic::getParams($cgi,'nolog');
-	my $params = \%FAQ::OMatic::theParams;
+	my $params = FAQ::OMatic::getParams($cgi,'nolog');
 	my $property = $params->{'property'};
 	my $duration = $params->{'duration'} || $FAQ::OMatic::Appearance::graphHistory;
 	my $resolution = int($params->{'resolution'} || '1');

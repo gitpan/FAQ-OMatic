@@ -35,10 +35,9 @@ use FAQ::OMatic;
 use FAQ::OMatic::Search;
 
 sub main {
-	my $cgi = $FAQ::OMatic::dispatch::cgi;
+	my $cgi = FAQ::OMatic::dispatch::cgi();
 	
-	FAQ::OMatic::getParams($cgi);
-	my $params = \%FAQ::OMatic::theParams;
+	my $params = FAQ::OMatic::getParams($cgi);
 
 	# Get the names of the recent files
 	my $matchset = FAQ::OMatic::Search::getRecentSet($params);
@@ -92,11 +91,7 @@ sub main {
 		$rt.=FAQ::OMatic::Appearance::itemRender($params, $itemboxes);
 	}
 	
-	$rt.=FAQ::OMatic::button(
-		FAQ::OMatic::makeAref('faq', {}),
-		'Return to FAQ');
-
-	$rt .= FAQ::OMatic::pageFooter($params);
+	$rt .= FAQ::OMatic::pageFooter($params, ['search', 'faq']);
 
 	print $rt;
 

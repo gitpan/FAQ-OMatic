@@ -36,7 +36,7 @@ use FAQ::OMatic::Groups;
 use FAQ::OMatic::Versions;
 
 sub main {
-	my $cgi = $FAQ::OMatic::dispatch::cgi;
+	my $cgi = FAQ::OMatic::dispatch::cgi();
 	my $params = FAQ::OMatic::getParams($cgi);
 
 	FAQ::OMatic::mirrorsCantEdit($cgi, $params);
@@ -45,9 +45,12 @@ sub main {
 	my $group = $params->{'group'};
 	my $member = $params->{'_member'};
 
-	my $rd = FAQ::OMatic::Auth::ensurePerm('', 'PermEditGroups',
-		FAQ::OMatic::commandName(), $cgi, 1);
-	if ($rd) { print $rd; exit 0; }
+	FAQ::OMatic::Auth::ensurePerm(
+		'-operation'=>'PermEditGroups',
+		'-restart'=>FAQ::OMatic::commandName(),
+		'-cgi'=>$cgi,
+		'-extraTime'=>1,
+		'-failexit'=>1);
 
 	if ($action eq 'add') {
 		FAQ::OMatic::Groups::validGroupName($group);
@@ -78,7 +81,7 @@ sub main {
 	}
 
 	my $url = FAQ::OMatic::makeAref('editGroups', {}, 'url');
-	print $cgi->redirect(FAQ::OMatic::urlBase($cgi).$url);
+	FAQ::OMatic::redirect($cgi, $url);
 }
 
 1;

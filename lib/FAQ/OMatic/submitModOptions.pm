@@ -35,7 +35,7 @@ use FAQ::OMatic;
 use FAQ::OMatic::Auth;
 
 sub main {
-	my $cgi = $FAQ::OMatic::dispatch::cgi;
+	my $cgi = FAQ::OMatic::dispatch::cgi();
 	
 	my $params = FAQ::OMatic::getParams($cgi);
 
@@ -47,9 +47,11 @@ sub main {
 			$params->{'file'}.") doesn't exist.");
 	}
 
-	my $rd = FAQ::OMatic::Auth::ensurePerm($item, 'PermModOptions',
-		'editModOptions', $cgi, 1);
-	if ($rd) { print $rd; exit 0; }
+	FAQ::OMatic::Auth::ensurePerm('-item'=>$item,
+		'-operation'=>'PermModOptions',
+		'-restart'=>'editModOptions',
+		'-cgi'=>$cgi,
+		'-failexit'=>1);
 	
 	# verify that an evil cache hasn't truncated a POST
 	if ($params->{'_zzverify'} ne 'zz') {
@@ -60,38 +62,15 @@ sub main {
 	$item->checkSequence($params);
 	$item->incrementSequence();
 
-	$item->setProperty('AttributionsTogether',
-		defined $params->{'_AttributionsTogether'} ? 1 : '');
-
-	if (defined $params->{'_Moderator'}) {
-		$item->setProperty('Moderator', $params->{'_Moderator'});
-	}
-	if (defined $params->{'_MailModerator'}) {
-		$item->setProperty('MailModerator', $params->{'_MailModerator'});
-	}
-	if (defined $params->{'_PermAddPart'}) {
-		$item->setProperty('PermAddPart', $params->{'_PermAddPart'});
-	}
-	if (defined $params->{'_PermUseHTML'}) {
-		$item->setProperty('PermUseHTML', $params->{'_PermUseHTML'});
-	}
-	if (defined $params->{'_PermEditPart'}) {
-		$item->setProperty('PermEditPart', $params->{'_PermEditPart'});
-	}
-	if (defined $params->{'_PermEditItem'}) {
-		$item->setProperty('PermEditItem', $params->{'_PermEditItem'});
-	}
-	if (defined $params->{'_PermModOptions'}) {
-		$item->setProperty('PermModOptions', $params->{'_PermModOptions'});
-	}
-	if (defined $params->{'_PermNewBag'}) {
-		$item->setProperty('PermNewBag', $params->{'_PermNewBag'});
-	}
-	if (defined $params->{'_PermReplaceBag'}) {
-		$item->setProperty('PermReplaceBag', $params->{'_PermReplaceBag'});
-	}
-	if (defined $params->{'_PermEditGroups'}) {
-		$item->setProperty('PermEditGroups', $params->{'_PermEditGroups'});
+	# set each defined permission from $params
+	my $pi = FAQ::OMatic::Item::permissionsInfo();
+	my @permSet = map { $pi->{$_}->{'name'} } sort keys %{$pi};
+	push @permSet, 'Moderator', 'MailModerator', 'RelaxChildPerms';
+	my $perm;
+	foreach $perm (@permSet) {
+		if (defined $params->{"_$perm"}) {
+			$item->setProperty($perm, $params->{"_$perm"});
+		}
 	}
 
 	$item->saveToFile();
@@ -104,7 +83,7 @@ sub main {
 		'-changedParams'=>{'checkSequenceNumber'=>''},
 		'-refType'=>'url');
 
-	print $cgi->redirect(FAQ::OMatic::urlBase($cgi).$url);
+	FAQ::OMatic::redirect($cgi, $url);
 }
 
 1;

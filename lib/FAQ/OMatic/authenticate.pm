@@ -34,12 +34,13 @@ use FAQ::OMatic::Item;
 use FAQ::OMatic;
 use FAQ::OMatic::Auth;
 use FAQ::OMatic::Help;
+use FAQ::OMatic::I18N;
 
 sub main {
-	my $cgi = $FAQ::OMatic::dispatch::cgi;
+	my $cgi = FAQ::OMatic::dispatch::cgi();
 	my $params = FAQ::OMatic::getParams($cgi);
 
-	my $rt = FAQ::OMatic::pageHeader();
+	my $rt = FAQ::OMatic::pageHeader($params, ['help', 'faq']);
 
 	my $what = $params->{'_restart'};
 	my $whoIsAllowed = FAQ::OMatic::Auth::authError($params->{'_reason'},
@@ -51,16 +52,15 @@ sub main {
 			FAQ::OMatic::makeAref('changePass',
 				{'_pass_pass' => '',
 			 	'_pass_id' => '' }, '', 'saveTransients'),
-			"Set a New Password");
+			gettext("Set a New Password"));
 	my $newLoginButton .= FAQ::OMatic::button(
 			FAQ::OMatic::makeAref('changePass',
 				{'_pass_pass' => '',
 			 	'_pass_id' => '' }, '', 'saveTransients'),
-			"Create a New Login");
+			gettext("Create a New Login"));
 
 	if ($params->{'badPass'}) {
-		$rt.="That password is invalid. If you've forgotten your old "
-			."password, you can $newPassButton.\n";
+		$rt.=gettext("That password is invalid. If you've forgotten your old password, you can")." $newPassButton.\n";
 
 		delete $params->{'badPass'};
 		# We had to use a nontransient param because the func that sets
@@ -78,58 +78,49 @@ sub main {
 		# no better.
 	} else {
 		if ($what eq 'addItem') {
-			$rt.="New items can only be added by $whoIsAllowed.";
+			$rt.=gettext("New items can only be added by")." $whoIsAllowed.";
 		} elsif ($what eq 'addPart') {
-			$rt.="New text parts can only be added by $whoIsAllowed.";
+			$rt.=gettext("New text parts can only be added by")." $whoIsAllowed.";
 		} elsif ($what eq 'delPart') {
-			$rt.="Text parts can only be removed by $whoIsAllowed.";
+			$rt.=gettext("Text parts can only be removed by")." $whoIsAllowed.";
 		} elsif ($what eq 'editPart' or $what eq 'submitPart') {
 			my $xreason = $params->{'_xreason'} || '';
 			if ($xreason eq 'useHTML') {
-				$rt.="This part contains raw HTML. To avoid pages with ";
-				$rt.="invalid HTML, the moderator has specified that ";
-				$rt.="only $whoIsAllowed can edit HTML parts. If you are $whoIsAllowed, ";
-				$rt.="you may authenticate yourself with this form.";
+				$rt.=gettext("This part contains raw HTML. To avoid pages with invalid HTML, the moderator has specified that only")." $whoIsAllowed ".gettext("can edit HTML parts.")." ";
+				$rt.=gettext("If you are")." $whoIsAllowed, ".gettext("you may authenticate yourself with this form.");
 			} elsif ($params->{'_insertpart'}) {
-				$rt.="Text parts can only be added by $whoIsAllowed.";
+				$rt.=gettext("Text parts can only be added by")." $whoIsAllowed.";
 			} else {
-				$rt.="Text parts can only be edited by $whoIsAllowed.";
+				$rt.=gettext("Text parts can only be edited by")." $whoIsAllowed.";
 			}
 		} elsif ($what eq 'editItem' or $what eq 'submitItem') {
-			$rt.="The title and options for this item can only "
-				."be edited by $whoIsAllowed.";
+			$rt.=gettext("The title and options for this item can only be edited by")." $whoIsAllowed.";
 		} elsif ($what eq 'editModOptions' or $what eq 'submitModOptions') {
-			$rt.="The moderator options can only be edited by $whoIsAllowed.";
+			$rt.=gettext("The moderator options can only be edited by")." $whoIsAllowed.";
 		} elsif ($what eq 'moveItem' or $what eq 'submitMove') {
 			if ($whoIsAllowed =~ m/moderator/) {
-				$rt.="This item can only be moved by someone who can edit both "
-					."the source and destination parent items.";
+				$rt.=gettext("This item can only be moved by someone who can edit both the source and destination parent items.");
 			} else {
-				$rt.="This item can only be moved by $whoIsAllowed.";
+				$rt.=gettext("This item can only be moved by")." $whoIsAllowed.";
 			}
 		} elsif ($what eq 'selectBag'
 			or $what eq 'editBag'
 			or $what eq 'submitBag') {
 			my $xreason = $params->{'_xreason'} || '';
 			if ($xreason eq 'replace') {
-				$rt.="Only $whoIsAllowed can replace existing bags.";
+				$rt.=gettext("Only")." $whoIsAllowed ".gettext("can replace existing bags.");
 			} else {
-				$rt.="Only $whoIsAllowed can post bags.";
+				$rt.=gettext("Only")." $whoIsAllowed ".gettext("can post bags.");
 			}
 		} elsif ($what eq 'install') {
-			$rt.="The FAQ-O-Matic can only be configured by $whoIsAllowed.";
+			$rt.=gettext("The FAQ-O-Matic can only be configured by")." $whoIsAllowed.";
 		} else {
-			$rt.="The operation you attempted ($what) can "
-				."only be done by $whoIsAllowed.";
+			$rt.=gettext("The operation you attempted")." ($what) ".gettext("can only be done by")." $whoIsAllowed.";
 		}
 	
-		$rt .= "<ul><li>If you have never established a password to use with "
-			."FAQ-O-Matic, you can $newLoginButton.\n";
-		$rt .= "<li>If you have forgotten your password, "
-			."you can $newPassButton.\n";
-		$rt .= "<li>If you have already logged in earlier today, it may be "
-			."that the token I use to identify you has expired. "
-			."Please log in again.\n";
+		$rt .= "<ul><li>".gettext("If you have never established a password to use with FAQ-O-Matic, you can")." $newLoginButton.\n";
+		$rt .= "<li>".gettext("If you have forgotten your password, you can")." $newPassButton.\n";
+		$rt .= "<li>".gettext("If you have already logged in earlier today, it may be that the token I use to identify you has expired. Please log in again.")."\n";
 		$rt .= "</ul>\n";
 	}
 
@@ -140,12 +131,13 @@ sub main {
 				'_none_id'=>'' },
 			'POST', 'saveTransients');
 
-	if ($params->{'_reason'} <= 3) {
+	$params->{'_reason'} =~ m/^(\d+)/;
+	if ($1 <= 3) {
 		$rt .= "<p>"
-			."Please offer one of the following forms of identification:\n";
+			.gettext("Please offer one of the following forms of identification:")."\n";
 	
 		$rt .= "<p><input type=radio name=\"auth\" value=\"none\" checked>\n";
-		$rt .= " No authentication, but my email address is:\n";
+		$rt .= " ".gettext("No authentication, but my email address is:")."\n";
 		$rt .= "<br>Email: "
 			."<input type=text name=\"_none_id\" value=\"\" size=60>\n";
 	}
@@ -153,9 +145,9 @@ sub main {
 	$rt .= "<p><input type=radio name=\"auth\" value=\"pass\"";
 	$rt .= " checked" if ($params->{'_reason'} > 3);
 	$rt .= ">\n";
-	$rt .= " Authenticated login:\n";
+	$rt .= " ".gettext("Authenticated login:")."\n";
 	$rt .= "<br>Email: <input type=text name=\"_pass_id\" value=\"\" size=60>\n";
-	$rt .= "<br>Password: <input type=password name=\"_pass_pass\" value=\"\" size=10>\n";
+	$rt .= "<br>".gettext("Password:")." <input type=password name=\"_pass_pass\" value=\"\" size=10>\n";
 
 	$rt .= "<p><input type=submit name=\"_submit\" value=\"Login\">\n";
 	$rt .= "</form>\n";
@@ -178,3 +170,14 @@ sub main {
 }
 
 1;
+
+
+
+
+
+
+
+
+
+
+

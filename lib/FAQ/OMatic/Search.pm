@@ -38,10 +38,9 @@ use FAQ::OMatic::Item;
 use FAQ::OMatic::Words;
 use FAQ::OMatic;
 
-my %wordDB;
-
 sub openWordDB {
-	return if (defined %wordDB);
+	return if (defined FAQ::OMatic::getLocal('wordDB'));
+	my %wordDB;
 	if (not dbmopen (%wordDB, "$FAQ::OMatic::Config::metaDir/search", 400)) {
 		FAQ::OMatic::gripe('abort', "Can't open dbm search database. "
 			."Have you run buildSearchDB? (Should I?)");
@@ -54,19 +53,28 @@ sub openWordDB {
 		FAQ::OMatic::gripe('abort', "Can't open search.index. "
 			."Have you run buildSearchDB? (Should I?)");
 	}
+	FAQ::OMatic::setLocal('wordDB', \%wordDB);
 }
 
 sub closeWordDB {
-	dbmclose %wordDB;
-	undef %wordDB;
+	my $wordDB = FAQ::OMatic::getLocal('wordDB');
+	dbmclose %{$wordDB};
+	undef %{$wordDB};
 	close WORDSFILE;
 	close INDEXFILE;
 }
 
 sub getIndices {
 	my $word = shift;
-	return split(' ', $wordDB{$word});
+	my $wordDB = FAQ::OMatic::getLocal('wordDB');
+	my $pair = $wordDB->{$word};
+
 	# returns indexseek,wordseek pair
+	# THANKS to Vicki Brown <vlb@cfcl.com> and jon * <jon@clearink.com>
+	# for reporting unitialized value errors in this code.
+	return defined($pair)
+		? split(' ', $pair)
+		: (undef,undef);
 }
 
 sub getWordClass {
@@ -77,14 +85,16 @@ sub getWordClass {
 	
 	my ($indexseek, $wordseek) = getIndices($word);
 
-	#grab all words in wordsfile with $word as a prefix
-	seek WORDSFILE, $wordseek, 0;
-	while (<WORDSFILE>) {
-		chomp;
-		if (m/^$word/) {
-			push @wordclass, $_;
-		} else {
-			last;
+	if (defined $indexseek) {
+		#grab all words in wordsfile with $word as a prefix
+		seek WORDSFILE, $wordseek, 0;
+		while (<WORDSFILE>) {
+			chomp;
+			if (m/^$word/) {
+				push @wordclass, $_;
+			} else {
+				last;
+			}
 		}
 	}
 
@@ -98,6 +108,7 @@ sub getMatchesForClass {
 	my $word;
 	foreach $word (@{$classref}) {
 		my ($indexseek,$wordseek) = getIndices($word);
+		next if (not defined $indexseek);
 		seek INDEXFILE, $indexseek, 0;
 		while (<INDEXFILE>) {
 			chomp;

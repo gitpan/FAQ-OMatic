@@ -35,7 +35,7 @@ use FAQ::OMatic::Item;
 use FAQ::OMatic::install;
 
 sub main {
-	my $cgi = $FAQ::OMatic::dispatch::cgi;
+	my $cgi = FAQ::OMatic::dispatch::cgi();
 	
 	my $params = FAQ::OMatic::getParams($cgi);
 
@@ -51,7 +51,7 @@ sub main {
 	$rt .= "bagsURL $FAQ::OMatic::Config::bagsURL\n";
 
 	# send mirrorable config params
-	my $configInfo = $FAQ::OMatic::install::configInfo;
+	my $configInfo = FAQ::OMatic::install::configInfo();
 	my $map = FAQ::OMatic::install::readConfig();
 	my $key;
 	foreach $key (sort keys %{$configInfo}) {
@@ -67,7 +67,8 @@ sub main {
 	foreach $file (@allItems) {
 		my $item = new FAQ::OMatic::Item($file);
 		my $lms = $item->{'LastModifiedSecs'};
-		$rt.="item $file $lms\n";
+		my $whatIsIt = $item->whatAmI();
+		$rt.="item $file $lms $whatIsIt\n";
 	}
 
 	# send meta catalog

@@ -29,16 +29,16 @@ use strict;
 
 package FAQ::OMatic::ColorPicker;
 
-my $f16 = 1/6;
-my $f26 = 2/6;
-my $f36 = 3/6;
-my $f46 = 4/6;
-my $f56 = 5/6;
-my $f66 = 1;
-
 sub findRGB {
 	my $horizFrac = shift;	# fraction of distance along horizontal of image
 	my $vertFrac = shift;
+
+	my $f16 = 1/6;
+	my $f26 = 2/6;
+	my $f36 = 3/6;
+	my $f46 = 4/6;
+	my $f56 = 5/6;
+	my $f66 = 1;
 
 	my ($hue, $red, $green, $blue);
 
@@ -82,3 +82,5 @@ sub findRGB {
 
 	return ($red,$green,$blue);
 }
+
+1;

@@ -39,6 +39,7 @@ use FAQ::OMatic;
 use FAQ::OMatic::Item;
 use FAQ::OMatic::Appearance;
 use FAQ::OMatic::Set;
+use FAQ::OMatic::I18N;
 use Text::Tabs;
 
 sub new {
@@ -55,9 +56,9 @@ sub new {
 	return $part;
 }
 
-sub loadFromFile {
+sub loadFromCodeClosure {
 	my $self = shift;
-	my $fileHandle = shift;
+	my $closure = shift;	# a sub that returns one line for each call
 	my $filename = shift;
 	my $item = shift;
 	my $partnum = shift;
@@ -65,7 +66,7 @@ sub loadFromFile {
 	my ($lines) = 0;
 	my ($text) = "";
 
-	while (<$fileHandle>) {
+	while ($_ = &{$closure}) {
 		chomp;
 		my ($key,$value) = FAQ::OMatic::keyValue($_);
 		if ($key eq 'Author') {
@@ -101,22 +102,22 @@ sub loadFromFile {
 			}
 		} else {
 			FAQ::OMatic::gripe('problem',
-			"FAQ::OMatic::Part::loadFromFile was confused by this header in file $filename: \"$_\"");
+			"FAQ::OMatic::Part::loadFromCodeClosure was confused by this header in file $filename: \"$_\"");
 		}
 	}
-	while (($lines>0) and ($_=<$fileHandle>)) {
+	while (($lines>0) and ($_ = &{$closure})) {
 		$text .= $_;
 		$lines--;
 	}
 	# verify that EndPart shows up in the right place
-	$_ = <$fileHandle>;
+	$_ = &{$closure};
 	if (not defined $_) {
 		FAQ::OMatic::gripe('problem',
-		"FAQ::OMatic::Part::loadFromFile file $filename part $partnum didn't end right.");
+		"FAQ::OMatic::Part::loadFromCodeClosure file $filename part $partnum didn't end right.");
 	}
 	my ($key,$value) = FAQ::OMatic::keyValue($_);
 	if (($key ne 'EndPart') or ($value != $partnum)) {
-		FAQ::OMatic::gripe('problem', "FAQ::OMatic::Part::loadFromFile file $filename part $partnum didn't end with EndPart.");
+		FAQ::OMatic::gripe('problem', "FAQ::OMatic::Part::loadFromCodeClosure file $filename part $partnum didn't end with EndPart.");
 	}
 	$self->{'Text'} = $text;
 }
@@ -179,11 +180,10 @@ sub displayHTML {
 	my $item = shift;
 	my $partnum = shift;
 	my $params = shift;
-	my $showAttributions = $params->{'showAttributions'} || 'default';
+	my $showAttributions = FAQ::OMatic::getParam($params, 'showAttributions');
 	my @boxes = ();		# return one table row per @boxes element
 
 	my $rt = '';
-	#$rt .= FAQ::OMatic::Appearance::partStart($params,$self);
 
 	my $type = $self->{'Type'} || '';
 	my $tmp = FAQ::OMatic::insertLinks($params, $self->{'Text'},
@@ -230,14 +230,14 @@ sub displayHTML {
 		# THANKS: DateOfPart courtesy Scott Hardin <scott@cs.dlh.de>
 		my ($date_string) = '';
 		if ($self->{'LastModifiedSecs'} and
-			($params->{'showLastModified'} or $FAQ::OMatic::Config::showLastModifiedAlways)) {
+			FAQ::OMatic::getParam($params, 'showLastModified') eq 'show') {
 		        $date_string = FAQ::OMatic::Item::compactDate(
 						$self->{'LastModifiedSecs'}) . " ";
 		}
 		$rt .= "<i>"
 			.$date_string
 			.join(", ",
-				map { FAQ::OMatic::mailtoReference($_) }
+				map { FAQ::OMatic::mailtoReference($params, $_) }
 					$self->{'Author-Set'}->getList()
 				)."</i>";
 	}
@@ -250,7 +250,8 @@ sub displayHTML {
 				'color'=>$color };
 	# that's the end of the main part content
 
-	if ($params->{'showEditCmds'} and $item->ordinaryItem()) {
+	if (FAQ::OMatic::getParam($params, 'editCmds') ne 'hide'
+		and $item->ordinaryItem()) {
 		my $aoc = $item->isCategory ? 'cat' : 'ans';
 		my $filename = $item->{'filename'};
 		my @rightEdits = ();
@@ -262,7 +263,7 @@ sub displayHTML {
 				'-changedParams'=>{'file'=>$filename,
 							'partnum'=>$partnum,
 							'checkSequenceNumber'=>$item->{'SequenceNumber'}}),
-			"Edit This Text",
+			gettext("Edit This Text"),
 			"$aoc-edit-part", $params),
 				'size'=>'edit'};
 		push @rightEdits, {'text'=>FAQ::OMatic::button(
@@ -273,7 +274,7 @@ sub displayHTML {
 							'_insertpart'=>1,
 							'_duplicate'=>1,
 							'checkSequenceNumber'=>$item->{'SequenceNumber'}}),
-			"Duplicate This Text",
+			gettext("Duplicate This Text"),
 			"$aoc-dup-part", $params),
 				'size'=>'edit'};
 		if ($type ne 'directory') {
@@ -284,7 +285,7 @@ sub displayHTML {
 						'partnum'=>$partnum,
 						'checkSequenceNumber'=>$item->{'SequenceNumber'}}
 				),
-			"Remove This Text",
+			gettext("Remove This Text"),
 			"$aoc-del-part", $params),
 				'size'=>'edit'};
 		} elsif (scalar($self->getChildren())==0) {
@@ -297,7 +298,7 @@ sub displayHTML {
 						'_removePart'=>1,
 						'checkSequenceNumber'=>$item->{'SequenceNumber'}}
 				),
-			"Remove This Text",
+			gettext("Remove This Text"),
 			"$aoc-del-part", $params),
 				'size'=>'edit'};
 		}
@@ -309,14 +310,14 @@ sub displayHTML {
 					'-params'=>$params,
 					'-changedParams'=>{'file'=>$filename,
 						'_target'=>$baglist[0]}),
-				"Replace $baglist[0]<br>with new upload"),
+				gettext("Replace")." $baglist[0]<br>".gettext("with new upload")),
 					'size'=>'edit'};
 		} elsif (scalar(@baglist)>1) {
 			push @rightEdits, {'edit'=>FAQ::OMatic::button(
 				FAQ::OMatic::makeAref('-command'=>'selectBag',
 					'-params'=>$params,
 					'-changedParams'=>{'file'=>$filename}),
-				"Select bag to replace with new upload"),
+				gettext("Select bag to replace with new upload")),
 					'size'=>'edit'};
 		}
 
@@ -325,7 +326,7 @@ sub displayHTML {
 				'-params'=>$params,
 				'-changedParams'=>{'file'=>$filename,
 					'partnum'=>$partnum}),
-			"Upload New Bag Here"),
+			gettext("Upload New Bag Here")),
 				'size'=>'edit'};
 
 		# separate block of editing commands that don't apply to a specific
@@ -338,7 +339,7 @@ sub displayHTML {
 							'partnum'=>$partnum,
 							'_insertpart'=>1,
 							'checkSequenceNumber'=>$item->{'SequenceNumber'}}),
-				"Insert Text Here",
+				gettext("Insert Text Here"),
 			"$aoc-ins-part", $params),
 				'size'=>'edit'};
 		push @belowEdits, {'text'=>FAQ::OMatic::button(
@@ -349,11 +350,12 @@ sub displayHTML {
 							'_insertpart'=>1,
 							'_upload'=>1,
 							'checkSequenceNumber'=>$item->{'SequenceNumber'}}),
-				"Insert Uploaded Text Here",
+				gettext("Insert Uploaded Text Here"),
 			"$aoc-ins-part", $params),
 				'size'=>'edit'};
 
 		return { 'type'=>'three',
+			'part'=>$self,
 			'body'=>$partBox,
 			'editbody'=>\@rightEdits,
 			'afterbody'=>\@belowEdits,
@@ -363,7 +365,72 @@ sub displayHTML {
 	# no editing boxes
 	return { 'type'=>'wide',
 		'text'=>$partBox->{'text'},
-		'color'=>$partBox->{'color'}
+		'color'=>$partBox->{'color'},
+		'part'=>$self,
+		};
+}
+
+sub displayText {
+	my $self = shift;
+	my $item = shift;
+	my $partnum = shift;
+	my $params = shift;
+	my $showAttributions = FAQ::OMatic::getParam($params, 'showAttributions');
+	my @boxes = ();		# return one table row per @boxes element
+
+	my $rt = '';
+
+	my $type = $self->{'Type'} || '';
+	my $tmp = FAQ::OMatic::insertLinksText($params, $self->{'Text'},
+					   $type eq 'html',
+					   $type eq 'directory');
+	if ($type eq 'monospaced'){
+		## monospaced text -- display it as-is
+	} elsif ($type eq 'html') {
+		## HTML text. Eliminate all tags.
+		$tmp =~ s#<([^>]("[^"]*")?)*>##sg;
+	} else {
+		## standard format: double-CRs are line breaks, triple-crs are
+		## white-space, indented lines shouldn't be touched.
+		my @whitespaces = split("\n\n\n", $tmp);
+		my $out = '';
+		$Text::Wrap::columns = 70;
+		for (my $i=0; $i<@whitespaces; $i++) {
+			my @lb = split("\n\n", $whitespaces[$i]);
+			my @paragraph = map { wrapLeftLines($_) } @lb;
+			$out .= join("\n", @paragraph);
+			$out =~ s/\n?\n?$/\n\n/s;	# ensure text ends in a blank line
+		}
+		# TODO: already-indented lines are not to be wrapped.
+		$tmp = $out;
+	}
+	$rt .= $tmp;
+
+	# turn off attributions if this part has the HideAttributions property,
+	# or if the item has the AttributionsTogether property.
+	if ($showAttributions eq 'default') {
+		if ($self->{'HideAttributions'} or $item->{'AttributionsTogether'}) {
+			$showAttributions = 'hide';
+		} else {
+			$showAttributions = 'all';
+		}
+	}
+	if ($showAttributions eq 'all') {
+		my @authors = $self->{'Author-Set'}->getList();
+		my $brt = FAQ::OMatic::authorList($params, \@authors);
+		if ($self->{'LastModifiedSecs'} and
+			FAQ::OMatic::getParam($params, 'showLastModified') eq 'show') {
+				$brt = FAQ::OMatic::Item::compactDate(
+						$self->{'LastModifiedSecs'})
+					." ".$brt;
+		}
+		$rt.=$brt;
+	}
+
+	# no editing boxes
+	return { 'type'=>'wide',
+		'text'=>$rt,
+		'part'=>$self,
 		};
 }
 
@@ -422,23 +489,22 @@ sub displayPartEditor {
 		# Upload file instead of typing in textarea
 		# THANKS: to John Goerzen
 		$rt .= "<p><input type=hidden name=\"_inputType\" value=\"file\">\n"
-			."Upload file: ";
+			.gettext("Upload file:")." ";
 		$rt .= "<input type=file name=\"_newTextFile\"><br>";
 		if ($self->{'Text'} ne '') {
 			my @count = ($self->{'Text'} =~ m/\n/gs);
 			my $count = scalar(@count);
-			$rt .= "Warning: file contents will <b>replace</b> "
-					."previous text ($count lines).\n";
+			$rt .= gettext("Warning: file contents will <b>replace</b> previous text")                                                ." ($count lines).\n";
 		}
 	}
 
 	# HideAttributions
 	$rt .= "<p><input type=checkbox name=\"_HideAttributions\"";
 	$rt .= " CHECKED" if $self->{'HideAttributions'};
-	$rt .= "> Hide Attributions\n";
+	$rt .= "> ".gettext("Hide Attributions")."\n";
 
 	# Type
-	$rt .= "<p><dl>Format text as:\n<dl>\n";
+	$rt .= "<p><dl>".gettext("Format text as:")."\n<dl>\n";
 
 	if ($self->{'Type'} eq 'directory') {
 # TODO: delete this commented block. superseded by submitCatToAns.
@@ -448,22 +514,22 @@ sub displayPartEditor {
 #				."item into an answer item) if text box above is empty.\n";
 #		}
 		$rt .= "<br><input type=radio name=\"_Type\" value=\"directory\""
-			."  CHECKED> Directory\n";
+			."  CHECKED> ".gettext("Directory")."\n";
 	} else {
 		$rt .= "<br><input type=radio name=\"_Type\" value=\"\"";
 		$rt .= " CHECKED" if ($self->{'Type'} eq '');
-		$rt .= "> Natural text\n";
+		$rt .= "> ".gettext("Natural text")."\n";
 
 		$rt .= "<br><input type=radio name=\"_Type\" value=\"monospaced\"";
 		$rt .= " CHECKED" if ($self->{'Type'} eq 'monospaced');
-		$rt .= "> Monospaced text (code, tables)\n";
+		$rt .= "> ".gettext("Monospaced text (code, tables)")."\n";
 
 		# THANKS: John Goerzen supplied the patches to introduce
 		# THANKS: 'html'-type parts.
-		my $rd = FAQ::OMatic::Auth::ensurePerm($item, 'PermUseHTML',
+		my $url = FAQ::OMatic::Auth::ensurePerm($item, 'PermUseHTML',
 			 FAQ::OMatic::commandName(), 
-			 $FAQ::OMatic::dispatch::cgi, 0, 'useHTML');
-		if ($rd) {
+			 FAQ::OMatic::dispatch::cgi(), 0, 'useHTML');
+		if ($url) {
 			# $rt .= "<p><i>Untranslated HTML</i>\n";
 			# THANKS: Jim Adler says: why even admit that it exists?
 			# problem: how can a user authenticate if he should be able
@@ -471,7 +537,7 @@ sub displayPartEditor {
 		} else {
 	    	$rt .= "<br><input type=radio name=\"_Type\" value=\"html\"";
 	    	$rt .= " CHECKED" if ($self->{'Type'} eq 'html');
-	    	$rt .= "> Untranslated HTML\n";
+	    	$rt .= "> ".gettext("Untranslated HTML")."\n";
 		}
 	}
 	$rt .= "</dl></dl>\n";
@@ -482,8 +548,8 @@ sub displayPartEditor {
 	# table to bring the Submit button up higher so users don't have
 	# to scroll just to get past the rest of the form.
 	$rt.="<td align=left valign=top width=\"50%\">\n";
-	$rt .= "<br><input type=submit name=\"_submit\" value=\"Submit Changes\">\n";
-	$rt .= "<br><input type=reset name=\"_reset\" value=\"Revert\">\n";
+	$rt .= "<br><input type=submit name=\"_submit\" value=\"".gettext("Submit Changes")."\">\n";
+	$rt .= "<br><input type=reset name=\"_reset\" value=\"".gettext("Revert")."\">\n";
 	$rt .= "<input type=hidden name=\"_zzverify\" value=\"zz\">\n";
 		# this lets the submit script check that the whole POST was
 		# received.
@@ -559,11 +625,9 @@ sub getBags() {
 	my $i;
 	my @baglist = ();
 	for ($i=0; $i<scalar(@regexlist); $i+=4) {
-		if ($regexlist[$i+1] ne '') {
-			push @baglist, $regexlist[$i+1];
-		} else {
-			push @baglist, $regexlist[$i+3];
-		}
+		push @baglist, $regexlist[$i+1] || $regexlist[$i+3];
+		# Thanks to John Nolan <JNolan@cdnow.com> for finding another
+		# Use of Uninitialized Value -w bug that was here.
 	}
 	# remove duplicates but keep order using a Set
 	my $bagset = new FAQ::OMatic::Set('keepOrdered');
@@ -654,6 +718,57 @@ sub getSet {
 	my $setName = shift;
 
 	return $self->{$setName} || new FAQ::OMatic::Set;
+}
+
+sub wrapLeftLines {
+	# wrap lines that are left-justified; preserve the others
+	my $text = shift;
+
+	my @lines = split(/\n/, $text);
+	my @buffer = ();
+	my $rt = '';
+	while (my $line = shift @lines) {
+		if ($line =~ m/^\s/) {
+			# a concrete line -- wrap prior buffer, pass concrete line
+			if (@buffer) {
+				$rt .= faqwrap(@buffer);
+				@buffer = ();
+			}
+			$rt.=$line."\n";
+		} else {
+			# a wrappable line -- group into buffer
+			push @buffer, $line;
+		}
+	}
+	# wrap remaining buffer
+	if (@buffer) {
+		$rt .= faqwrap(@buffer);
+		@buffer = ();
+	}
+	return $rt;
+}
+
+sub faqwrap {
+	my @lines = @_;
+
+	# Text::Wrap() is pretty broken. The docs say it doesn't die
+	# when given a word longer than $columns, but it still does.
+
+	my $rt="Text::Wrap() failed\n";
+	eval {
+		require Text::Wrap;
+		import Text::Wrap qw(wrap $columns);
+
+		$rt=wrap('','',@lines);
+	};
+	return $rt;
+}
+
+sub touch {
+	my $self = shift;
+	my $time = shift || time();
+
+	$self->setProperty('LastModifiedSecs', $time);
 }
 
 1;

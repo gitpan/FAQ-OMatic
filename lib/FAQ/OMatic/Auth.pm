@@ -45,8 +45,10 @@ use FAQ::OMatic;
 use FAQ::OMatic::Item;
 use FAQ::OMatic::AuthLocal;
 use FAQ::OMatic::Groups;
+use FAQ::OMatic::I18N;
 
-use vars qw($cookieExtra);
+# a global constant (accessible outside using my namespace)
+use vars qw($cookieExtra);	# constant, visible to maintenance.pm
 
 my $trustedID = undef;
 						# Perm values only:
@@ -56,7 +58,6 @@ my $trustedID = undef;
 						# '6' -- a perm that indicates a group membership
 						#		requirement. (actually "6 group_name".)
 						# $authQuality's and Perm* values:
-my $authQuality = undef;
 						# '5' -- user has provided proof that ID is correct
 						# '3' -- user has merely claimed this ID
 						# '1' -- no ID is offered
@@ -64,11 +65,12 @@ my $authQuality = undef;
 $cookieExtra = 600;		# 10 extra minutes to submit forms after filling
 						# them out so you don't have to worry about
 						# losing your text.
-my $cookieActual = $FAQ::OMatic::Config::cookieLife || 3600;
 
 sub getID {
-	my $params = \%FAQ::OMatic::theParams;
+	my $params = FAQ::OMatic::getParams();	# get cached params
 
+	my $trustedID = FAQ::OMatic::getLocal('trustedID');
+	my $authQuality = FAQ::OMatic::getLocal('authQuality');
 	if (not defined $trustedID) {
 		if (defined $params->{'auth'}) {
 			# use a user-overridable auth function
@@ -84,6 +86,8 @@ sub getID {
 		}
 	}
 
+	FAQ::OMatic::setLocal('trustedID', $trustedID);
+	FAQ::OMatic::setLocal('authQuality', $authQuality);
 	return ($trustedID,$authQuality);
 }
 
@@ -93,12 +97,13 @@ sub checkPerm {
 	my $operation = shift;
 
 	my ($id,$aq) = getID();
+
 	my $whocan = getInheritedProperty($item, $operation);
 
 	# if just some low quality of authentication is required, prove
 	# user has provided it:
 	$whocan =~ m/^(\d+)/;
-	my $whocanNum = $1 || 0;
+	my $whocanNum = $1 || 7;
 		# THANKS to Mikel Smith <granola@maserith.com>
 		# for pointing out that this code was generating warning messages
 	if ($whocanNum <= 5 and $whocanNum <= $aq) {
@@ -113,7 +118,6 @@ sub checkPerm {
 		return 0;
 	}
 
-	getInheritedProperty($item, 'Moderator');
 	# prove user has at least moderator priveleges
 	if ((($whocanNum==7) and ($aq==5))
 		and (($id eq getInheritedProperty($item, 'Moderator'))
@@ -145,8 +149,11 @@ sub getInheritedProperty {
 		$item = new FAQ::OMatic::Item('1');
 	}
 
-	return $item->{$property}
-		if (defined($item) and defined $item->{$property});
+	if (defined($item) and defined $item->{$property}) {
+		return wantarray()
+			? ($item->{$property}, $item)
+			: $item->{$property};
+	}
 
 	if (not defined($item)
 		or ($item eq '')
@@ -154,7 +161,9 @@ sub getInheritedProperty {
 		or ($depth > 80)) {
 
 		# no-one defines it, all the way up the chain
-		return getDefaultProperty($property);
+		return wantarray()
+			? (getDefaultProperty($property), undef)
+			: getDefaultProperty($property);
 	} else {
 		return getInheritedProperty($item->getParent(), $property, $depth+1);
 	}
@@ -162,16 +171,20 @@ sub getInheritedProperty {
 
 # fields: [ default value, isGlobal ]
 my %defaultProperties = (
-	'Moderator' => 		[ 'nobody', 0 ],
-	'MailModerator' => 	[ 0, 0 ],
-	'PermEditItem' =>	[ 5, 0 ],		# users with proven authentication
-	'PermEditPart' =>	[ 5, 0 ],
-	'PermAddPart' =>	[ 5, 0 ],
-	'PermModOptions' =>	[ 7, 0 ],		# moderator
-	'PermUseHTML' =>	[ 7, 0 ],
-	'PermNewBag' =>		[ 7, 1 ],
-	'PermReplaceBag' =>	[ 7, 1 ],
-	'PermEditGroups' =>	[ "6 Administrators", 1 ],
+	'Moderator' => 			[ 'nobody', 0 ],
+	'MailModerator' => 		[ 0, 0 ],
+	'PermEditPart' =>		[ 5, 0 ],		# users with proven authentication
+	'PermAddPart' =>		[ 5, 0 ],
+	'PermAddItem' =>		[ 5, 0 ],
+#	'PermEditItem' =>		[ 5, 0 ],		# (deprecated)
+	'PermEditTitle' =>		[ 7, 0 ],		# moderator
+	'PermEditDirectory' =>	[ 7, 0 ],
+	'PermModOptions' =>		[ 7, 0 ],
+	'PermUseHTML' =>		[ 7, 0 ],
+	'PermNewBag' =>			[ 7, 1 ],
+	'PermReplaceBag' =>		[ 7, 1 ],
+	'PermEditGroups' =>		[ "6 Administrators", 1 ],
+	'RelaxChildPerms' =>	[ 'norelax', 0],
 );
 
 sub getDefaultProperty {
@@ -200,31 +213,43 @@ sub isPropertyGlobal {
 # value, so if you require two ensurePerms, you return the redirect
 # with the higher qualityf value (so the user gets all the authentication
 # done at once). See submitMove.
-# A good use is:
-# my $rd = ensurePerm(...);
-# if ($rd) { print $rd; exit 0; }
 sub ensurePerm {
-	my $item = shift;
-	my $operation = shift;
-	my $restart = shift;	# which program to run to restart operation
+	my @p = @_;
+
+	my (
+		$item,
+		$operation,
+		$restart,			# which program to run to restart operation
 							# after user presents ID
-	my $cgi = shift;
-	my $extraTime = shift;	# allow slightly stale cookies, so that a
+		$cgi,
+		$extraTime,			# allow slightly stale cookies, so that a
 							# cookie isn't likely to time out between
 							# clicking "edit" and "submit", which annoys.
-	my $xreason = shift;	# an extra reason, needed to distinguish
+		$xreason,			# an extra reason, needed to distinguish
 							# two cases (modOptions) in editItem.
+		$failexit			# redirect and exit on failure
+	) = FAQ::OMatic::rearrange(
+		['item','operation','restart','cgi','extraTime','xreason',
+			'failexit'],
+		@p);
+	$item ||= '';
+
 	my $result = '';
 
+	my $cookieActual = $FAQ::OMatic::Config::cookieLife || 3600;
 	$cookieActual += $cookieExtra if ($extraTime);
+	FAQ::OMatic::setLocal('cookieActual', $cookieActual);
 
 	my $authFailed = checkPerm($item,$operation);
 
 	if ($authFailed) {
 		my $url = FAQ::OMatic::makeAref('authenticate',
 			{'_restart' => $restart, '_reason'=>$authFailed,
-			 '_xreason'=>$xreason}, 'url', 'saveTransients');
-		$result = $cgi->redirect(FAQ::OMatic::urlBase($cgi).$url);
+			 '_xreason'=>($xreason||'')}, 'url', 'saveTransients');
+		$result = FAQ::OMatic::redirect($cgi, $url, 'asString');
+		if ($failexit||'') {
+			FAQ::OMatic::redirect($cgi, $result);
+		}
 	}
 
 	return wantarray	? ($result, $authFailed)
@@ -240,7 +265,6 @@ sub newCookie {
 	($cookie,$cid,$ctime) = findCookie($id,'id');
 	return $cookie if (defined $cookie);
 
-	srand(time() ^ ($$ + ($$ << 15)) );	# camel book, 2 ed, p 223
 	$cookie = "ck".getRandomHex();
 
 	open COOKIEFILE, ">>$FAQ::OMatic::Config::metaDir/cookies";
@@ -251,7 +275,7 @@ sub newCookie {
 }
 
 sub getRandomHex {
-	srand(time() ^ ($$ + ($$ << 15)) );	# camel book, 2 ed, p 223
+	FAQ::OMatic::seedRand();
 	return sprintf "%04x%04x%04x", rand(1<<16), rand(1<<16), rand(1<<16);
 }
 
@@ -260,12 +284,17 @@ sub findCookie {
 	my $by = shift;
 
 	my ($cookie,$cid,$ctime);
-	open COOKIEFILE, "<$FAQ::OMatic::Config::metaDir/cookies";
+	if (not open COOKIEFILE, "<$FAQ::OMatic::Config::metaDir/cookies") {
+		return undef;
+	}
 	while (<COOKIEFILE>) {
 		chomp;
 		($cookie,$cid,$ctime) = split(' ');
 
 		# ignore dead cookies
+		my $cookieActual = FAQ::OMatic::getLocal('cookieActual')
+				|| $FAQ::OMatic::Config::cookieLife
+				|| 3600;
 		next if ((time() - $ctime) > $cookieActual);
 
 		if (($by eq 'id') and ($cid eq $match)) {
@@ -387,7 +416,7 @@ sub checkCryptPass {
 
 sub cryptPass {
 	my $pass = shift;
-	srand(time() ^ ($$ + ($$ << 15)) );	# camel book, 2 ed, p 223
+	FAQ::OMatic::seedRand();
 	my $salt = pack('cc', 65+rand(16), 65+rand(16));
 	#FAQ::OMatic::gripe('note', "crypt($pass,$salt) = ".crypt($pass,$salt));
 	return crypt($pass,$salt);
@@ -437,15 +466,15 @@ sub authenticate {
 	return ($id, $aq);
 }
 
-my %staticErrors = (
-	9 => 'the administrator of this Faq-O-Matic',
-	5 => 'someone who has proven their identification',
-	3 => 'someone who has offered identification',
-	1 => 'anybody' );
-
 sub authError {
 	my $reason = shift;
 	my $file = shift;
+
+	my %staticErrors = (
+		9 => gettext("the administrator of this Faq-O-Matic"),
+		5 => gettext("someone who has proven their identification"),
+		3 => gettext("someone who has offered identification"),
+		1 => gettext("anybody") );
 
 	return $staticErrors{$reason} if ($staticErrors{$reason});
 
@@ -455,14 +484,15 @@ sub authError {
 			my $item = new FAQ::OMatic::Item($file);
 			$modname = " (".getInheritedProperty($item, 'Moderator').")";
 		}
-		return "the moderator of the item".$modname;
+		return gettext("the moderator of the item").$modname;
 	}
 
 	if ($reason =~ m/^6/) {
-		return FAQ::OMatic::Groups::groupCodeToName($reason)." group members";
+		return FAQ::OMatic::Groups::groupCodeToName($reason)." ".gettext("group members");
 	}
 
 	return "I don't know who";
 }
 
 1;
+

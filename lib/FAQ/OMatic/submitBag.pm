@@ -34,9 +34,10 @@ use FAQ::OMatic::Item;
 use FAQ::OMatic;
 use FAQ::OMatic::Auth;
 use FAQ::OMatic::Bags;
+use FAQ::OMatic::I18N;
 
 sub main {
-	my $cgi = $FAQ::OMatic::dispatch::cgi;
+	my $cgi = FAQ::OMatic::dispatch::cgi();
 	my $rt = '';
 	
 	my $params = FAQ::OMatic::getParams($cgi);
@@ -46,26 +47,31 @@ sub main {
 	my $bagName = FAQ::OMatic::Bags::untaintBagName($params->{'_bagName'});
 
 	if ($bagName eq '') {
-		FAQ::OMatic::gripe('error', "Bag names may only contain letters, "
-			."numbers, underscores (_), hyphens (-), and periods (.), and "
-			."may not end in '.desc'. "
-			."Yours was \"$bagName\".");
+		FAQ::OMatic::gripe('error', gettext("Bag names may only contain letters, numbers, underscores (_), hyphens (-), and periods (.), and may not end in '.desc'. Yours was")." \"$bagName\".");
 	}
 
 	if (-f $FAQ::OMatic::Config::bagsDir.$bagName) {
 		# bag exists
-		my $rd = FAQ::OMatic::Auth::ensurePerm('', 'PermReplaceBag',
-			FAQ::OMatic::commandName(), $cgi, 1, 'replace');
-		if ($rd) { print $rd; exit 0; }
+		FAQ::OMatic::Auth::ensurePerm('-item'=>'',
+			'-operation'=>'PermReplaceBag',
+			'-restart'=>FAQ::OMatic::commandName(),
+			'-cgi'=>$cgi,
+			'-extraTime'=>1,
+			'-xreason'=>'replace',
+			'-failexit'=>1);
 	} else {
 		# new bag name
-		my $rd = FAQ::OMatic::Auth::ensurePerm('', 'PermNewBag',
-			FAQ::OMatic::commandName(), $cgi, 1);
-		if ($rd) { print $rd; exit 0; }
+		FAQ::OMatic::Auth::ensurePerm('-item'=>'',
+			'-operation'=>'PermNewBag',
+			'-restart'=>FAQ::OMatic::commandName(),
+			'-cgi'=>$cgi,
+			'-extraTime'=>1,
+			'-failexit'=>1);
 	}
 
 	# get the bag contents
-	if (not open(BAGFILE, ">".$FAQ::OMatic::Config::bagsDir."newbag.$$")) {
+	my $bagTmpName = 'newbag.'.FAQ::OMatic::nonce();
+	if (not open(BAGFILE, ">".$FAQ::OMatic::Config::bagsDir.$bagTmpName)) {
 		FAQ::OMatic::gripe('error', "Couldn't store incoming bag $bagName: $!");
 	}
 	# THANKS: to John Nolan <JNolan@n2k.com> for fixing the reference
@@ -74,22 +80,24 @@ sub main {
 	my $buf;
 	my $formDataHandle = $cgi->param('_bagData');
 
-	# The next line will make the 'use strict' pragma throw an error
-	# if you're using an old CGI.pm. It has been tested and seen
-	# to work with CGI.pm 2.46 and newer, so upgrade.
-	while (bagread($formDataHandle, \$buf, 4096)) {
-		print BAGFILE $buf;
-		$sizeBytes += length($buf);
-		# TODO: should have admin-configurable length limit here
-		# TODO: and in similar submitPart.pm code
+	if ($formDataHandle) {
+		# The next line will make the 'use strict' pragma throw an error
+		# if you're using an old CGI.pm. It has been tested and seen
+		# to work with CGI.pm 2.46 and newer, so upgrade.
+		while (bagread($formDataHandle, \$buf, 4096)) {
+			print BAGFILE $buf;
+			$sizeBytes += length($buf);
+			# TODO: should have admin-configurable length limit here
+			# TODO: and in similar submitPart.pm code
+		}
+		close BAGFILE;
 	}
-	close BAGFILE;
 
 	if ($sizeBytes > 0) {
-		if (not rename($FAQ::OMatic::Config::bagsDir."newbag.$$",
+		if (not rename($FAQ::OMatic::Config::bagsDir.$bagTmpName,
 					$FAQ::OMatic::Config::bagsDir.$bagName)) {
 			FAQ::OMatic::gripe('error', "Couldn't rename "
-					.$FAQ::OMatic::Config::bagsDir."newbag.$$"
+					.$FAQ::OMatic::Config::bagsDir.$bagTmpName
 					." to "
 					.$FAQ::OMatic::Config::bagsDir.$bagName);
 		}
@@ -100,9 +108,9 @@ sub main {
 		}
 	} else {
 		# no bag file sent; discard bag file
-		if (not unlink($FAQ::OMatic::Config::bagsDir."newbag.$$")) {
+		if (not unlink($FAQ::OMatic::Config::bagsDir.$bagTmpName)) {
 			FAQ::OMatic::gripe('problem', "Couldn't unlink "
-					.$FAQ::OMatic::Config::bagsDir."newbag.$$");
+					.$FAQ::OMatic::Config::bagsDir.$bagTmpName);
 		}
 	}
 
@@ -142,7 +150,7 @@ sub main {
 				'-params'=>$params,
 				'-changedParams'=>{'partnum'=>'', 'checkSequenceNumber'=>''},
 				'-refType'=>'url');
-	print $cgi->redirect(FAQ::OMatic::urlBase($cgi).$url);
+	FAQ::OMatic::redirect($cgi, $url);
 }
 
 sub bagread {
