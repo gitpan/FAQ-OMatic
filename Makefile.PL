@@ -31,3 +31,19 @@ WriteMakefile(
 				'VERSION=${VERSION} dev-bin/distribute-final'
 						},
 );
+
+
+sub MY::top_targets {
+  my $self = shift;
+  my $string = $self->MM::top_targets;
+
+   $string .= <<'EOF';
+
+update_readme:
+	lwp-request 'http://faqomatic.sourceforge.net/cgi-bin/fom?file=1026&render=text' > README
+
+EOF
+
+    $string;
+
+}

@@ -45,7 +45,9 @@ sub build {
 	my @allItems = FAQ::OMatic::getAllItemNames();
 	my $filename;
 	my $item;
+	localhprint("beginning scan");
 	foreach $filename (@allItems) {
+		localhprint("scanning $filename");
 		$item = new FAQ::OMatic::Item($filename);
 		if ($item->isBroken()) {
 			FAQ::OMatic::gripe('debug', 'item/'.$filename.' is broken.');
@@ -64,17 +66,29 @@ sub build {
 	my %wordsdb;
 	my $searchFileName = 'search.'.FAQ::OMatic::nonce();
 	my $searchFilePath = $FAQ::OMatic::Config::metaDir.'/'.$searchFileName;
-	dbmopen (%wordsdb, $searchFilePath, 0600);
+	my $usedbm = FAQ::OMatic::usedbm();
+	if ($usedbm) {
+		dbmopen (%wordsdb, $searchFilePath, 0600);
 		# perl sure is touchy about its octal literals
+	} else {
+		open OFFSETFILE, ">${searchFilePath}.offset"
+			|| die "${searchFilePath}.offset $!";
+	}
 	open(INDEXFILE, ">${searchFilePath}.index")
 		|| die "${searchFilePath}.index $!";
 	open(WORDSFILE, ">${searchFilePath}.words")
 		|| die "${searchFilePath}.words $!";
 
+	localhprint("squirting words into ${searchFilePath}");
 	foreach my $i (@wordlist) {
 		## Write down in the hash the file pointer where we can find
 		## this entry:
-		$wordsdb{$i} = (tell INDEXFILE)." ".(tell WORDSFILE);
+		if ($usedbm) {
+			$wordsdb{$i} = (tell INDEXFILE)." ".(tell WORDSFILE);
+		} else {
+			# a very slow replacement for a direct-access database. Pfft.
+			print OFFSETFILE "${i} ".(tell INDEXFILE)." ".(tell WORDSFILE)."\n";
+		}
 		## Then dump out all the items with this word in them:
 		my @list = sort keys %{ $words->{$i} };
 		foreach my $j (@list) {
@@ -85,7 +99,13 @@ sub build {
 		## terminate the list
 		print INDEXFILE "END\n";
 	}
-	dbmclose %wordsdb;
+	localhprint("squirting complete");
+
+	if ($usedbm) {
+		dbmclose %wordsdb;
+	} else {
+		close OFFSETFILE;
+	}
 	close INDEXFILE;
 	close WORDSFILE;
 
@@ -115,6 +135,12 @@ sub build {
 	# this again any time soon.
 	open SEARCHHINT, ">$FAQ::OMatic::Config::metaDir/freshSearchDBHint";
 	close SEARCHHINT;
+}
+
+sub localhprint {
+	my $msg = shift;
+	FAQ::OMatic::maintenance::hprint("${msg}<br>\n");
+	FAQ::OMatic::maintenance::hflush();
 }
 
 1;

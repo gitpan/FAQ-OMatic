@@ -253,7 +253,7 @@ sub navigationBlock {
 						'-changedParams'=>{'partnum'=>'',
 							'checkSequenceNumber'=>''},
 					),
-					gettext("Return to FAQ"));
+					gettext("Return to the FAQ"));
 		}
 	}
 

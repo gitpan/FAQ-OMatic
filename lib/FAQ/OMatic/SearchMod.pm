@@ -40,10 +40,20 @@ use FAQ::OMatic;
 
 sub openWordDB {
 	return if (defined FAQ::OMatic::getLocal('wordDB'));
-	my %wordDB;
-	if (not dbmopen (%wordDB, "$FAQ::OMatic::Config::metaDir/search", 0400)) {
-		FAQ::OMatic::gripe('abort', "Can't open dbm search database. "
-			."Have you run buildSearchDB? (Should I?)");
+	my $wordDBtoken;
+	if (FAQ::OMatic::usedbm()) {
+		my %wordDB;
+		if (not dbmopen (%wordDB, "$FAQ::OMatic::Config::metaDir/search", 0400)) {
+			FAQ::OMatic::gripe('abort', "Can't open dbm search database. "
+				."Have you run buildSearchDB? (Should I?)");
+		}
+		$wordDBtoken = \%wordDB;
+	} else {
+		if (not open(OFFSETFILE, "<$FAQ::OMatic::Config::metaDir/search.offset")) {
+			FAQ::OMatic::gripe('abort', "Can't open search.offset. "
+				."Have you run buildSearchDB? (Should I?)");
+		}
+		$wordDBtoken = "files_are_open_yahoo!";
 	}
 	if (not open(WORDSFILE, "<$FAQ::OMatic::Config::metaDir/search.words")) {
 		FAQ::OMatic::gripe('abort', "Can't open search.words. "
@@ -53,21 +63,48 @@ sub openWordDB {
 		FAQ::OMatic::gripe('abort', "Can't open search.index. "
 			."Have you run buildSearchDB? (Should I?)");
 	}
-	FAQ::OMatic::setLocal('wordDB', \%wordDB);
+	FAQ::OMatic::setLocal('wordDB', $wordDBtoken);
 }
 
 sub closeWordDB {
 	my $wordDB = FAQ::OMatic::getLocal('wordDB');
-	dbmclose %{$wordDB};
-	undef %{$wordDB};
+	if (FAQ::OMatic::usedbm()) {
+		dbmclose %{$wordDB};
+		undef %{$wordDB};
+	} else {
+		close OFFSETFILE;
+	}
 	close WORDSFILE;
 	close INDEXFILE;
 }
 
+# linear scan of .offset file, looking for $word. Pretty slow,
+# unless your dbm implementation is somehow very slow and broken,
+# as on sourceforge.
+sub scanOffsets {
+	my $word = shift;
+	seek (OFFSETFILE, 0, 0);
+	my $line;
+	while ($line = <OFFSETFILE>) {
+		chomp $line;
+		my ($fileWord, $pair) = split(' ', $line, 2);
+		if ($fileWord eq $word) {
+			#FAQ::OMatic::gripe('debug', "found pair: $line");
+			return $pair;
+		}
+	}
+	return undef;
+}
+
 sub getIndices {
 	my $word = shift;
-	my $wordDB = FAQ::OMatic::getLocal('wordDB');
-	my $pair = $wordDB->{$word};
+	my $pair;
+	if (FAQ::OMatic::usedbm()) {
+		my $wordDB = FAQ::OMatic::getLocal('wordDB');
+		$pair = $wordDB->{$word};
+	} else {
+		$pair = scanOffsets($word);
+	}
 
 	# returns indexseek,wordseek pair
 	# THANKS to Vicki Brown <vlb@cfcl.com> and jon * <jon@clearink.com>
@@ -84,6 +121,7 @@ sub getWordClass {
 	openWordDB();
 	
 	my ($indexseek, $wordseek) = getIndices($word);
+	#FAQ::OMatic::gripe('debug', "got seeks $indexseek and $wordseek for $word");
 
 	if (defined $indexseek) {
 		#grab all words in wordsfile with $word as a prefix

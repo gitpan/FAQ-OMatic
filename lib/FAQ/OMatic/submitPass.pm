@@ -46,8 +46,10 @@ sub main {
 		# in email, and put up a page explaining what to do.
 		my $id = $params->{'_id'} || '';
 		if (not FAQ::OMatic::validEmail($id)) {
-			FAQ::OMatic::gripe('error', gettext("An email address must look like")." "
-				."'name\@some.domain'. ".gettext("If yours")." ($id) ".gettext("does and I keep rejecting it, please mail")." $FAQ::OMatic::authorAddress ".gettext("and tell him what's happening."));
+			FAQ::OMatic::gripe('error', gettext("An email address must look like 'name\@some.domain'.")
+				."\n"
+				.gettexta("If yours (%0) does and I keep rejecting it, please mail %1 and tell him what's happening.",
+					 $id, $FAQ::OMatic::authorAddress));
 		}
 		my $pass = $params->{'_pass'} || '';
 			# THANKS to Mark Shaw <mshaw@dal.asp.ti.com> for catching this
@@ -108,7 +110,7 @@ and I will look into the matter.)
 __EOF__
 			if (FAQ::OMatic::sendEmail($id, $subj, $mesg)) {
 				FAQ::OMatic::gripe('error',
-					gettext("I couldn't mail the authentication secret to")." \"$id\", ".gettext("and I'm not sure why."));
+					gettexta("I couldn't mail the authentication secret to \"%0\" and I'm not sure why.", $id));
 			}
 		}
 
@@ -123,14 +125,16 @@ __EOF__
 			gettext("Did you copy and paste the secret or the URL completely?")
 				."\n<p>\n";
 		}
-
-		$rt .= gettext("I sent email to you at")." \"$id\". "
-				.gettext("It should arrive soon, containing a URL. Either open "
-				."the URL directly, or paste the secret into the form below "
-				."and click Validate.")
-				."\n<p>\n"
-				.gettext("Thank you for taking the time to sign up.")
-				."\n";
+		else {
+			$rt .= gettexta("I sent email to you at \"%0\". "
+					."It should arrive soon, containing a URL.", $id)
+				."\n<p>\n";
+		}
+		$rt.= gettext("Either open the URL directly, or paste the secret "
+				."into the form below and click Validate.")
+			."\n<p>\n"
+			.gettext("Thank you for taking the time to sign up.")
+			."\n";
 
 		$rt.= FAQ::OMatic::makeAref('submitPass',
 					{	'_id'=>$id,
@@ -139,7 +143,7 @@ __EOF__
 		#$rt.="<form action=\"submitPass\" method=POST>\n";
 		$rt.= gettext("Secret:")." \n";
 		$rt.= "<input type=text name=\"_secret\" value=\"\" size=14>\n";
-		$rt.= "<p><input type=submit name=\"_submit\" value=\"Validate\">\n";
+		$rt.= "<p><input type=submit name=\"_submit\" value=\"".gettext("Validate")."\">\n";
 		$rt.= "</form>\n";
 
 		$rt .= FAQ::OMatic::pageFooter($params);

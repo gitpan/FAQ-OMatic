@@ -32,6 +32,7 @@ package FAQ::OMatic::faq;
 use CGI;
 use FAQ::OMatic::Item;
 use FAQ::OMatic;
+use FAQ::OMatic::I18N;
 
 sub main {
 	my $cgi = FAQ::OMatic::dispatch::cgi();
@@ -70,8 +71,7 @@ sub main {
 
 	my $item = new FAQ::OMatic::Item($params->{'file'});
 	if ($item->isBroken()) {
-		FAQ::OMatic::gripe('error', "The file (".
-			$params->{'file'}.") doesn't exist.");
+		FAQ::OMatic::gripe('error', gettexta("The file (%0) doesn't exist.", $params->{'file'}));
 	}
 
 	if ($params->{'debug'}) {

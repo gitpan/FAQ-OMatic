@@ -47,8 +47,7 @@ sub main {
 	
 	my $item = new FAQ::OMatic::Item($params->{'file'});
 	if ($item->isBroken()) {
-		FAQ::OMatic::gripe('error', "The file (".
-			$params->{'file'}.") doesn't exist.");
+		FAQ::OMatic::gripe('error', gettexta("The file (%0) doesn't exist.", $params->{'file'}));
 	}
 
 	FAQ::OMatic::Auth::ensurePerm('-item'=>$item,
@@ -110,8 +109,8 @@ sub main {
 	}
 
 	if (scalar %itemSet) {
-		$rt .= gettext("Make")." <b>".$item->getTitle()
-			."</b> ".gettext("belong to which other item?")."<p>\n";
+		$rt .= gettexta("Make <b>%0</b> belong to which other item?", $item->getTitle())
+			."<p>\n";
 		$rt .= join("\n", map {$itemSet{$_}} (sort keys (%itemSet)));
 	} elsif (not $params->{'showBarrenItems'}) {
 		$rt .= gettext("No item that already has sub-items can become the parent of")." <b>".$item->getTitle()."</b>.\n";
@@ -146,24 +145,5 @@ sub main {
 }
 
 1;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 

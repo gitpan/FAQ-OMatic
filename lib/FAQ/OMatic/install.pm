@@ -118,13 +118,13 @@ sub doStep {
 		my $expr = $step."Step()";
 		eval($expr);
 		if ($@) {
-			displayMessage("$step ".gettext("failed:")." $@"
+			displayMessage(gettexta("%0 failed: ", $step).$@
 				.FAQ::OMatic::stackTrace('html'), 'default');
 		}
 	} elsif ($step eq '') {
 		doStep('default');
 	} else {
-		displayMessage(gettext("Unknown step:")." \"$step\".", 'default');
+		displayMessage(gettexta("Unknown step: \"%0\".", $step), 'default');
 	}
 }
 
@@ -135,8 +135,8 @@ sub defaultStep {
 		# CGI stub points at a valid config file, but config hasn't
 		# been updated. This happens if admin moves meta dir and
 		# fixes the stub.
-		displayMessage(gettext("Updating config to reflect new meta location")." "
-			."<b>".FAQ::OMatic::dispatch::meta()."</b>.");
+		displayMessage(gettexta("Updating config to reflect new meta location <b>%0</b>.",
+				FAQ::OMatic::dispatch::meta()));
   		my $map = readConfig();
 		$map->{'$metaDir'} = "'".FAQ::OMatic::dispatch::meta()."'";
   		writeConfig($map);
@@ -153,7 +153,7 @@ sub defaultStep {
 		doStep('mainMenu');
 	} else {
 		# Can't see a config file. Offer to create it for admin.
-		displayMessage(gettext("(Can't find <b>config</b> in '$meta' -- assuming this is a new installation.)"));
+		displayMessage(gettexta("(Can't find <b>config</b> in '%0' -- assuming this is a new installation.)", $meta));
 		doStep('askMeta');
 	}
 }
@@ -177,11 +177,10 @@ sub askMetaStep {
 	}
 	$stubMeta.="<b>".FAQ::OMatic::dispatch::meta()."</b>";
 
-	$rt.="<a href=\"".installUrl('configMeta')."\">".gettext("Click here")."</a> "
-		.gettext("to create")." $stubMeta.<p>\n";
+	$rt.="<a href=\"".installUrl('configMeta')."\">".gettexta("Click here</a> to create %0.", $stubMeta)."<p>\n";
 
-	$rt.=gettext("If you want to change the CGI stub to point to another directory, edit the script and then\n");
-	$rt.="<a href=\""
+	$rt.=gettext("If you want to change the CGI stub to point to another directory, edit the script and then");
+	$rt.="\n<a href=\""
 		.installUrl('default')
 		."\">".gettext("click here to use the new location")."</a>.<p>\n";
 
@@ -200,14 +199,14 @@ sub configMetaStep {
 	if (not -d "$meta/.") {
 		# try mkdir
 		if (not mkdir(stripSlash($meta), 0700)) {
-			displayMessage(gettext("I couldn't create")." <b>$meta</b>: $!");
+			displayMessage(gettexta("I couldn't create <b>%0</b>: %1" , $meta, $!));
 			doStep('askMeta');
 			return;
 		}
-		displayMessage(gettext("Created")." <b>$meta</b>.");
+		displayMessage(gettexta("Created <b>%0</b>.", $meta));
 	}
 	if (not -w "$meta/.") {
-		displayMessage(gettext("I don't have write permission to")." <b>$meta</b>.");
+		displayMessage(gettexta("I don't have write permission to <b>%0</b>.", $meta));
 		doStep('askMeta');
 		return;
 	}
@@ -215,14 +214,14 @@ sub configMetaStep {
 	if (not -d $rcsDir) {
 		# try mkdir
 		if (not mkdir(stripSlash($rcsDir), 0700)) {
-			displayMessage(gettext("I couldn't create")." <b>$rcsDir</b>: $!");
+			displayMessage(gettexta("I couldn't create <b>%0</b>: %1", $rcsDir, $!));
 			doStep('askMeta');
 			return;
 		}
-		displayMessage(gettext("Created")." <b>$rcsDir</b>.");
+		displayMessage(gettexta("Created <b>%0</b>.", $rcsDir));
 	}
 	if (not -w "$rcsDir.") {
-		displayMessage(gettext("I don't have write permission to")." <b>$rcsDir</b>.");
+		displayMessage(gettexta("I don't have write permission to <b>%0</b>.", $rcsDir));
 		doStep('askMeta');
 		return;
 	}
@@ -274,8 +273,9 @@ sub initConfigStep {
 
 sub initMetaFilesStep {
 	if (not open(IDFILE, ">>".FAQ::OMatic::dispatch::meta()."/idfile")) {
-		displayMessage("Couldn't create "
-			."<b>".FAQ::OMatic::dispatch::meta()."/idfile</b>: $!", 'askMeta');
+		displayMessage(gettexta("I couldn't create <b>%0</b>: %1",
+				FAQ::OMatic::dispatch::meta()."/idfile", $!),
+			'askMeta');
 		return;
 	}
 	close IDFILE;
@@ -334,7 +334,7 @@ sub mainMenuStep {
 		."\n<ol>";
 	$rt.="$par<li><a href=\"".installUrl('askConfig')."\">"
 			.checkBoxFor('askConfig')
-			.gettext("Define configuration parameters.")."</a>\n";
+			.gettext("Define configuration parameters")."</a>\n";
 	if (not $FAQ::OMatic::Config::secureInstall) {
 		if ($FAQ::OMatic::Config::mailCommand and $FAQ::OMatic::Config::adminAuth) {
 			$rt.="$par<li><a href=\"".installUrl('makeSecure')."\">"
@@ -345,18 +345,18 @@ sub mainMenuStep {
 			$rt.="$par<li>"
 				.checkBoxFor('makeSecure')
 				.gettext("Set your password and turn on installer security")
-				.gettext("(Need to configure ")
-				."\$mailCommand and \$adminAuth).\n";
+				.gettext("(Need to configure \$mailCommand and \$adminAuth)")
+				."\n";
 		}
 	} else {
 		$rt.="$par<li>"
 			.checkBoxFor('makeSecure')
-			.gettext("(Installer security is on.)")
+			.gettext("(Installer security is on)")
 			."\n";
 	}
 	$rt.="$par<li><a href=\"".installUrl('configItem')."\">"
 			.checkBoxFor('configItem')
-			.gettext("Create item, cache, and bags directories in serve dir.")
+			.gettext("Create item, cache, and bags directories in serve dir")
 			."</a>\n";
 
 	if (not $mirror) {
@@ -364,19 +364,19 @@ sub mainMenuStep {
 			$rt.="$par<li>"
 				."<a href=\"".installUrl('copyItems')."\">"
 				.checkBoxFor('copyItems')
-				.gettext("Copy old items</a> from")
-				." <tt>$FAQ::OMatic::Config::itemDir_Old</tt> "
-				.gettext("to")
-				." <tt>$FAQ::OMatic::Config::itemDir</tt>.\n";
+				.gettexta("Copy old items</a> from <tt>%0</tt> to <tt>%1</tt>.",
+					$FAQ::OMatic::Config::itemDir_Old,
+					$FAQ::OMatic::Config::itemDir)
+				."\n";
 			$rt.="$par<li>"
 				."<a href=\"".installUrl('firstItem')."\">"
 				.checkBoxFor('firstItem')
-				.gettext("Install any new items that come with the system.")
+				.gettext("Install any new items that come with the system")
 				."</a>\n"
 		} else {
 			$rt.="$par<li><a href=\"".installUrl('firstItem')."\">"
 				.checkBoxFor('firstItem')
-				.gettext("Create system default items.")
+				.gettext("Create system default items")
 				."</a>\n";
 		}
 
@@ -384,14 +384,14 @@ sub mainMenuStep {
 			.checkBoxFor('rebuildCache')
 			."<a href=\"".installUrl('', 'url', 'maintenance')
 			."&secret=$maintenanceSecret&tasks=rebuildCache\">"
-			.gettext("Rebuild the cache and dependency files.")
+			.gettext("Rebuild the cache and dependency files")
 			."</a>\n";
 	
 		$rt.="$par<li>"
 			.checkBoxFor('systemBags')
 			."<a href=\"".installUrl('', 'url', 'maintenance')
 			."&secret=$maintenanceSecret&tasks=bagAllImages\">"
-			.gettext("Install system images and icons.")
+			.gettext("Install system images and icons")
 			."</a>\n";
 	} else {
 		# mirror sites should update now
@@ -431,8 +431,9 @@ sub mainMenuStep {
 
 	$rt.="$par<li><a href=\"".installUrl('configVersion')."\">"
 		.checkBoxFor('configVersion')
-		.gettext("Mark the config file as upgraded to Version")
-		." $FAQ::OMatic::VERSION</a>\n";
+		.gettexta("Mark the config file as upgraded to Version %0",
+		          $FAQ::OMatic::VERSION)
+                ."</a>\n";
 
 	$rt.="$par<li><a href=\"".installUrl('colorSampler')."\">"
 			.checkBoxFor('customColors')
@@ -451,10 +452,9 @@ sub mainMenuStep {
 				? ''
 				: " ".gettext("(optional; older versions have bugs that affect bags)")."\n"
 			)
-			.gettext("You are using version")
-			." $CGI::VERSION "
-			.gettext("now")
-			.".\n";
+			." "
+			.gettexta("You are using version %0 now.", $CGI::VERSION)
+			."\n";
 
 	$rt.="$par<li>".checkBoxFor('nothing')
 			."<a href=\"".installUrl('mainMenu')."\">"
@@ -464,7 +464,7 @@ sub mainMenuStep {
 		$rt.="$par<li>".checkBoxFor('nothing')
 				."<a href=\"".installUrl('', 'url', 'faq')."\">"
 				.gettext("Go to the Faq-O-Matic")
-				.".</a>\n";
+				."</a>\n";
 	} else {
 		$rt.="$par<li>".checkBoxFor('nothing')
 			.gettext("Go to the Faq-O-Matic")
@@ -476,18 +476,18 @@ sub mainMenuStep {
 	$rt.="$par<li>"
 			.checkBoxFor('nothing')
 			."<a href=\"".installUrl('','url','stats')."\">"
-			.gettext("See access statistics.")
+			.gettext("See access statistics")
 			."</a>\n";
 	$rt.="$par<li>"
 			.checkBoxFor('nothing')
 			."<a href=\"".installUrl('','url','selectBag')."\">"
-			.gettext("Examine all bags.")
+			.gettext("Examine all bags")
 			."</a>\n";
 	$rt.="$par<li>"
 		.checkBoxFor('nothing')
 		."<a href=\"".installUrl('', 'url', 'maintenance')
 		."&secret=$maintenanceSecret&tasks=expireBags\">"
-		.gettext("Check for unreferenced bags (not linked by any FAQ item).")
+		.gettext("Check for unreferenced bags (not linked by any FAQ item)")
 		."</a>\n";
 	# rebuildCache shows up again at the end, because it doesn't show
 	# up in the numbered list if this is a mirror site.
@@ -495,13 +495,13 @@ sub mainMenuStep {
 		.checkBoxFor('nothing')
 		."<a href=\"".installUrl('', 'url', 'maintenance')
 		."&secret=$maintenanceSecret&tasks=rebuildCache\">"
-		.gettext("Rebuild the cache and dependency files.")
+		.gettext("Rebuild the cache and dependency files")
 		."</a>\n";
 	
 	$rt.="</ul>\n";
 
-	$rt.=gettext("The Faq-O-Matic modules are version")
-		." $FAQ::OMatic::VERSION.\n";
+	$rt.=gettexta("The Faq-O-Matic modules are version %0.", $FAQ::OMatic::VERSION)
+		."\n";
 
 	displayMessage($rt);
 }
@@ -609,18 +609,18 @@ sub createDir {
 
 	if (not -d $dirPath) {
 		if (not mkdir(stripSlash($dirPath), 0700)) {
-			dirFail(gettext("I couldn't create")." $dirSymbol"."Dir = <b>$dirPath</b>: $!");
+			dirFail(gettexta("I couldn't create <b>%0</b>: %1", $dirPath, $!));
 			return;
 		}
-		displayMessage(gettext("Created")." <b>$dirPath</b>.");
+		displayMessage(gettexta("Created <b>%0</b>.", $dirPath));
 	}
 	if (not -w "$dirPath/.") {
-		dirFail(gettext("I don't have write permission to")." <b>$dirPath</b>.");
+		dirFail(gettexta("I don't have write permission to <b>%0</b>.", $dirPath));
 		return;
 	}
 	if (not chmod 0755, $dirPath) {
-		dirFail(gettext("I wasn't able to change the permissions on")." <b>$dirPath</b> "
-			.gettext("to 755 (readable/searchable by all)."));
+		dirFail(gettexta("I wasn't able to change the permissions on <b>%0</b> "
+				."to 755 (readable/searchable by all).", $dirPath));
 		return;
 	}
 
@@ -642,8 +642,7 @@ sub dirFail {
 	my $message = shift;
 
 	displayMessage($message
-		."<p>".gettext("Redefine configuration parameters to ensure that")." "
-		.'<b>$serveDir</b> '.gettext("is valid."));
+		."<p>".gettexta("Redefine configuration parameters to ensure that <b>%0</b> is valid.", $FAQ::OMatic::Config::serveDir));
 	doStep('mainMenu');
 }
 
@@ -655,7 +654,7 @@ sub ci {
 	while ($property = shift(@_)) {
 		if (not $property=~m/^-/) {
 			FAQ::OMatic::gripe('error',
-				"Jon made a mistake here; key=$key, property=$property.")
+				gettexta("Jon made a mistake here; key=%0, property=%1.", $key, $property))
 		}
 		my $val = 1;
 		if (scalar(@_) and not $_[0]=~m/^-/) {
@@ -707,7 +706,7 @@ sub configInfo {
 	ci('serveDir', '-sort'=>'c-c1', '-free', '-desc'=>
 		gettext("Filesystem directory where FAQ-O-Matic will keep item files, image and other bit-bag files, and a cache of generated HTML files. This directory must be accesible directly via the http server. It might be something like /home/faqomatic/public_html/fom-serve/"),'-default'=>"''"),
 	ci('serveURL', '-sort'=>'c-c2', '-free', '-desc'=>
-		gettext("The path prefix of the URL needed to access files in").' <b>$serveDir</b>. '.gettext("It should be relative to the root of the server (omit http://hostname:port, but include a leading '/'). It should also end with a '/'.") , '-default'=>"''" ),
+		gettext("The path prefix of the URL needed to access files in <b>\$serveDir</b>. It should be relative to the root of the server (omit http://hostname:port, but include a leading '/'). It should also end with a '/'.") , '-default'=>"''" ),
 
 	ci('sep_e', '-sort'=>'e--sep', '-separator', '-desc'=>
 		gettext("<i>Optional:</i> Miscellaneous configurations")),
@@ -725,10 +724,9 @@ sub configInfo {
 		'-default'=>"''", '-desc'=>
 		gettext("If this parameter is set, this FAQ will become a mirror of the one at the given URL. The URL should be the base name of the CGI script of the master FAQ-O-Matic.")),
 	ci('pageHeader',	'-sort'=>'m-p1', '-free', '-mirror', '-desc'=>
-		gettext("An HTML fragment inserted at the top of each page. You might "
-	."use this to place a corporate logo. If this field begins with "
-	."\"file=\", the text will come from the named file in the meta "
-	."directory; otherwise, this field is included verbatim.")),
+		gettext("An HTML fragment inserted at the top of each page. You might use this to place a corporate logo.")
+		." "
+		.gettext("If this field begins with <tt>file=</tt>, the text will come from the named file in the meta directory; otherwise, this field is included verbatim.")),
 	# THANKS to Vicki Brown <vlb@cfcl.com> for demanding a configurable
 	# tableWidth tag. It's a workaround for Netscape's buggy page layout;
 	# it doesn't even help with align=right images.
@@ -736,13 +734,15 @@ sub configInfo {
 		'-choices'=>[ "'width=\"100%\"'" ],
 		'-default'=>"'width=\"100%\"'",
 		'-free', '-mirror', '-desc'=>
-		gettext("The width= tag in a table. If your").' $pageHeader '.gettext("has")." align=left, ".gettext("you will want to make this empty.")),
+		gettext("The <tt>width=</tt> tag in a table. If your <b>\$pageHeader</b> has <tt>align=left</tt>, you will want to make this empty.")),
 	ci('pageFooter',	'-sort'=>'m-p2', '-free', '-mirror',
 		'-default' => "'This FAQ administered by ...'", '-desc'=>
-		gettext("An HTML fragment appended to the bottom of each page. You might use this to identify the webmaster for this site.")),
+		gettext("An HTML fragment appended to the bottom of each page. You might use this to identify the webmaster for this site.")
+		." "
+		.gettext("If this field begins with <tt>file=</tt>, the text will come from the named file in the meta directory; otherwise, this field is included verbatim.")),
 	ci('adminEmail','-sort'=>'n-e2', '-free', '-choices'=>[ '$adminAuth' ],
 		'-default' => "\$adminAuth",
-		'-desc'=> gettext("Where FAQ-O-Matic should send email when it wants to alert the administrator (usually same as").' $adminAuth)'),
+		'-desc'=> gettext('Where FAQ-O-Matic should send email when it wants to alert the administrator (usually same as $adminAuth)')),
 	ci('maintSendErrors',	'-sort'=>'n-m2', '-choices'=>[ "'true'", "''" ],
 		'-desc'=> gettext("If true, FAQ-O-Matic will mail the log file to the administrator whenever it is truncated."),
 		'-default'=>"'true'"),
@@ -755,9 +755,7 @@ sub configInfo {
 	ci('antiSpam', '-sort'=>'r-s7', '-mirror',
 		'-choices'=>[ "'off'", "'cheesy'", "'nameonly'", "'hide'" ],
 		'-default'=>"'off'", '-desc'=>
-		gettext("mailto: links can be rewritten such as")." "
-		.'jonhATdartmouthDOTedu (cheesy), jonh (nameonly), '
-		.gettext("or e-mail addresses suppressed entirely (hide).")),
+		gettext("mailto: links can be rewritten such as jonhATdartmouthDOTedu (cheesy), jonh (nameonly), or e-mail addresses suppressed entirely (hide).")),
 	ci('cookieLife', '-sort'=>'r-s8', '-free',
 		'-choices'=>[ "'3600'" ],
 		'-default'=>"'3600'",
@@ -769,7 +767,7 @@ sub configInfo {
 	ci('renderDefault', '-sort'=>'t-t1', '-mirror',
 		'-choices'=>[ "'tables'", "'simple'", "'text'" ],
 		'-default'=> "'tables'", '-desc'=>
-		      gettext("Page rendering scheme. Do not choose")." 'text' ".gettext("as the default.")),
+		      gettext("Page rendering scheme. Do not choose 'text' as the default.")),
 
 	ci('editCmdsDefault', '-sort'=>'t-t2', '-mirror',
 		'-choices'=>[ "'show'", "'compact'", "'hide'" ],
@@ -825,6 +823,10 @@ sub configInfo {
 	ci('hideSiblings', '-mirror', '-choices'=>[ "'true'", "''" ],
 			'-default'=>"''", '-desc'=>
 			gettext("Hide sibling (Previous, Next) links")),
+
+	ci('useDBMSearch', '-choices'=>[ "'true'", "''" ],
+			'-default'=>"''", '-desc'=>
+			gettext("Use DBM-based search databases. Faster on machines with non-broken DBM.")),
 
 	ci('RCSargs',	'-hide', '-free', '-desc'=>
 		'Arguments to make ci quietly log changes (default is probably fine)',
@@ -990,8 +992,8 @@ sub askConfigStep {
 		}
 	}
 
-	$rt.=gettext("If this is your first time installing a FAQ-O-Matic, I recommend")." "
-		.gettext("only filling in the sections marked <b>Mandatory</b>.");
+	$rt.=gettext("If this is your first time installing a FAQ-O-Matic, I recommend "
+		    ."only filling in the sections marked <b>Mandatory</b>.");
 	# now display the widgets in sorted order
 	$rt.= join('', map {$widgets->{$_}} sort(keys %{$widgets}));
 	$rt.="<tr><td></td><td>"
@@ -1036,9 +1038,8 @@ sub setConfigStep {
 	}
 	if ($warnings) {
 		$warnings = "<p><b>".gettext("Warnings:")." <ul>$warnings</ul>"
-				."You should "
-				."<a href=\"".installUrl('askConfig')."\">go back</a>"
-				." and fix these configurations.</b>";
+				.gettexta("You should <a href=\"%0\">go back</a> and fix these configurations.", installUrl('askConfig'))
+				 ."</b>";
 	}
 	displayMessage(gettext("Rewrote configuration file.")
 		."\n$notices\n$warnings");
@@ -1054,31 +1055,28 @@ sub checkConfig {
 
 	if ($aright =~ m/'/) {
 		$$rightref = configInfo()->{$left}->{'-default'} || "''";
-		return ("$left ($eright) has an internal apostrophe, which will "
-			."certainly make Perl choke on the config file.", 'fix');
+		return (gettexta("%0 (%1) has an internal apostrophe, which will certainly make Perl choke on the config file.", $left, $eright), 'fix');
 	}
 	if ($left eq '$adminAuth') {
 		if (not FAQ::OMatic::validEmail($aright)) {
-			return ("$left ($eright) doesn't look like a "
-					."fully-qualified email address.",
+			return (gettexta("%0 (%1) doesn't look like a fully-qualified email address.", $left, $eright),
 				'fix');
 		}
 	}
 	if ($left eq '$adminEmail' and $right ne '$adminAuth') {
 		if (not FAQ::OMatic::validEmail($aright)) {
-			return ("$left ($eright) doesn't look like a "
-					."fully-qualified email address.",
+			return (gettexta("%0 (%1) doesn't look like a fully-qualified email address.", $left, $eright),
 				'fix');
 		}
 	}
 	if ($left eq '$mailCommand') {
 		if (not -x $aright) {
-			return ("$left ($eright) isn't executable.", 'fix');
+			return (gettexta("%0 (%1) isn't executable.", $left, $eright), 'fix');
 		}
 	}
 	if ($left eq '$RCSci') {
 		if (not -x $aright) {
-			return ("$left ($eright) isn't executable.", 'fix');
+			return (gettexta("%0 (%1) isn't executable.", $left, $eright), 'fix');
 		}
 	}
 	if ($left eq '$serveDir') {
@@ -1095,7 +1093,7 @@ sub checkConfig {
 		if (not -d $aright) {
 			my $dirname = stripSlash($aright);
 			if (scalar($dirname =~ m#^([/\w\.\-_]+)$#)==0) {
-				FAQ::OMatic::gripe('error', "$dirname has funny characters");
+				FAQ::OMatic::gripe('error', gettexta("%0 has funny characters.", $dirname));
 			}
 			$dirname = $1;
 			if (not mkdir($dirname, 0755)) {
@@ -1124,25 +1122,25 @@ sub checkConfig {
 sub firstItemStep {
 	if (not -f "$FAQ::OMatic::Config::itemDir/1") {
 		my $item = new FAQ::OMatic::Item();
-		$item->setProperty('Title', 'Untitled Faq-O-Matic');
+		$item->setProperty('Title', gettext('Untitled Faq-O-Matic'));
 		$item->setProperty('Parent', '1');
 		$item->setProperty('Moderator', $FAQ::OMatic::Config::adminAuth);
 
 		# tell the user how to name his FAQ
 		my $helpPart = new FAQ::OMatic::Part();
-		$helpPart->{'Text'} = 'To name your FAQ-O-Matic, use the '
+		$helpPart->{'Text'} = gettext('To name your FAQ-O-Matic, use the '
 			.'[Appearance] page to show the expert editing commands, '
-			.'then click [Edit Category Title and Options].';
+			.'then click [Edit Category Title and Options].');
 		push @{$item->{'Parts'}}, $helpPart;
 
 		# prevent user from feeling dumb because he can't find
 		# the [New Answer] button by making the initial item as a
 		# category (giving it a directory).
 		$item->makeDirectory()->
-			setText(gettext("Subcategories:\n\n\nAnswers in this category:\n"));
+			setText(gettext("Subcategories:")."\n\n\n".gettext("Answers in this category:")."\n");
 
 		$item->saveToFile('1');
-		displayMessage("Created an initial category (file=1).");
+		displayMessage(gettexta("Created category \"%0\".", 'Top (file=1)'));
 	} else {
 		displayMessage(gettexta("<b>%0</b> already contains a file '%1'.",
 			$FAQ::OMatic::Config::itemDir, '1'));
@@ -1154,7 +1152,7 @@ sub firstItemStep {
 		$item->setProperty('Moderator', $FAQ::OMatic::Config::adminAuth);
 		$item->makeDirectory();
 		$item->saveToFile('trash');
-		displayMessage("Created a trash category.");
+		displayMessage(gettexta("Created category \"%0\".", 'trash'));
 	} else {
 		displayMessage(gettexta("<b>%0</b> already contains a file '%1'.",
 			$FAQ::OMatic::Config::itemDir, 'trash'));
@@ -1166,7 +1164,7 @@ sub firstItemStep {
 		$item->setProperty('Moderator', $FAQ::OMatic::Config::adminAuth);
 		$item->makeDirectory();
 		$item->saveToFile('help000');
-		displayMessage("Created a help category.");
+		displayMessage(gettexta("Created category \"%0\".", 'help'));
 	} else {
 		displayMessage(gettexta("<b>%0</b> already contains a file '%1'.",
 			$FAQ::OMatic::Config::itemDir, 'help000'));
@@ -1263,8 +1261,8 @@ sub maintenanceStep {
 
 	# display what we're planning to do, so that resourceful admins
 	# can still install even if our heuristics fail and we have to abort.
-	displayMessage("Attempting to install cron job:\n"
-			."<pre><font size=\"-1\">$cronLine</font></pre>\n");
+	displayMessage(gettext("Attempting to install cron job:")
+			."\n<pre><font size=\"-1\">$cronLine</font></pre>\n");
 
 	# Set up new maintenance secret immediately, in case the install fails
 	# but a resourceful admin manually installs the displayed crontab line.
@@ -1320,12 +1318,10 @@ sub maintenanceStep {
 	my @newTab = getCurrentCrontab();
 	if (scalar(grep {m/$pattern/} @newTab) != 1
 		or scalar(grep {m/$secret/} @newTab) != 1) {
-		displayMessage(gettext("I thought I installed a new cron job, but it didn't")."\n"
-			.gettext("appear to take.")."\n"
+		displayMessage(gettext("I thought I installed a new cron job, but it didn't appear to take.")."\n"
 			."tab".join("<br>\n",@newTab)
-			.gettext("You better add")."\n"
-			."<pre><font size=\"-1\">$cronLine</font></pre>\n"
-			.gettext("to some crontab yourself with")." <b><tt>crontab -e</tt></b>.\n",
+			.gettexta("You better add %0 to some crontab yourself with <b><tt>crontab -e</tt></b>",
+				"\n<pre><font size=\"-1\">$cronLine</font></pre>\n")."\n",
 			'default', 'abort');
 	}
 
@@ -1386,10 +1382,10 @@ sub colorSamplerStep {
 	my $rt = '';
 	my $button = "*";
 
-	$rt.=gettext("Use the")." <u>$button</u> ".gettext("links to change the color of a feature.\n");
+	$rt.=gettexta("Use the <u>%0</u> links to change the color of a feature.", $button);
 
 	# an outer table provides the background (page) color
-	$rt.="<table bgcolor=$FAQ::OMatic::Config::backgroundColor width=\"100%\">\n";
+	$rt.="\n<table bgcolor=$FAQ::OMatic::Config::backgroundColor width=\"100%\">\n";
 	$rt.="<tr><td>\n";
 
 	$rt.="<table width=\"100%\">\n";
@@ -1445,15 +1441,15 @@ sub colorSamplerStep {
 	$rt.="<a href=\""
 		.installUrl('askColor', 'url')."&whichColor=\$textColor\">"
 		."$button</a>\n";
-	$rt.="<font color=$FAQ::OMatic::Config::textColor>".gettext("Regular text color")."</font><br>\n";
+	$rt.="<font color=$FAQ::OMatic::Config::textColor>".gettext("Regular text")."</font><br>\n";
 	$rt.="<a href=\""
 		.installUrl('askColor', 'url')."&whichColor=\$linkColor\">"
 		."$button</a>\n";
-	$rt.="<font color=$FAQ::OMatic::Config::linkColor>".gettext("Link color")."</font><br>\n";
+	$rt.="<font color=$FAQ::OMatic::Config::linkColor>".gettext("A new link")."</font><br>\n";
 	$rt.="<a href=\""
 		.installUrl('askColor', 'url')."&whichColor=\$vlinkColor\">"
 		."$button</a>\n";
-	$rt.="<font color=$FAQ::OMatic::Config::vlinkColor>".gettext("Visited link color")."</font><br>\n";
+	$rt.="<font color=$FAQ::OMatic::Config::vlinkColor>".gettext("A visited link")."</font><br>\n";
 	$rt.="<a href=\""
 		.installUrl('askColor', 'url')."&whichColor=\$highlightColor\">"
 		."$button</a>\n";
@@ -1470,7 +1466,8 @@ sub colorSamplerStep {
 sub askColorStep {
 	my $rt = '';
 	my $which = $params->{'whichColor'};
-	$rt.=gettext("Select a color for")." $which:<p>\n";
+	$rt.=gettexta("Select a color for %0:", $which)
+		."<p>\n";
 	$rt.="<a href=\""
 		.installUrl('setColor', 'url')
 		."&whichColor=$which&color=\"><img src=\""
@@ -1540,8 +1537,7 @@ sub displayMessage {
 
 	if ($whereNext) {
 		my $url = installUrl($whereNext);
-		$rt .= "<a href=\"$url\">".gettext("Click here")."</a> "
-			.gettext("to proceed to the")." \"$whereNext\" ".gettext("step").".\n";
+		$rt .= "[<a href=\"$url\">".gettexta("Proceed to step '%0'", $whereNext)."</a>]\n";
 	}
 	print $rt;
 

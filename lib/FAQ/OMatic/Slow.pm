@@ -134,11 +134,11 @@ sub display {
 	close(SLOW);
 	print "<title>Slow page</title>\n";
 	if (not $params->{'tailSize'}) {
-		print gettexta("This page will reload every %0 seconds, showing the last %1 lines of the process output.\n",
-			$reloadFrequency, $tailSize);
+		print gettexta("This page will reload every %0 seconds, showing the last %1 lines of the process output.",
+			$reloadFrequency, $tailSize)."\n";
 		my $url2 = FAQ::OMatic::makeAref('-command'=>'displaySlow',
 			'-changedParams' => {'_wholeFile' => '1'});
-		print $url2.gettext("This link</a> shows the entire process log.")."\n";
+		print "[".$url2.gettext("Show the entire process log")."</a>]\n";
 		print "<hr>\n";
 	}
 	print $cropped;

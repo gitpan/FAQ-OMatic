@@ -33,6 +33,7 @@ use CGI;
 use FAQ::OMatic::Item;
 use FAQ::OMatic;
 use FAQ::OMatic::Auth;
+use FAQ::OMatic::I18N;
 
 sub main {
 	my $cgi = FAQ::OMatic::dispatch::cgi();
@@ -56,7 +57,7 @@ sub main {
 	if (defined $file) {
 		my $item = new FAQ::OMatic::Item($file);
 		if ($item->isBroken()) {
-			FAQ::OMatic::gripe('error', "The file ($file) doesn't exist.");
+			FAQ::OMatic::gripe('error', gettexta("The file (%0) doesn't exist.", $file));
 		}
 		@bagList = $item->getBags();
 	} else {
@@ -65,7 +66,7 @@ sub main {
 			FAQ::OMatic::getAllItemNames($FAQ::OMatic::Config::bagsDir);
 	}
 
-	$rt .= "<h3>Replace which bag?</h3>\n";
+	$rt .= "<h3>".gettext("Replace which bag?")."</h3>\n";
 
 	# display bags in a few columns.
 	my $numcols = 3;

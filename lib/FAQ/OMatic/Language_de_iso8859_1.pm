@@ -1,5 +1,6 @@
+################################################
 ###
-### submitItem.pm
+### Language_de_iso8859_1.pm
 ###
 
 sub translations {
@@ -9,103 +10,76 @@ sub translations {
 ### submitItem.pm
 ###
 
-msgid "The file"
-msgstr "Die Datei"
+msgid "The file (%0) doesn't exist."
+msgstr "Die Datei (%0) existiert nicht."
 
-msgid "doesn't exist."
-msgstr "konnte nicht gefunden werden."
+msgid "To name your FAQ-O-Matic, use the [Appearance] page to show the expert editing commands, then click [Edit Category Title and Options]."
+msgstr "Um Ihre FAQ-O-Matic umzubenennen, klicken Sie auf [Anzeige] zur Anzeige der erweiterten Editier-Funktionen und wählen dann [Kategorie-Titel & -Optionen]."
 
 msgid "Your browser or WWW cache has truncated your POST."
-msgstr "Ihr Browser oder WWW-Cache hat Ihre Post gekürzt."
+msgstr "Ihr Browser oder WWW-Cache hat Ihr Posting gekürzt."
 
-msgid "Changed the item title, was"
-msgstr "Die Titel wurde geändert in"
+msgid "Changed the item title, was "%0""
+msgstr "Der bisherige Titel <i>%0</i> wurde geändert"
 
-msgid "Your part order list"
-msgstr "Ihre Liste mit den Abschnitten"
+msgid "Your part order list (%0) "
+msgstr "Ihre Liste mit den Abschnitten (%0) "
 
-msgid "doesn't have the same number of parts"
-msgstr "hat nicht die gleiche Anzahl von Abschnitten"
+msgid "doesn't have the same number of parts (%0) as the original item."
+msgstr "hat nicht die gleiche Anzahl von Abschnitten (%0) wie das Original."
 
-msgid "as the original item."
-msgstr "wie der Original-Eintrag."
-
-msgid "doesn't say what to do with part"
-msgstr "beschreibt keine Aktion mit dem Abschnitt"
+msgid "doesn't say what to do with part %0."
+msgstr "sagt nicht, was mit Abschnitt %0 passieren soll."
 
 ###
 ### submitMove.pm
 ###
 
-msgid "The moving file" 
-msgstr "Die zu verschiebene Datei" 
+msgid "The moving file (%0) is broken or missing."
+msgstr "Das zu verschiebene Objekt (%0) ist defekt oder nicht vorhanden."
 
-msgid "is broken or missing."
-msgstr "ist defekt oder nicht vorhanden."
+msgid "The newParent file (%0) is broken or missing."
+msgstr "Das Ziel-Elternobjekt (%0) ist defekt oder nicht vorhanden."
 
-msgid "The newParent file" 
-msgstr "Die newParant-Datei"
+msgid "The oldParent file (%0) is broken or missing."
+msgstr "Das Quell-Elternobjekt (%0) ist defekt oder nicht vorhanden."
 
-msgid "is broken or missing."
-msgstr "ist defekt oder nicht vorhanden."
+msgid "The new parent (%0) is the same as the old parent."
+msgstr "Das Ziel-Elternobjekt (%0) stimmt mit dem Quell-Elternobjekt überein."
 
-msgid "The oldParent file" 
-msgstr "Die oldParant-Datei" 
+msgid "The new parent (%0) is the same as the item you want to move."
+msgstr "Das Ziel-Elternobjekt (%0) ist gleich dem zu verschiebendem Objekt."
 
-msgid "is broken or missing."
-msgstr "ist defekt oder nicht vorhanden."
-
-msgid "The new parent"
-msgstr "Die newParent-Datei"
-
-msgid "is the same as the old parent."
-msgstr "ist die gleiche wie die oldParent-Datei."
-
-msgid "is the same as the item you want to move."
-msgstr "ist gleich mit dem Eintrag den Sie verschieben möchten."
-
-msgid "The new parent"
-msgstr "Die neue parent-Datei"
-
-msgid "is a child of the item being moved"
-msgstr "ist ein Kind vom Eintrag der verschoben wurde"
+msgid "The new parent (%0) is a child of the item being moved (%1)."
+msgstr "Das Ziel-Elternobjekt (%0) ist ein Kind des zu verschiebenden Objekts (%1)."
 
 msgid "You can't move the top item."
-msgstr "Sie können den in der Hierarchie höchsten Eintrag nicht verschieben."
+msgstr "Sie können das in der Hierarchie höchste Objekt nicht verschieben."
 
-msgid "moved a sub-item to"
-msgstr "hat ein Subeintrag verschoben nach"
+msgid "moved a sub-item to %0"
+msgstr "Subeintrag verschoben nach %0"
 
-msgid "moved a sub-item from"
-msgstr "hat ein Subeintrag verschoben von"
+msgid "moved a sub-item from %0"
+msgstr "Subeintrag verschoben von %0"
 
 ###
 ### submitPass.pm
 ###
 
-msgid "An email address must look like"
-msgstr "Eine eMail-Adresse sollte folgendermaßen aufgebaut sein:"
+msgid "An email address must look like 'name@some.domain'."
+msgstr "Eine eMail-Adresse muss aussehen wie 'name@some.domain'."
 
-msgid "If yours"
-msgstr "Wenn Ihre Mailadresse"
-
-msgid "does and I keep rejecting it, please mail"
-msgstr "lautet und nicht akzeptiert wurde, schicken Sie bitte eine Mail an"
-
-msgid "and tell him what's happening."
-msgstr "mit der Fehlerbeschreibung."
+msgid "If yours (%0) does and I keep rejecting it, please mail %1 and tell him what's happening."
+msgstr "Wenn Ihre Mailadresse (<i>%0</i>) dies tut und nicht akzeptiert wurde, schicken Sie bitte eine eMail mit der Fehlerbeschreibung an %1."
 
 msgid "Your password may not contain spaces or carriage returns."
-msgstr "Ihr Passwort darf keine Leerzeichen enthalten."
+msgstr "Ihr Passwort darf keine Leerzeichen oder Zeilenvorschübe enthalten."
 
 msgid "Your Faq-O-Matic authentication secret"
 msgstr "Ihr Faq-O-Matic Schlüssel"
 
-msgid "I couldn't mail the authentication secret to"
-msgstr "Konnte den Schlüssel nicht senden an"
-
-msgid "and I'm not sure why."
-msgstr "aus ungeklärter Ursache."
+msgid "I couldn't mail the authentication secret to "%0" and I'm not sure why."
+msgstr "Konnte den Schlüssel aus ungeklärter Ursache nicht an <i>%0</i> senden."
 
 msgid "The secret you entered is not correct."
 msgstr "Der eingegebe Schlüssel ist falsch."
@@ -113,11 +87,11 @@ msgstr "Der eingegebe Schlüssel ist falsch."
 msgid "Did you copy and paste the secret or the URL completely?"
 msgstr "Haben Sie die URL komplett kopiert und wieder eingefügt?"
 
-msgid "I sent email to you at"
-msgstr "Es wurde eine email zur folgenden Adresse geschickt:"
+msgid "I sent email to you at "%0". It should arrive soon, containing a URL."
+msgstr "Es wurde eine eMail zur Adresse <i>%0</i> geschickt. Die Mail, die eine URL enthält, wird gleich in Ihrer Mailbox sein."
 
-msgid "It should arrive soon, containing a URL. Either open the URL directly, or paste the secret into the form below and click Validate."
-msgstr "Die Mail, die eine URL enthält, wird gleich in Ihrer Mailbox sein. Entweder öffnen Sie die URL direkt oder fügen den Schlüssel in das Eingabefeld unten ein und klicken auf Absenden."
+msgid "Either open the URL directly, or paste the secret into the form below and click Validate."
+msgstr "Öffnen Sie entweder die URL direkt oder aber fügen Sie den Schlüssel in das Eingabefeld unten ein und klicken auf Überprüfen."
 
 msgid "Thank you for taking the time to sign up."
 msgstr "Vielen Dank das Sie sich Zeit genommen haben für die Registrierung."
@@ -126,7 +100,7 @@ msgid "Secret:"
 msgstr "Schlüssel:"
 
 msgid "Validate"
-msgstr "Absenden"
+msgstr "Überprüfen"
 
 ###
 ### editBag.pm
@@ -134,6 +108,9 @@ msgstr "Absenden"
 
 msgid "Replace bag"
 msgstr "Ersetze Datei-Objekt"
+
+msgid "Replace which bag?"
+msgstr "Welches Datei-Objekt ersetzen?"
 
 ###
 ### OMatic.pm
@@ -146,125 +123,128 @@ msgstr "Warnungen:"
 ### install.pm
 ###
 
+msgid "Untitled Faq-O-Matic"
+msgstr "Unbenannte Faq-O-Matic"
+
 msgid "Faq-O-Matic Installer"
 msgstr "Faq-O-Matic Installation"
 
-msgid "failed:"
-msgstr "schlug fehl:"
+msgid "%0 failed: "
+msgstr "%0 schlug fehl: "
 
-msgid "Unknown step:"
-msgstr "Unbekannter Schritt:"
+msgid "Unknown step: "%0"."
+msgstr "Unbekannter Schritt: "%0"."
 
-msgid "Updating config to reflect new meta location"
-msgstr "Konfiguration wird aktualisiert für neues meta-Verzeichnis"
+msgid "Updating config to reflect new meta location <b>%0</b>."
+msgstr "Konfiguration wird aktualisiert für neues meta-Verzeichnis <b>%0</b>."
 
-msgid "(Can't find <b>config</b> in '$meta' -- assuming this is a new installation.)"
-msgstr "(Konnte <b>config</b> nicht in '$meta' finden -- vermutlich ist dies eine Neuinstallation.)"
+msgid "(Can't find <b>config</b> in '%0' -- assuming this is a new installation.)"
+msgstr "(Konnte <b>config</b> nicht in '%0' finden -- vermutlich ist dies eine Neuinstallation.)"
 
-msgid "Click here"
-msgstr "Klicke hier"
+msgid "Click here</a> to create %0."
+msgstr "Klicken Sie hier</a>, um %0 zu erzeugen."
 
-msgid "to create"
-msgstr "zum erzeugen von"
+msgid "If you want to change the CGI stub to point to another directory, edit the script and then"
+msgstr "Wenn Sie den CGI-Abschnitt in einem anderem Verzeichnis ablegen möchten, editieren Sie das Skript und dann"
 
-msgid "If you want to change the CGI stub to point to another directory, edit the script and then\n"
-msgstr "Wenn Sie den CGI-Abschnitt in einem anderem Verzeichnis ablegen möchten, editieren Sie das Skript und dann\n"
-
-msgud "click here to use the new location"
-msgstr "klicke hier, um das neue Verzeichnis zu benutzen"
+msgid "click here to use the new location"
+msgstr "klicken Sie hier, um das neue Verzeichnis zu benutzen"
 
 msgid "FAQ-O-Matic stores files in two main directories.<p>The <b>meta/</b> directory path is encoded in your CGI stub ($0). It contains:"
-msgstr "FAQ-O-Matic speichert Dateien in zwei Haupverzeichnisse.<p>Das <b>meta/</b>-Verzeichnis wird für CGI benutzt ($0). Es enthält:"
+msgstr "FAQ-O-Matic speichert Dateien in zwei Haupverzeichnisse.<p>Das <b>meta/</b>-Verzeichnis ist im CGI-Script ($0) codiert. Es enthält:"
 
 msgid "<ul><li>the <b>config</b> file that tells FAQ-O-Matic where everything else lives. That's why the CGI stub needs to know where meta/ is, so it can figure out the rest of its configuration. <li>the <b>idfile</b> file that lists user identities. Therefore, meta/ should not be accessible via the web server. <li>the <b>RCS/</b> subdirectory that tracks revisions to FAQ items. <li>various hint files that are used as FAQ-O-Matic runs. These can be regenerated automatically.</ul>"
-msgstr "<ul><li>Das <b>config</b>-File, wo alle FAQ-O-Matic-Verzeichniseinträge abgelegt sind. Dies ist für den CGI-Abschnitt wichtig, damit das Verzeichnis meta/ gefunden wird. <li>Das <b>idfile</b> wo Benutzerdaten abgelegt werden. Deshalb sollte das Verzeichnis meta/ nicht via Web-Server freigegeben sein. <li>Das <b>RCS/</b> Unterverzeichnis, was auf die verschiedenen Versionen der FAQ-Einträge zeigt. <li>verschiedene Dateien die zur Laufzeit von FAQ-O-Matic angelegt werden.</ul>"
+msgstr "<ul><li>Das <b>config</b>-File, wo alle FAQ-O-Matic-Verzeichniseinträge abgelegt sind. Daher muss das CGI-Script wissen, wo meta/ liegt, um so den Rest der Konfiguration herausfinden zu können. <li>Das <b>idfile</b> wo Benutzerdaten abgelegt werden. Deshalb sollte das Verzeichnis meta/ nicht via Web-Server freigegeben sein. <li>Das <b>RCS/</b> Unterverzeichnis, was die verschiedenen Versionen der FAQ-Einträge vorhält. <li>verschiedene Dateien die zur Laufzeit von FAQ-O-Matic angelegt und benötigt werden.</ul>"
 
 msgid "<p>The <b>serve/</b> directory contains three subdirectories <b>item/</b>, <b>cache/</b>, and <b>bags/</b>. These directories are created and populated by the FAQ-O-Matic CGI, but should be directly accessible via the web server (without invoking the CGI)."
 msgstr "<p>Das <b>serve/</b>-Verzeichnis enthält drei Unterverzeichnisse: <b>item/</b>, <b>cache/</b> und <b>bags/</b>. Diese Verzeichnisse werden erzeugt und benutzt von FAQ-O-Matic-CGI und sollten daher auf dem Webserver frei verfügbar sein (ohne CGI einzuschalten)."
 
 msgid "<ul><li>serve/item/ contains only FAQ-O-Matic formatted source files, which encode both user-entered text and the hierarchical structure of the answers and categories in the FAQ. These files are only accessed through the web server (rather than the CGI) when another FAQ-O-Matic is mirroring this one. <li>serve/cache/ contains a cache of automatically-generated HTML versions of FAQ answers and categories. When possible, the CGI directs users to the cache to reduce load on the server. (CGI hits are far more expensive than regular file loads.) <li>serve/bags/ contains image files and other ``bags of bits.'' Bit-bags can be linked to or inlined into FAQ items (in the case of images). </ul>"
-msgstr "<ul><li>serve/item/ enthält ausschließlich FAQ-O-Matic-formatierte source-Files, welche den vom Benutzer eingegebenen Text und die hierachische Struktur der Einträge und Kategorien enthält. Auf diese Dateien kann nur über den Webserver zugegriffen werden, wenn ein anderes FAQ-O-Matic diese spiegelt. <li>serve/cache/ enthält ein Cache von automatisch erstellten HTML-Versionen von FAQ-Einträgen und Kategorien. Wenn möglich, wird der Cache benutzt, um den Server zu entlasten. (CGI-Zugriffe sind weitaus teurer als reguläre Dateizugriffe.) <li>serve/bags/ enthält Bild-Dateien und und andere Datei-Objekte. Datei-Objekte können in FAQ-Einträge eingefügt werden).</ul>"
+msgstr "<ul><li>serve/item/ enthält ausschließlich FAQ-O-Matic-formatierte Source-Files, die den vom Benutzer eingegebenen Text und die hierachische Struktur der Einträge und Kategorien enthalten. Auf diese Dateien kann nur über den Webserver zugegriffen werden, wenn ein anderes FAQ-O-Matic diese spiegelt. <li>serve/cache/ enthält einen Cache automatisch erstellter HTML-Versionen von FAQ-Einträgen und Kategorien. Wenn möglich, wird der Cache benutzt, um den Server zu entlasten. (CGI-Zugriffe sind weitaus teurer als reguläre Dateizugriffe.) <li>serve/bags/ enthält Bild-Dateien und und andere Datei-Objekte. Datei-Objekte können in FAQ-Einträge eingefügt werden).</ul>"
 
-msgid "I don't have write permission to <b>$meta</b>."
-msgstr "Habe keine Schreib-Berechtigung für <b>$meta</b>."
+msgid "I don't have write permission to <b>%0</b>."
+msgstr "Habe keine Schreib-Berechtigung für <b>%0</b>."
 
-msgid "I couldn't create"
-msgstr "Fehler beim erzeugen von"
+msgid "I couldn't create <b>%0</b>: %1"
+msgstr "Fehler beim Erzeugen von <b>%0</b>: %1"
 
-msgid "Created"
-msgstr "erzeugt: "
+msgid "<b>%0</b> already contains a file '%1'."
+msgstr "<b>%0</b> enthält bereits eine Datei '%1'."
 
-msgid "I don't have write permission to"
-msgstr "Habe keine Schreib-Berechtigung für"
+msgid "Created <b>%0</b>."
+msgstr "<b>%0</b> erzeugt."
 
 msgid "Created new config file."
-msgstr "Habe neues config-File erzeugt."
-
-msgid "Couldn't create"
-msgstr "Fehler beim erzeugen von"
+msgstr "Neues Config-File erzeugt."
 
 msgid "The idfile exists."
-msgstr "Das idfile ist vorhanden."
+msgstr "Das ID-File ist vorhanden."
 
 msgid "Configuration Main Menu (install module)"
-msgstr "Konfigurationsmenü (Modulinstallation)"
+msgstr "Konfigurationsmenü"
+
+msgid "Go To Install/Configuration Page"
+msgstr "Zum Konfigurationsmenü"
 
 msgid "Perform these tasks in order to prepare your FAQ-O-Matic version %0:"
-msgstr "Führe diese Schritte durch, für FAQ-O-Matic Version %0:"
+msgstr "Führen Sie diese Schritte zur Installation und Konfiguration Ihrer FAQ-O-Matic Version %0 durch:"
 
-msgid "Define configuration parameters."
-msgstr "Festlegen der Konfigurationsparameter."
+msgid "Define configuration parameters"
+msgstr "Festlegen der Konfigurationsparameter"
 
 msgid "Set your password and turn on installer security"
 msgstr "Wählen Sie Ihr Passwort und Installations-Sicherheit"
 
-msgid "(Need to configure"
-msgstr "(Wird benötigt zur Konfiguration von"
+msgid "(Need to configure $mailCommand and $adminAuth)"
+msgstr "($mailCommand und $adminAuth müssen definiert sein)"
 
-msgid "(Installer security is on.)"
-msgstr "(Installations-Sicherheit ist an.)"
+msgid "(Installer security is on)"
+msgstr "(Installations-Sicherheit ist aktiviert)"
 
-msgid "Create item, cache, and bags directories in serve dir."
-msgstr "Erzeuge Eintrags-, Cache und Datei-Objekt-Verzeichnisse."
+msgid "Create item, cache, and bags directories in serve dir"
+msgstr "Erzeugen der Eintrags-, Cache und Datei-Objekt-Verzeichnisse"
 
-msgid "Copy old items</a> from"
-msgstr "Kopiere alte Einträge</a> von"
+msgid "Copy old items</a> from <tt>%0</tt> to <tt>%1</tt>."
+msgstr "Kopieren alter Einträge</a> von <tt>%0</tt> nach <tt>%1</tt>."
 
-msgid "to"
-msgstr "nach"
+msgid "Install any new items that come with the system"
+msgstr "Installieren neuer System-Einträge"
 
-msgid "Install any new items that come with the system."
-msgstr "Installiere neue System-Einträge."
+msgid "Create system default items"
+msgstr "Erstellen der Standard-Objekte"
 
-msgid "Create system default items."
-msgstr "Erstelle Systemdefault-Einträge"
+msgid "Created category "%0"."
+msgstr "Kategorie <b>%0</b> erzeugt."
 
-msgid "Rebuild the cache and dependency files."
-msgstr "Erneuere den Cache und die davon abhängigen Dateien."
+msgid "Rebuild the cache and dependency files"
+msgstr "Erneuern des Cache und der davon abhängigen Dateien"
 
-msgid "Install system images and icons."
-msgstr "Installiere Systemgrafiken und Icons."
+msgid "Install system images and icons"
+msgstr "Installieren der Systemgrafiken und Icons"
 
 msgid "Update mirror from master now. (this can be slow!)"
-msgstr "Updaten der Mirror-Files (kann lange dauern)"
+msgstr "Update der Mirror-Files vom Master (kann lange dauern!)"
 
 msgid "Set up the maintenance cron job"
-msgstr "Einrichten des Pflegedienstes"
+msgstr "Einrichten des Wartungs-Scripts in cron"
 
 msgid "Run maintenance script manually now"
-msgstr "Starte Pflege-Skript jetzt manuell"
+msgstr "Starte Wartungs-Skript jetzt manuell"
 
 msgid "(Need to set up the maintenance cron job first)"
-msgstr "(Notwendig um den Pflegedienst erstmalig einzuschalten)"
+msgstr "(Das Wartungs-Script muss zuerst installiert werden)"
 
-msgid "Mark the config file as upgraded to Version"
-msgstr "Vermerke im Konfigurationsfile die neue Versionsnummer"
+msgid "Maintenance last run at:"
+msgstr "Letzte Ausführung des Wartungs-Scripts:"
+
+msgid "Mark the config file as upgraded to Version %0"
+msgstr "Vermerken der neuen Version %0 im Konfigurationsfile"
 
 msgid "Select custom colors for your Faq-O-Matic</a> (optional)"
-msgstr "Benutzerdefinierte Farben für Faq-O-Matic</a> (optional)"
+msgstr "Festlegung benutzerdefinierter Farben für Faq-O-Matic</a> (optional)"
 
 msgid "Define groups</a> (optional)"
-msgstr "Lege Gruppen fest</a> (optional)"
+msgstr "Einrichtung von Gruppen</a> (optional)"
 
 msgid "Upgrade to CGI.pm version 2.49 or newer."
 msgstr "Upgrade auf CGI.pm Version 2.49 oder neuer."
@@ -272,92 +252,107 @@ msgstr "Upgrade auf CGI.pm Version 2.49 oder neuer."
 msgid "(optional; older versions have bugs that affect bags)"
 msgstr "(optional; ältere Versionen haben Fehler beim Umgang mit Datei-Objekten)"
 
-msgid "You are using version"
-msgstr "Sie benutzen Version"
-
-msgid "now"
-msgstr "zur Zeit"
+msgid "You are using version %0 now."
+msgstr "Sie benutzen derzeit Version %0."
 
 msgid "Bookmark this link to be able to return to this menu."
 msgstr "Setzen Sie ein Lesezeichen auf diese URL, damit Sie wieder zum Menü zurückkehren können."
 
 msgid "Go to the Faq-O-Matic"
-msgstr "Gehe zur Faq-O-Matic"
+msgstr "Zur Faq-O-Matic"
 
 msgid "(need to turn on installer security)"
 msgstr "(Installations-Sicherheit geht verloren)"
 
 msgid "Other available tasks:"
-msgstr "Andere vorhandene Tasks:"
+msgstr "Weitere vorhandene Tasks:"
 
-msgid "See access statistics."
-msgstr "Zugriffs-Statistik anzeigen."
+msgid "See access statistics"
+msgstr "Zugriffs-Statistik anzeigen"
 
-msgid "Examine all bags."
-msgstr "Untersuche alle Datei-Objekte."
+msgid "Examine all bags"
+msgstr "Untersuchen aller Datei-Objekte"
 
-msgid "Check for unreferenced bags (not linked by any FAQ item)."
-msgstr "Suche nach Datei-Objekten, die in keinem FAQ-Eintrag vorhanden sind)."
+msgid "Check for unreferenced bags (not linked by any FAQ item)"
+msgstr "Suche nach Datei-Objekten, die in keinem FAQ-Eintrag vorhanden sind"
 
-msgid "Rebuild the cache and dependency files."
-msgstr "Erneuere den Cache und die davon abhängigen Dateien."
+msgid "Rebuild the cache and dependency files"
+msgstr "Erneuern des Cache und der davon abhängigen Dateien"
 
-msgid "The Faq-O-Matic modules are version"
-msgstr "Die Faq-O-Matic-Module haben die Version"
+msgid "The Faq-O-Matic modules are version %0."
+msgstr "Die Faq-O-Matic-Module haben die Version %0."
 
-msgid "I wasn't able to change the permissions on"
-msgstr "Ich darf die Zugriffsrechte nicht ändern von"
+msgid "I wasn't able to change the permissions on <b>%0</b> to 755 (readable/searchable by all)."
+msgstr "Kann die Zugriffsrechte von <b>%0</b> nicht auf 755 (lesbar/suchbar von allen) ändern."
 
-msgid "to 755 (readable/searchable by all)."
-msgstr "nach 755 (lesbar/suchbar von Allen)."
+msgid "Rewrote configuration file."
+msgstr "Config-File neu geschrieben."
+
+msgid "%0 (%1) has an internal apostrophe, which will certainly make Perl choke on the config file."
+msgstr "%0 (%1) enthält einen Apostroph, der Perl am Lesen des Config-File scheitern lassen wird."
+
+msgid "%0 (%1) doesn't look like a fully-qualified email address."
+msgstr "%0 (%1) ist keine vollqualifizierte eMail-Adresse"
+
+msgid "%0 (%1) isn't executable."
+msgstr "%0 (%1) ist nicht ausführbar."
+
+msgid "%0 has funny characters."
+msgstr "%0 enthält nicht erlaubt Zeichen."
+
+msgid "You should <a href="%0">go back</a> and fix these configurations."
+msgstr "Sie sollten <a href="%0">zurückgehen</a> und diese Einstellungen korrigieren."
 
 msgid "updated config file:"
-msgstr "Habe config-file upgedatet:"
+msgstr "Config-File aktualisiert:"
 
-msgid "Redefine configuration parameters to ensure that"
-msgstr "Erneuere Konfigurationsparameter um sicherzustellen das"
+msgid "Redefine configuration parameters to ensure that <b>%0</b> is valid."
+msgstr "Passen Sie die konfigurationsparameter an, um die Gültigkeit von <b>%0</b> sicherzustellen."
 
-msgid "is valid."
-msgstr "gültig ist."
-
-msgid "Jon made a mistake here; key=$key, property=$property."
-msgstr "Jon hat hier einen Fehler gemacht; key=$key, property=$property."
+msgid "Jon made a mistake here; key=%0, property=%1."
+msgstr "Jon hat hier einen Fehler gemacht; key=%0, property=%1."
 
 msgid "<b>Mandatory:</b> System information"
-msgstr "<b>Vorschreibend:</b> System-Information"
+msgstr "<b>Nötig:</b> System-Information"
 
 msgid "Identity of local FAQ-O-Matic administrator (an email address)"
-msgstr "Identität des FAQ-O-Matic Administrators (email-Adresse)"
+msgstr "Identität (eMail-Adresse) des FAQ-O-Matic Administrators"
 
 msgid "A command FAQ-O-Matic can use to send mail. It must either be sendmail, or it must understand the -s (Subject) switch."
-msgstr "Ein FAQ-O-Matic-Kommando sendet eine Mail via sendmail oder mit dem -s (Subject) Argument."
+msgstr "Kommando, das FAQ-O-Matic zum eMail-Versand nutzen kann. Es muss die -s (Subject) Option verstehen (z.B. sendmail)."
 
 msgid "The command FAQ-O-Matic can use to install a cron job."
-msgstr "Das Kommando mit dem FAQ-O-Matic ein cron-job benutzt"
+msgstr "Kommando, das FAQ-O-Matic zur Installation eines cron-Jobs nutzen kann"
 
-msgid "RCS ci command."
-msgstr "RCS ci Kommando."
+msgid "Path to the <b>ci</b> command from the RCS package."
+msgstr "Pfad zum <b>ci</b> Kommando aus dem RCS-Paket."
 
 msgid "<b>Mandatory:</b> Server directory configuration"
-msgstr "<b>Vorschreibend:</b> Server-Verzeichnis-Konfiguration"
+msgstr "<b>Nötig:</b> Server-Verzeichnis-Konfiguration"
+
+msgid "Protocol, host, and port parts of the URL to your site. This will be used to construct link URLs. Omit the trailing '/'; for example: <tt>http://www.dartmouth.edu</tt>"
+msgstr "Protokoll-, Host- und Port-Teil der URL Ihrer Site. Dies wird benutzt, um Link-URLs zu konstruieren (ohne abschliessendes '/'). Beispiel: <tt>http://www.dartmouth.edu</tt>"
+
+msgid "The path part of the URL used to access this CGI script, beginning with '/' and omitting any parameters after the '?'. For example: <tt>/cgi-bin/cgiwrap/jonh/faq.pl</tt>"
+msgstr "Lokaler Pfad-Teil der URL, um das FOM CGI-Script anzusprechen (beginnend mit dem führenden '/', aber ohne '?' und die folgenden Parameter). Beispiel: <tt>/cgi-bin/cgiwarp/faq.pl</tt>"
 
 msgid "Filesystem directory where FAQ-O-Matic will keep item files, image and other bit-bag files, and a cache of generated HTML files. This directory must be accesible directly via the http server. It might be something like /home/faqomatic/public_html/fom-serve/"
-msgstr "Dateisystem-Verzeichnis wo FAQ-O-Matic die item-Files, andere Datei-Objekte und den Cache von erzeugten HTML-Files ablegt. Auf dieses Verzeichnis wird via HTTP zugegriffen. Beispiel : /home/faqomatic/public_html/fom-serve/" 
+msgstr "Dateisystem-Verzeichnis, in dem FAQ-O-Matic die item-Files, andere Datei-Objekte und den Cache von erzeugten HTML-Files ablegt. Das Verzeichnis muss für den HTTP-Server schreibbar sein. Beispiel : <tt>/home/faqomatic/public_html/fom-serve/<tt>"
 
-msgid "Use the" 
-msgstr "Benutze den"
+msgid "The path prefix of the URL needed to access files in <b>$serveDir</b>. It should be relative to the root of the server (omit http://hostname:port, but include a leading '/'). It should also end with a '/'."
+msgstr "Lokales Pfad-Präfix der URL, um Dateien in <b>$serveDir</b> anzusprechen (ohne Protokoll-, Host- und Port-Teil, aber einschliesslich führendem und abschliessendem '/'). Beispiel: <tt>/faqomatic/fom-serve/</tt>"
 
-msgid "links to change the color of a feature.\n"
-msgstr "Link um eine bestimmte Farben zu ändern.\n"  
+msgid "Use the <u>%0</u> links to change the color of a feature."
+msgstr "Benutzen Sie die <u>%0</u> Links um die entsprechende Farbe zu ändern."
 
 msgid "An Item Title"
-msgstr "Ein Titeleintrag"
+msgstr "Titel eines Eintrags"
 
 msgid "A regular part is how most of your content will appear. The text colors should be most pleasantly readable on this background."
-msgstr "In diesem reguläre Abschnitt wird der Inhalt erscheinen. Die Textfarben sollten gut lesbar sein auf diesem Hintergrund."
+msgstr "In solch einem normalen Text-Abschnitt wird der meiste Inhalt erscheinen.<br>Die Textfarben sollten auf diesem Hintergrund gut lesbar sein."
 
 msgid "A new link"
-msgstr "Ein neuer Link"
+msgstr "Ein neuer/nicht besuchter Link"
 
 msgid "A visited link"
 msgstr "Ein besuchter Link"
@@ -366,142 +361,115 @@ msgid "A search hit"
 msgstr "Ein Suchergebnis"
 
 msgid "A directory part should stand out"
-msgstr "Ein Verzeichnis sollte hervortreten"
+msgstr "Ein Kategorie-Abschnitt sollte optisch gegenüber normalen Text-Abschnitten hervortreten"
 
-msgid "Regular text color"
-msgstr "Reguläre Textfarbe"
+msgid "Regular text"
+msgstr "Normaler Text"
 
-msgid "Link color"
-msgstr "Farbe eines Links"
+msgid "Proceed to step '%0'"
+msgstr "Weiter mit Schritt '%0'"
 
-msgid "Visited link color"
-msgstr "Farbe eines besuchten Links"  
-
-msgid "to proceed to the"
-msgstr "um weitermachen bei:"
-
-msgid "step"
-msgstr "Schritt"
-
-msgid "Select a color for"
-msgstr "Wähle eine Farbe für"
+msgid "Select a color for %0:"
+msgstr "Wählen Sie eine Farbe für %0:"
 
 msgid "Or enter an HTML color specification manually:"
-msgstr "Oder gebe einen HTML-Farben-Code ein:"
+msgstr "Oder geben Sie einen HTML-Farben-Code ein:"
 
 msgid "Select"
 msgstr "OK"
 
-msgid "The URL prefix needed to access files in" 
-msgstr "Der URL-Prefix ist nötig für den Filezugriff in"
-
-msgid "It should be relative to the root of the server (omit http://hostname:port, but include a leading /). It should also end with a /."
-msgstr " Er sollte relativ zum root des Servers (ohne http://hostname:port, aber mit einem Slash (/) am Anfang). Am Ende der Kommandozeile sollte auch ein Slash (/) stehen."
-
 msgid "<i>Optional:</i> Miscellaneous configurations"
 msgstr "<i>Optional:</i> Verschiedene Einstellungen"
 
+msgid "Select the display language."
+msgstr "Sprachauswahl"
+
+msgid "Show dates in 24-hour time or am/pm format."
+msgstr "Zeit-Anzeige im 24h- oder am/pm-Format"
+
 msgid "If this parameter is set, this FAQ will become a mirror of the one at the given URL. The URL should be the base name of the CGI script of the master FAQ-O-Matic."
-msgstr "Wenn diese Einstellung gesetzt ist, wird FAQ-O-Matic an der angegebenen URL gespiegelt. Die URL sollte auf das FAQ-O-Matic-CGI-Script zeigen."
+msgstr "Wenn diese Einstellung gesetzt ist, wird FAQ-O-Matic von der angegebenen URL gespiegelt. Die URL sollte auf das FAQ-O-Matic-CGI-Script auf dem Master zeigen."
 
 msgid "An HTML fragment inserted at the top of each page. You might use this to place a corporate logo."
-msgstr "Auf jeder Seite wird am Anfang ein HTML-Fragment eingefügt. Dies kann zum Plazieren eines gemeinsamen Logos verwendet werden."
+msgstr "HTML-Fragment, das an jedem Seitenanfang eingefügt wird, und zur Anzeige eines Firmen-Logo benutzt werden kann."
 
-msgid "The width= tag in a table. If your"
-msgstr "Der width= Tag in einer Tabelle. Steht im"
+msgid "If this field begins with <tt>file=</tt>, the text will come from the named file in the meta directory; otherwise, this field is included verbatim."
+msgstr "Beginnt dieses Feld mit <tt>file=</tt>, wird der Text aus der so referenzierten Datei im meta-Verzeichnis genommen. Ansonsten wird der Feldinhalt wörtlich übernommen."
 
-msgid "has"
-msgstr " " 
-
-msgid "you will want to make this empty."
-msgstr "sollte dieses Feld freigelassen werden."
+msgid "The <tt>width=</tt> tag in a table. If your <b>$pageHeader</b> has <tt>align=left</tt>, you will want to make this empty."
+msgstr "<tt>width=</tt> Tag in Tabellen. Enthält Ihr <b>$pageHeader</b> <tt>align=left</tt>, sollte dieses Feld leer gelassen werden."
 
 msgid "An HTML fragment appended to the bottom of each page. You might use this to identify the webmaster for this site."
-msgstr "Auf jedem Seiten-Ende wird ein HTML-Fragment eingefügt und kann zur Identifikation des Webmasters benutzt werden."
+msgstr "HTML-Fragment, das an jedem Seiten-Ende eingefügt wird, und zur Identifikation des Webmasters benutzt werden kann."
 
-msgid "Where FAQ-O-Matic should send email when it wants to alert the administrator (usually same as"
-msgstr "An wen soll FAQ-O-Matic eine Mail schicken, wenn der Administrator alarmiert werden soll (normalerweise"
+msgid "Where FAQ-O-Matic should send email when it wants to alert the administrator (usually same as $adminAuth)"
+msgstr "An wen soll FAQ-O-Matic eine Mail schicken, wenn der Administrator alarmiert werden soll (normalerweise gleich $adminAuth)"
 
 msgid "If true, FAQ-O-Matic will mail the log file to the administrator whenever it is truncated."
-msgstr "FAQ-O-Matic schickt das Logfile als Mail zum Administrator."
+msgstr "Wenn gesetzt, schickt FAQ-O-Matic das Logfile bei jeder Kürzung als Mail an den Administrator."
 
 msgid "User to use for RCS ci command (default is process UID)"
-msgstr "Benutzer, welcher das RCS ci-Kommando einsetzt (default: UID)"
+msgstr "Benutzer, unter dessen ID das RCS ci-Kommando ablaufen soll (default: UID)"
 
 msgid "Links from cache to CGI are relative to the server root, rather than absolute URLs including hostname:"
-msgstr "Links vom Cache zu CGI sind relativ zum Server-Root, nicht absolute URLs inklusive hostname:"
+msgstr "Links vom Cache zu CGI sind relativ zum Server-Root, nicht absolute URLs inklusive Hostname:"
 
-msgid "mailto: links can be rewritten such as"
-msgstr "mailto: Links können geändert werden wie beispielsweise"
-
-msgid "or e-mail addresses suppressed entirely (hide)."
-msgstr "oder die eMail-Adresse nicht anzeigen (verstecke)"
+msgid "mailto: links can be rewritten such as jonhATdartmouthDOTedu (cheesy), jonh (nameonly), or e-mail addresses suppressed entirely (hide)."
+msgstr "Ausgabe von mailto:-Links ohne Modifikation (off), als jonhATdartmouthDOTedu (cheesy), jonh (nameonly) oder komplett ohne eMail-Adresse (hide)."
 
 msgid "Number of seconds that authentication cookies remain valid. These cookies are stored in URLs, and so can be retrieved from a browser history file. Hence they should usually time-out fairly quickly."
-msgstr "Zeit in Sekunden, in der die Authentifikationscookies gültig sind. Die Cookies werden in URLs gespeichert und können mit der Browser-History aufgerufen werden. Daher sollte das time-out schnell genug gewählt werden."
+msgstr "Zeit in Sekunden, in der die Authentifikationscookies gültig sind. Die Cookies werden in URLs gespeichert und können mit der Browser-History aufgerufen werden. Daher sollte der TimeOut kurz genug gewählt werden."
 
 msgid "<i>Optional:</i> These options set the default [Appearance] modes."
-msgstr "<i>Optional:</i> Diese Einstellungen werden als Default-Werte bei [Darstellung] verwendet."
+msgstr "<i>Optional:</i> Diese Einstellungen werden als Default-Werte bei [Anzeige] verwendet."
 
-msgid "Page rendering scheme. Do not choose"
-msgstr "Seitenaufbau. Bitte nicht"
-
-msgid "as the default."
-msgstr "als Standardeinstellung wählen."
+msgid "Page rendering scheme. Do not choose 'text' as the default."
+msgstr "Seitenaufbau (Bitte nicht 'text' als Standardeinstellung wählen)"
 
 msgid "expert editing commands"
-msgstr "Experten-Kommandos"
-
-msgid "show"
-msgstr "zeige"
-
-msgid "hide"
-msgstr "verstecke"
-
-msgid "compact"
-msgstr "kompakt"
+msgstr "Anzeige der erweiterten Editier-Funktionen"
 
 msgid "name of moderator who organizes current category"
-msgstr "Name des Moderators, welcher die aktuelle Kategorie administriert"
+msgstr "Anzeige des Moderators für die aktuelle Kategorie"
 
 msgid "last modified date"
-msgstr "Datum der letzten Änderung"
+msgstr "Anzeige des Datums der letzten Änderung"
 
 msgid "attributions"
-msgstr "Zeige Autoren"
+msgstr "Anzeige der Autoren"
 
 msgid "commands for generating text output"
-msgstr "Kommandos für das generieren der Textausgabe"
+msgstr "Anzeige der Funktionen für das Erzeugen der Textausgabe"
 
 msgid "<i>Optional:</i> These options fine-tune the appearance of editing features."
 msgstr "<i>Optional:</i> Diese Einstellungen sind für die Feineinstellung der Texteingabe."
 
 msgid "The old [Show Edit Commands] button appears in the navigation bar."
-msgstr "Der [Zeige erweiterte Funktionen]-Button erscheint in der Navigationszeile."
+msgstr "Anzeige des alten Buttons [Erweiterte Editier-Funktionen] in der Navigationszeile."
 
 msgid "Navigation links appear at top of page as well as at the bottom."
-msgstr "Navigations-Links erscheinen auf oben und unten auf der Seite."
+msgstr "Anzeige der Navigations-Links oben und unten auf der Seite."
 
-msgid "Hide [Append to This Answer] and [Add New Answer in ...] buttons."
-msgstr "Verstecke [Diesen Eintrag erweitern] und [Einen neuen Eintrag hinzufügen in...]"
+msgid "Hide [Append to This Answer] and [New Answer in ...] buttons."
+msgstr "Verstecke [Eintrag erweitern] und [Neuer Eintrag in...]"
 
 msgid "icons-and-label"
-msgstr "Icons und Label"
+msgstr "Icons und Text"
 
 msgid "Editing commands appear with neat-o icons rather than [In Brackets]."
-msgstr "Editier-Kommandos erscheinen mit Icons nicht in [eckigen Klammern]."
+msgstr "Anzeige der Editier-Kommandos als Icons statt als Text in [eckigen Klammern]."
 
 msgid "<i>Optional:</i> Other configurations that you should probably ignore if present."
-msgstr "<i>Optional:</i> Andere Einstellungen welche ignoriert werden können."
+msgstr "<i>Optional:</i> Andere Einstellungen, die ignoriert werden können."
 
 msgid "Draw Item titles John Nolan's way."
-msgstr "Zeige den Titel nach John Nolan's Art"
+msgstr "Anzeige des Titels auf John Nolan's Art"
 
 msgid "Hide sibling (Previous, Next) links"
-msgstr "Links nicht anzeigen (Vorherige, Nächste)"
+msgstr "Navigations-Links (Vorherige, Nächste) nicht anzeigen"
 
 msgid "Arguments to make ci quietly log changes (default is probably fine)"
-msgstr "Argumente für ci um Änderungen an der log-Datei vorzunehmen (Default: fine)"
+msgstr "Argumente für ci um Änderungen an der log-Datei vorzunehmen (Standard sollte passen)"
 
 msgid "off"
 msgstr "aus"
@@ -515,11 +483,8 @@ msgstr "cheesy"
 msgid "This is a command, so only letters, hyphens, and slashes are allowed."
 msgstr "Bei diesem Kommando sind nur Buchstaben, Bindestrich (-) und Slashes (/) erlaubt."
 
-msgid "If this is your first time installing a FAQ-O-Matic, I recommend"
-msgstr "Installieren Sie zum ersten Mal FAQ-O-Matic, wird empfohlen"
-
-msgid "only filling in the sections marked <b>Mandatory</b>."
-msgstr "nur die mit <b>Vorschreibend</b> markierten Anschnitte auszufüllen."
+msgid "If this is your first time installing a FAQ-O-Matic, I recommend only filling in the sections marked <b>Mandatory</b>."
+msgstr "Installieren Sie zum ersten Mal FAQ-O-Matic, wird empfohlen, nur die mit <b>Nötig</b> markierten Anschnitte auszufüllen."
 
 msgid "Define"
 msgstr "Änderungen übernehmen"
@@ -528,28 +493,25 @@ msgid "(no description)"
 msgstr "(kein Eintrag)"
 
 msgid "Unrecognized config parameter"
-msgstr "Falscher Konfigurationsparameter"
+msgstr "Unbekannter Konfigurationsparameter"
 
 msgid "Please report this problem to"
 msgstr "Bitte wenden Sie sich mit diesem Problem an"
 
+msgid "Attempting to install cron job:"
+msgstr "Versuche folgenden cron-Job zu installieren:"
+
 msgid "Cron job installed. The maintenance script should run hourly."
 msgstr "Der Cron-Job wurde installiert. Das Script wird nun stündlich aufgerufen."
 
-msgid "I thought I installed a new cron job, but it didn't"
-msgstr "Der neue cron-Job wurde installiert, wird aber nicht"
+msgid "I thought I installed a new cron job, but it didn't appear to take."
+msgstr "Der neue cron-Job wurde installiert, wird aber nicht ausgeführt"
 
-msgid "appear to take."
-msgstr "ausgeführt."
-
-msgid "You better add"
-msgstr "Durch hinzufügen von"
-
-msgid "to some crontab yourself with"
-msgstr "zum crontab mit"
+msgid "You better add %0 to some crontab yourself with <b><tt>crontab -e</tt></b>."
+msgstr "Am besten tragen Sie die Zeile %0 selbst mit <b><tt>crontab -e</tt></b> in cron ein."
 
 msgid "I replaced this old crontab line, which appears to be an older one for this same FAQ:"
-msgstr "Die alte crontab-Zeile wurde ersetzt"
+msgstr "Der alte crontab-Eintrag für diese FAQ wurde ersetzt:"
 
 
 ###
@@ -559,18 +521,16 @@ msgstr "Die alte crontab-Zeile wurde ersetzt"
 msgid "Bag names may only contain letters, numbers, underscores (_), hyphens (-), and periods (.), and may not end in '.desc'. Yours was"
 msgstr "Objekt-Dateinamen dürfen nur Buchstaben, Nummern, Unterstriche (_), Bindestriche (-) und Punkte (.) enthalten. Die Dateiendung '.desc' ist nicht erlaubt. Ihr Dateiname war"
 
+
 ###
 ### editBag.pm
 ###
 
-msgid "Upload new bag to show in the"
-msgstr "Uploaden eines Dateiobjekts in den"
-
-msgid "part in"
-msgstr "Eintrag von"
+msgid "Upload new bag to show in the %0 part in <b>%1</b>."
+msgstr "Upload eines Datei-Objekts in den %0 Textteil von <b>%1</b>"
 
 msgid "Bag name:"
-msgstr "Objekt-Name"
+msgstr "Objekt-Name:"
 
 msgid "The bag name is used as a filename, so it is restricted to only contain letters, numbers, underscores (_), hyphens (-), and periods (.). It should also carry a meaningful extension (such as .gif) so that web browsers will know what to do with the data."
 msgstr "Der Objektname wird von FAQ-O-Matic als Dateiname benutzt (nur Buchstaben, Zahlen, Unterstriche, Bindestriche und Punkte sind erlaubt) und sollte eine sinnvolle Erweiterung haben (beispielsweise .gif), damit der Webbrowser die Datei korrekt darstellt."
@@ -588,44 +548,30 @@ msgid "Height:"
 msgstr "Höhe:"
 
 msgid "(Leave blank to keep original bag data and change only the associated information below.)"
-msgstr "(Braucht nicht ausgefüllt zu werden, wenn das alte Dateiobjekt erhalten werden soll.)"
+msgstr "(Nicht ausfüllen, wenn nur die Zusatzinformationen des Objekts geändert werden sollen.)"
+
 
 ###
 ### appearanceForm.pm
 ###
 
 msgid "Appearance Options"
-msgstr "Einstellungen zur Darstellung"
+msgstr "Anzeige-Einstellungen"
 
 msgid "Show"
 msgstr "Alle"
 
 msgid "Compact"
-msgstr "Kompakte"
+msgstr "Kompakt"
 
 msgid "Hide"
 msgstr "Keine"
 
-msgid "expert editing commands"
-msgstr "Anzeige der Experten-Kommandos"
-
-msgid "name of moderator who organizes current category"
-msgstr "Anzeige vom Namen des Moderators"
-
 msgid "all categories and answers below current category"
-msgstr "Anzeige aller Kategorien und Antworten unter der Aktuellen Kategorie"
-
-msgid "last modified date"
-msgstr "Anzeige vom Datum der letzten Änderung"
-
-msgid "Show All"
-msgstr "Zeige alle"
+msgstr "Anzeige aller Kategorien und Einträge unter der aktuellen Kategorie"
 
 msgid "Default"
 msgstr "Standard"
-
-msgid "attributions"
-msgstr "Autoren"
 
 msgid "Simple"
 msgstr "Einfaches"
@@ -633,21 +579,23 @@ msgstr "Einfaches"
 msgid "Fancy"
 msgstr "Erweitertes"
 
-msgid "commands for generating text output"
-msgstr "Anzeige der Kommandos um die Textausgabe zu generieren"
-
 msgid "Accept"
 msgstr "Änderungen übernehmen"
+
 
 ###
 ### addItem.pm
 ###
 
-msgid "Subcategories:\n\n\nAnswers in this category:\n"
-msgstr "Unterkategorien:\n\n\nAntworten in dieser Kategorie:\n"
+msgid "Subcategories:"
+msgstr "Kategorien:"
+
+msgid "Answers in this category:"
+msgstr "Einträge in dieser Kategorie:"
 
 msgid "Copy of"
 msgstr "Kopie von"
+
 
 ###
 ### changePass.pm
@@ -656,23 +604,21 @@ msgstr "Kopie von"
 msgid "Please enter your username, and select a password."
 msgstr "Bitte geben Sie Ihren Usernamen und Ihr Passwort ein."
 
-msgid "I will send a secret number to the email address you enter"
-msgstr "Es wird ein Schlüssel zu der eingegebenen email-Adresse geschickt"
-
-msgid "to verify that it is valid."
-msgstr "um zu überprüfen, ob Ihre Eingaben richtig sind."
+msgid "I will send a secret number to the email address you enter to verify that it is valid."
+msgstr "Es wird ein Schlüssel zu der eingegebenen eMail-Adresse geschickt, um die Richtigkeit Ihrer Eingaben zu überprüfen."
 
 msgid "If you prefer not to give your email address to this web form, please contact"
-msgstr "Wenn Sie Ihre email-Adresse nicht in dieses Formular eingeben möchten, kontaktieren Sie bitte"
+msgstr "Wenn Sie Ihre eMail-Adresse nicht in dieses Formular eingeben möchten, wenden Sie sich bitte an"
 
 msgid "Please <b>do not</b> use a password you use anywhere else, as it will not be transferred or stored securely!"
-msgstr "Da das Passwort unverschlüsselt übertragen wird, sollten Sie auf keinen Fall ein Passwort wählen, welches Sie schon anderweitig benutzen."
+msgstr "Da das Passwort unverschlüsselt übertragen und gespeichert wird, wählen Sie bitte keinesfalls ein Passwort, das Sie schon anderweitig benutzen!"
 
 msgid "Password:"
 msgstr "Passwort:"
 
 msgid "Set Password"
 msgstr "Setze Passwort"
+
 
 ###
 ### Auth.pm
@@ -685,19 +631,23 @@ msgid "someone who has proven their identification"
 msgstr "von Benutzern, die ihre Identifikation bewiesen haben,"
 
 msgid "someone who has offered identification"
-msgstr "von Benutzern, die ihre e-mail Adresse eingegeben haben,"
+msgstr "von Benutzern, die ihre eMail-Adresse eingegeben haben,"
 
 msgid "anybody"
-msgstr "von allen" 
+msgstr "von allen"
 
 msgid "the moderator of the item"
 msgstr "vom Moderator des Eintrags"
 
 msgid "%0 group members"
-msgstr "von Mitgliedern der Gruppe %0"
+msgstr "von Mitgliedern der Gruppe <i>%0</i>"
 
 msgid "I don't know who"
 msgstr "von (unbekannt)"
+
+msgid "Email:"
+msgstr "eMail:"
+
 
 ###
 ### Authenticate.pm
@@ -749,7 +699,7 @@ msgid "Bags can only be posted by %0."
 msgstr "Datei-Objekte dürfen nur %0 erstellt werden."
 
 msgid "The FAQ-O-Matic can only be configured by %0."
-msgstr "FAQ-O-Matic kann nur %0 konfiguriert."
+msgstr "FAQ-O-Matic kann nur %0 konfiguriert werden."
 
 msgid "The operation you attempted (%0) can only be done by %1."
 msgstr "Die von Ihnen versuchte Operation (%0) kann nur %1 ausgeführt werden."
@@ -761,32 +711,24 @@ msgid "If you have forgotten your password, you can"
 msgstr "Wenn Sie Ihr Passwort vergessen haben, können Sie"
 
 msgid "If you have already logged in earlier today, it may be that the token I use to identify you has expired. Please log in again."
-msgstr "Wenn Sie schon eingeloggt waren, könnte es sein, daß Ihr Zugangsschlüssel abgelaufen ist ist. Bitte loggen Sie sich erneut ein."
+msgstr "Wenn Sie heute schon eingeloggt waren, ist möglicherweise Ihr Zugangsschlüssel abgelaufen. Bitte loggen Sie sich erneut ein."
 
 msgid "Please offer one of the following forms of identification:"
 msgstr "Bitte wählen Sie die Art der Identifikation:"
 
 msgid "No authentication, but my email address is:"
-msgstr "Keine Authorisierung, aber meine email-Adresse lautet:"
+msgstr "Keine Authentisierung, aber meine eMail-Adresse lautet:"
 
 msgid "Authenticated login:"
-msgstr "Authorisiertes Login:"
+msgstr "Authentisiertes Login:"
+
 
 ###
 ### moveItem.pm
 ###
 
-msgid "The file"
-msgstr "Die Datei"
-
-msgid "doesn't exist."
-msgstr "konnte nicht gefunden werden."
-
-msgid "Make"
-msgstr "Mache"
-
-msgid "belong to which other item?"
-msgstr "zugehörig zu welchem Eintrag?"
+msgid "Make <b>%0</b> belong to which other item?"
+msgstr "Zu welchem Eintrag soll <b>%0</b> verschoben werden?"
 
 msgid "No item that already has sub-items can become the parent of"
 msgstr "Der Eintrag hat Subeinträge und kann daher nicht verwendet werden als Oberbegriff von"
@@ -801,63 +743,59 @@ msgid "Click here</a> to provide better authentication."
 msgstr "Klicken Sie hier</a>, um die Zugriffsrechte zu ändern."
 
 msgid "Hide answers, show only categories"
-msgstr "Zeige keine Antworten, zeige nur die Kategorien"
+msgstr "Zeige keine Einträge, nur Kategorien"
 
 msgid "Show both categories and answers"
-msgstr "Zeige die Kategorien und die Antworten"
+msgstr "Zeige Kategorien und Einträge"
+
 
 ###
 ### editPart.pm
 ###
 
-msgid "Enter the answer to"
-msgstr "Antwort eingeben in"
+msgid "Enter the answer to <b>%0</b>"
+msgstr "Bearbeite Text in <b>%0</b>"
 
-msgid "Enter a description for"
-msgstr "Beschreibung eingeben für"
+msgid "Enter a description for <b>%0</b>"
+msgstr "Beschreibung eingeben für <b>%0</b>"
 
-msgid "Edit duplicated text for"
-msgstr "Ändere duplizierten Text für"
+msgid "Edit duplicated text for <b>%0</b>"
+msgstr "Bearbeite kopierten Textteil in <b>%0</b>"
 
-msgid "Enter new text for"
-msgstr "Neuen Text eingeben für"
+msgid "Enter new text for <b>%0</b>"
+msgstr "Neuen Textteil eingeben in <b>%0</b>"
 
-msgid "Editing the"
-msgstr "Änderung des"
+msgid "Editing the %0 text part in <b>%1</b>."
+msgstr "Bearbeite %0 Textteil in <b>%1</b>."
 
-msgid "text part in"
-msgstr "Texteintrag in"
+msgid "If you later need to edit or delete this text, use the [Appearance] page to turn on the expert editing commands."
+msgstr "Um diesen Text später zu bearbeiten oder zu löschen, benutzen Sie [Anzeige] zur Anzeige der erweiterten Editier-Funktionen."
 
-msgid "If you later need to edit or delete this text, use the [%0] page to turn on the expert editing commands."
-msgstr "Wenn Sie diesen Text später ändern oder löschen wollen, dann benutzen Sie [%0] zur Anzeige der Experten-Kommandos."
 
 ###
 ### Part.pm
 ###
 
 msgid "Upload file:"
-msgstr "Zu ladene Datei:"
+msgstr "Zu ladende Datei:"
 
 msgid "Warning: file contents will <b>replace</b> previous text"
 msgstr "Warnung: Die Datei wird den vorhandenen Text <b>ersetzen</b>"
 
-msgid "Replace"
-msgstr "Ersetze"
-
-msgid "with new upload"
-msgstr "mit neuer Datei"
+msgid "Replace %0 with new upload"
+msgstr "<i>%0</i> ersetzen"
 
 msgid "Select bag to replace with new upload"
-msgstr "Wähle ein neues Datei-Objekt" 
+msgstr "Wähle ein neues Datei-Objekt"
 
 msgid "Hide Attributions"
-msgstr "Name des Autors nicht anzeigen"
+msgstr "Autor verbergen"
 
 msgid "Format text as:"
-msgstr "Formatiere den Text als:"
+msgstr "Formatiere Text als:"
 
 msgid "Directory"
-msgstr "Verzeichnis"
+msgstr "Kategorie"
 
 msgid "Natural text"
 msgstr "Normaler Text"
@@ -872,25 +810,26 @@ msgid "Submit Changes"
 msgstr "Änderungen abschicken"
 
 msgid "Revert"
-msgstr "Eingabefeld zurücksetzen"
+msgstr "Eingabe zurücksetzen"
 
 msgid "Insert Uploaded Text Here"
-msgstr "Textdatei hier einfügen"
+msgstr "Textdatei einfügen"
 
 msgid "Insert Text Here"
-msgstr "Text hier einfügen"
+msgstr "Text einfügen"
 
 msgid "Edit This Text"
-msgstr "Diesen Text editieren"
+msgstr "Text editieren"
 
 msgid "Duplicate This Text"
-msgstr "Diesen Text duplizieren"
+msgstr "Text kopieren"
 
 msgid "Remove This Text"
-msgstr "Diesen Text löschen"
+msgstr "Text löschen"
 
 msgid "Upload New Bag Here"
-msgstr "Eine neues Datei-Objekt hier einfügen"
+msgstr "Datei-Objekt einfügen"
+
 
 ###
 ### searchForm.pm
@@ -947,6 +886,7 @@ msgstr "in den letzten vierzehn Tagen"
 msgid "month"
 msgstr "im letzten Monat"
 
+
 ###
 ### search.pm
 ###
@@ -958,13 +898,14 @@ msgid "of these words"
 msgstr "der folgenden Wörter"
 
 msgid "Search results for"
-msgstr "Ergebnisse der Suche für"
+msgstr "Such-Ergebnisse für"
 
 msgid "at least"
 msgstr "zumindest"
 
 msgid "Results may be incomplete, because the search index has not been refreshed since the most recent change to the database."
 msgstr "Die Ergebnisse können unvollständig sein, da der Index nicht erneuert wurde seit der letzten Änderung an der Datenbasis."
+
 
 ###
 ### Item.pm
@@ -980,13 +921,25 @@ msgid "Setting"
 msgstr "Einstellung"
 
 msgid "Setting if Inherited"
-msgstr "Geerbter Wert"
+msgstr "Vererbter Wert"
+
+msgid "Group %0"
+msgstr "Gruppe %0"
 
 msgid "Moderator"
 msgstr "Moderator"
 
+msgid "nobody"
+msgstr "niemand"
+
+msgid "(system default)"
+msgstr "(Systemvorgabe)"
+
+msgid "(inherited from parent)"
+msgstr "(vererbt von übergeordnetem Eintrag)"
+
 msgid "(will inherit if empty)"
-msgstr "(geerbter Wert wenn leer)"
+msgstr "(vererbter Wert wenn leer)"
 
 msgid "Send mail to the moderator when someone other than the moderator edits this item:"
 msgstr "Schicke dem Moderator eine Mail, wenn jemand anders diesen Eintrag ändert:"
@@ -994,71 +947,74 @@ msgstr "Schicke dem Moderator eine Mail, wenn jemand anders diesen Eintrag änder
 msgid "Permissions"
 msgstr "Zugriffsrechte"
 
-#msgid "RelaxChildPerms"
-#msgstr "RelaxChildPerms"
+msgid "Blah blah"
+msgstr "Bla bla"
 
-msgid "Blah"
-msgstr "Blah"
+msgid "Yes"
+msgstr "Ja"
 
-msgid "blah"
-msgstr "blah"
+msgid "No"
+msgstr "Nein"
+
+msgid "Relax"
+msgstr "Lockerer"
+
+msgid "Don't Relax"
+msgstr "Nicht lockerer"
+
+msgid "undefined"
+msgstr "Nicht definiert"
 
 msgid "<p>New Order for Text Parts:"
 msgstr "<p>Neue Reihenfolge für Textabschnitte:"
 
+msgid "Who can access the installation/configuration page (use caution!):"
+msgstr "Wer darf auf die Installations-/Konfigurationsseiten zugreifen (Vorsicht !):"
+
 msgid "Who can add a new text part to this item:"
-msgstr "Wer darf einen neuen Texteintrag in dieses Feld eintragen:" 
+msgstr "Wer darf neuen Text zu diesem Eintrag hinzufügen:"
 
 msgid "Who can add a new answer or category to this category:"
-msgstr "Wer darf eine neue Antwort oder Kategorie in diese Katagorie eintragen:"
+msgstr "Wer darf neue Einträge oder Unterkategorien in diese Katagorie einfügen:"
 
 msgid "Who can edit or remove existing text parts from this item:"
-msgstr "Wer darf vorhandenen Text editieren bzw. verschieben von diesem Feld:"
+msgstr "Wer darf in diesem Eintrag vorhandenen Text editieren bzw. löschen:"
 
-msgid "Who can move answers or subcategories from this category;"
-msgstr "Wer darf Antworten oder Subkategorien verschieben von dieser Kategorie;"
-
-msgid "or turn this category into an answer or vice versa:"
-msgstr "bzw. umwandeln dieser Kategorie in eine Antwort und umgekehrt:"
+msgid "Who can move answers or subcategories from this category; or turn this category into an answer or vice versa:"
+msgstr "Wer darf Einträge oder Unterkategorien dieser Kategorie verschieben bzw. diese Kategorie in einen Eintrag und umgekehrt umwandeln:"
 
 msgid "Who can edit the title and options of this answer or category:"
-msgstr "Wer darf den Titel und die Einstellungen dieser Antwort oder Kategorie ändern:"
+msgstr "Wer darf den Titel und die Einstellungen dieses Eintrags bzw. dieser Kategorie ändern:"
 
-msgid "Who can use untranslated HTML when editing the text of"
-msgstr "Wer darf HTML-Code benutzen beim Editieren von"
-
-msgid "this answer or category:"
-msgstr "dieser Antwort oder Kategorie:"
+msgid "Who can use untranslated HTML when editing the text of this answer or category:"
+msgstr "Wer darf HTML-Code beim Editieren dieser Eintrags bzw. dieser Kategorie benutzen:"
 
 msgid "Who can change these moderator options and permissions:"
 msgstr "Wer darf diese Moderator-Einstellungen und Zugriffsrechte ändern:"
 
 msgid "Who can use the group membership pages:"
-msgstr "Wer darf die Gruppenmitgliedschaftsseiten benutzen:"
+msgstr "Wer darf die Gruppenmitgliedschafts-Seiten benutzen:"
 
 msgid "Who can create new bags:"
-msgstr "Wer darf neue Dateiobjekte einfügen:"
+msgstr "Wer darf neue Datei-Objekte einfügen:"
 
 msgid "Who can replace existing bags:"
-msgstr "Wer darf vorhandene Dateiobjekte ersetzen:"
+msgstr "Wer darf vorhandene Datei-Objekte ersetzen:"
 
 msgid "Group"
-msgstr "Gruppen"
-
-msgid "The moderator"
-msgstr "Moderator"
+msgstr "Gruppe"
 
 msgid "Authenticated users"
-msgstr "Authorisierte Benutzer"
+msgstr "Authentisierte Benutzer"
 
 msgid "Users giving their names"
-msgstr "Benutzer, welcher seinen Namen angegeben hat"
+msgstr "Namentlich bekannte Benutzer"
 
-msgid "Whoever can for my parent,"
-msgstr "Jeder Übergeordnete Benutzer"
+msgid "Inherit"
+msgstr "Erben von Elternobjekt"
 
-msgid "File $subfilename seems broken."
-msgstr "Datei $subfilename scheint defekt zu sein."
+msgid "File %0 seems broken."
+msgstr "Datei %0 scheint defekt zu sein."
 
 msgid "Permissions:"
 msgstr "Zugriffsrechte:"
@@ -1075,35 +1031,26 @@ msgstr "Kategorie"
 msgid "Answer"
 msgstr "Eintrag"
 
-msgid "answer"
-msgstr "Eintrag"
-
 msgid "Show attributions from all parts together at bottom"
-msgstr "Zeige nicht den Namen des Autors unter jedem Eintrag"
+msgstr "Anzeige der Autoren aller Einträge am unteren Rand"
 
 msgid "New Item"
 msgstr "Neuer Eintrag"
 
-msgid "Submit Changes"
-msgstr "Änderungen abschicken"
-
-msgid "Revert"
-msgstr "Eingabefelder zurücksetzen"
- 
 msgid "Convert to Answer"
-msgstr "Konvertieren nach Antwort"
+msgstr "In Eintrag umwandeln"
 
 msgid "Convert to Category"
-msgstr "Konvertieren nach Kategorie"
+msgstr "In Kategorie umwandeln"
 
-msgid "New Subcategory of"
-msgstr "Neue Subkategorie von"
+msgid "New Subcategory of "%0""
+msgstr "Neue Kategorie in <i>%0</i>"
 
-msgid "Move"
-msgstr "Verschiebe"
+msgid "Move %0"
+msgstr "%0 verschieben"
 
-msgid "Trash"
-msgstr "Lösche"
+msgid "Trash %0"
+msgstr "%0 löschen"
 
 msgid "Parts"
 msgstr "Einträge"
@@ -1112,43 +1059,31 @@ msgid "New Category"
 msgstr "Neue Kategorie"
 
 msgid "New Answer"
-msgstr "Neue Antwort"
+msgstr "Neuer Eintrag"
 
-msgid "Editing"
-msgstr "Bearbeite"
+msgid "Editing %0 <b>%1</b>"
+msgstr "Bearbeite %0 <b>%1</b>"
 
-msgid "Insert Uploaded Text Here"
-msgstr "Textdatei hier einfügen"
-
-msgid "Insert Text Here"
-msgstr "Text hier einfügen"
-
-msgid "New Answer in"
-msgstr "Neuer Eintrag in"
+msgid "New Answer in "%0""
+msgstr "Neuer Eintrag in <i>%0</i>"
 
 msgid "Duplicate Category as Answer"
-msgstr "Dupliziere Kategorie"
+msgstr "Kategorie kopieren"
 
 msgid "Duplicate Answer"
-msgstr "Dupliziere Eintrag"
+msgstr "Eintrag kopieren"
 
-msgid "Title and Options"
-msgstr "Titel und Einstellungen"
+msgid "%0 Title and Options"
+msgstr "%0-Titel & -Optionen"
 
-msgid "Category"
-msgstr "Kategorie"
-
-msgid "Edit"
-msgstr "Ändere"
-
-msgid "Add a New Answer in"
-msgstr "Ein neuen Eintrag hinzufügen in"
+msgid "Edit %0 Permissions"
+msgstr "%0-Rechte ändern"
 
 msgid "Append to This Answer"
-msgstr "Diesen Eintrag erweitern"
+msgstr "Eintrag erweitern"
 
 msgid "This document is:"
-msgstr "Dieses Dokument ist:"
+msgstr "Dieses Dokument ist erreichbar via:"
 
 msgid "This document is at:"
 msgstr "Dieses Dokument hat die URL:"
@@ -1161,35 +1096,32 @@ msgstr "Nächste"
 
 
 ###
-### Appearcance.pm
+### Appearance.pm
 ###
 
 msgid "Search"
 msgstr "Suchen"
 
 msgid "Appearance"
-msgstr "Darstellung"
+msgstr "Anzeige"
 
 msgid "Show Top Category Only"
-msgstr "Nur die oberste Kategorie zeigen"
+msgstr "Zeige nur die oberste Kategorie"
 
 msgid "Show This <em>Entire</em> Category"
-msgstr "Die <em>gesamte</em> Kategorie zeigen"
+msgstr "Zeige <em>gesamte</em> Kategorie"
 
 msgid "Show This %0 As Text"
 msgstr "%0 als Text anzeigen"
 
 msgid "Show This <em>Entire</em> Category As Text"
-msgstr "Anzeigen der <em>gesamten</em> Kategorie als Text"
+msgstr "Zeige <em>gesamte</em> Kategorie als Text"
 
 msgid "Hide Expert Edit Commands"
-msgstr "Erweiterte Funktionen verstecken"
+msgstr "Basis-Editier-Funktionen"
 
 msgid "Show Expert Edit Commands"
-msgstr "Zeige erweiterte Funktionen"
-
-msgid "Return to FAQ"
-msgstr "Zurück zur FAQ"
+msgstr "Erweiterte Editier-Funktionen"
 
 msgid "This is a"
 msgstr "Dies ist eine"
@@ -1207,13 +1139,13 @@ msgid "Change Password"
 msgstr "Ändere Passwort"
 
 msgid "Edit Title of %0 %1"
-msgstr "Ändere Titel von %0 %1"
+msgstr "Bearbeite Titel von %0 %1"
 
 msgid "New %0"
 msgstr "Neue %0"
 
 msgid "Edit Part in %0 %1"
-msgstr " Ändere Abschnitt in %0 %1"
+msgstr "Bearbeite Abschnitt in %0 %1"
 
 msgid "Insert Part in %0 %1"
 msgstr "Einfügen eines Textteils in %0 %1"
@@ -1221,28 +1153,69 @@ msgstr "Einfügen eines Textteils in %0 %1"
 msgid "Move %0 %1"
 msgstr "Verschiebe %0 %1"
 
-msgid "Search"
-msgstr "Suche"
-
 msgid "Access Statistics"
 msgstr "Zugriffs-Statistik"
-
-msgid "Validate"
-msgstr "Für gültig erklären"
 
 msgid "%0 Permissions for %1"
 msgstr "%0 Zugriffsrechte für %1"
 
 msgid "Upload bag for %0 %1"
-msgstr "Uploaden eines Datei-Objekts für %0 %1"
+msgstr "Upload eines Datei-Objekts für %0 %1"
+
+
+###
+### Slow.pm
+###
+
+msgid "Either someone has changed the answer or category you were editing since you received the editing form, or you submitted the same form twice."
+msgstr "Entweder hat jemand anderer den Eintrag oder die Kategorie geändert seit Sie sie bearbeiten, oder Sie haben das Formular mehrfach abgeschickt."
+
+msgid "Return to the FAQ"
+msgstr "Zurück zur Faq-O-Matic"
+
+msgid "Please %0 and start again to make sure no changes are lost. Sorry for the inconvenience."
+msgstr "Bitte gehen Sie %0 und starten Sie neu, um keine Änderungen zu verlieren. Sorry für die Umstände."
+
+msgid "(Sequence number in form: %0; in item: %1)"
+msgstr "(Versionsnummer im Formular: %0; im Eintrag: %1)"
+
+msgid "This page will reload every %0 seconds, showing the last %1 lines of the process output."
+msgstr "Diese Seite lädt alle %0 Sekunden neu und zeigt die letzten %1 Zeilen des Prozess-Log."
+
+msgid "Show the entire process log"
+msgstr "Anzeige des gesamten Prozess-Log"
+
+msgid "Select a group to edit:"
+msgstr "Wählen Sie eine Gruppe zur Bearbeitung:"
+
+msgid "Add Group"
+msgstr "Neue Gruppe"
+
+msgid "(Members of this group are allowed to access these group definition pages.)"
+msgstr "(Mitglieder dieser Gruppe haben Zugriff auf die Gruppenmitgliedschafts-Seiten.)"
+
+msgid "Up To List Of Groups"
+msgstr "Zurück zur Gruppen-Liste"
+
+msgid "Add Member"
+msgstr "Neues Mitglied"
+
+msgid "Remove Member"
+msgstr "Mitglied löschen"
+
+
+###
+### END
+###
+
 );
 __EOF__
 
 	my @txs = grep { m/^msg/ } split(/\n/, $txfile);
 	for (my $i=0; $i<@txs; $i+=2) {
-		$txs[$i] =~ m/msgid \"(.*)\"$/;
+		$txs[$i] =~ m/msgid \"(.*)\"$/s;
 		my $from = $1;
-		$txs[$i+1] =~ m/msgstr \"(.*)\"$/;
+		$txs[$i+1] =~ m/msgstr \"(.*)\"$/s;
 		my $to = $1;
 		if (not defined $from or not defined $to) {
 			die "bad translation at pair $i";
@@ -1250,3 +1223,4 @@ __EOF__
 		$tx->{$from} = $to;
 	}
 };
+

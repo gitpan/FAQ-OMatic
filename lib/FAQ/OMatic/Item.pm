@@ -746,8 +746,8 @@ sub displaySiblings {
 		} else {
 			$rt.="<br>\n";
 		}
-		$rt.=gettext("Previous");
-		$rt.=": </td><td valign=top align=left>\n" if $useTable;
+		$rt.=gettext("Previous").": ";
+		$rt.="</td><td valign=top align=left>\n" if $useTable;
 		$rt.=FAQ::OMatic::makeAref('-command'=>'faq',
 							'-params'=>$params,
 							'-changedParams'=>{"file"=>$prevs})
@@ -764,8 +764,8 @@ sub displaySiblings {
 		} else {
 			$rt.="<br>\n";
 		}
-		$rt.=gettext("Next");
-		$rt.=": </td><td valign=top align=left>\n" if $useTable;
+		$rt.=gettext("Next").": ";
+		$rt.="</td><td valign=top align=left>\n" if $useTable;
 		$rt.=FAQ::OMatic::makeAref('-command'=>'faq',
 							'-params'=>$params,
 							'-changedParams'=>{"file"=>$nexts})
@@ -858,8 +858,8 @@ sub displayCoreHTML {
 	if (FAQ::OMatic::getParam($params, 'showModerator') eq 'show') {
 		my $mod = FAQ::OMatic::Auth::getInheritedProperty($self, 'Moderator');
 		my $brt = '';
-		$brt .= "Moderator: ".FAQ::OMatic::mailtoReference($params, $mod);
-		$brt .= " <i>(inherited from parent)</i>" if (not $self->{'Moderator'});
+		$brt .= gettext("Moderator").": ".FAQ::OMatic::mailtoReference($params, $mod);
+		$brt .= " <i>".gettext("(inherited from parent)")."</i>" if (not $self->{'Moderator'});
 		$brt .= "\n";
 		push @rowboxes, { 'type'=>'wide', 'text'=>$brt,
 			'id'=>'showModerator' };
@@ -874,7 +874,7 @@ sub displayCoreHTML {
 			FAQ::OMatic::makeAref('-command'=>'editItem',
 					'-params'=>$params,
 					'-changedParams'=>{@fixfn}),
-			gettext($whatAmI)." ".gettext("Title and Options"),
+			gettexta("%0 Title and Options", gettext($whatAmI)),
 			"$aoc-title", $params),
 				'size'=>'edit'};
 			# TODO: just edit title. Options is only part order; need
@@ -884,7 +884,7 @@ sub displayCoreHTML {
 			FAQ::OMatic::makeAref('-command'=>'editModOptions',
 					'-params'=>$params,
 					'-changedParams'=>{@fixfn}),
-			gettext("Edit")." ".gettext($whatAmI)." ".gettext("Permissions"),
+			gettexta("Edit %0 Permissions", gettext($whatAmI)),
 			"$aoc-opts", $params),
 				'size'=>'edit'};
 
@@ -924,7 +924,7 @@ sub displayCoreHTML {
 						FAQ::OMatic::makeAref('-command'=>'moveItem',
 							'-params'=>$params,
 							'-changedParams'=>{@fixfn}),
-						gettext("Move")." ".gettext($whatAmI)),
+						gettexta("Move %0", gettext($whatAmI))),
 							'size'=>'edit'};
 	
 				# Trash it (same rules as for moving)
@@ -933,7 +933,7 @@ sub displayCoreHTML {
 							'-params'=>$params,
 							'-changedParams'=>{@fixfn,
 								'_newParent'=>'trash'}),
-						gettext("Trash")." ".gettext($whatAmI)),
+						gettexta("Trash %0", gettext($whatAmI))),
 							'size'=>'edit'};
 			}
 	
@@ -975,14 +975,14 @@ sub displayCoreHTML {
 					FAQ::OMatic::makeAref('-command'=>'addItem',
 							'-params'=>$params,
 							'-changedParams'=>{'_insert'=>'answer', @fixfn}),
-						gettext("New Answer in")." \"$title\"",
+						gettexta("New Answer in \"%0\"", $title),
 						'cat-new-ans', $params),
 							'size'=>'edit'};
 				push @$editrow, {'text'=>FAQ::OMatic::button(
 					FAQ::OMatic::makeAref('-command'=>'addItem',
 							'-params'=>$params,
 							'-changedParams'=>{'_insert'=>'category', @fixfn}),
-						gettext("New Subcategory of")." \"$title\"",
+						gettexta("New Subcategory of \"%0\"", $title),
 						'cat-new-cat', $params),
 							'size'=>'edit'};
 			}
@@ -1055,7 +1055,7 @@ sub displayCoreHTML {
 					FAQ::OMatic::makeAref('-command'=>'addItem',
 							'-params'=>$params,
 							'-changedParams'=>{'_insert'=>'answer', @fixfn}),
-					gettext("Add a New Answer in") . " \"$title\"",
+					gettexta("New Answer in \"%0\"", $title),
 					'cat-new-ans', $params),
 				'size'=>'edit',
 				'id'=>'easy edit insert answer'};
@@ -1204,7 +1204,7 @@ sub permissionBox {
 	my @permDesc = map { nameForPerm($_); } @permNum;
 
 	push @permNum, ('');
-	push @permDesc, 'Inherit';
+	push @permDesc, gettext('Inherit');
 
 	return popup($perm, \@permNum, \@permDesc, $self->{$perm}||'');
 }
@@ -1233,13 +1233,13 @@ sub nameForPerm {
 	my $perm = shift;
 
 	if ($perm =~ m/^6 (.*)$/) {
-		return 'Group'." $1";
+		return gettexta('Group %0', "$1");
 	}
 
 	my %map = (
-		'3' => 'Users giving their names',
-		'5' => 'Authenticated users',
-		'7' => 'The moderator',
+		'3' => gettext('Users giving their names'),
+		'5' => gettext('Authenticated users'),
+		'7' => gettext('Moderator'),
 	);
 
 	return $map{$perm};
@@ -1254,11 +1254,12 @@ sub displayItemEditor {
 	my $insertHint = $params->{'_insert'} || '';
 	if ($insertHint eq 'category') {
 		$rt .= gettext("New Category")."\n";
-	} elsif ($insertHint eq gettext("answer")) {
+	} elsif ($insertHint eq "answer") {
 		$rt .= gettext("New Answer")."\n";
 	} else {
-		$rt .= gettext("Editing")." "
-			.gettext($self->whatAmI())." <b>".$self->getTitle()."</b>\n";
+		$rt .= gettexta("Editing %0 <b>%1</b>",
+				gettext($self->whatAmI()), $self->getTitle())
+		    ."\n";
 	}
 	$rt .= FAQ::OMatic::makeAref('-command'=>'submitItem',
 			'-params'=>$params,
@@ -1324,7 +1325,7 @@ sub displayItemEditor {
 #			FAQ::OMatic::makeAref('-command'=>'faq',
 #				'-params'=>$params,
 #				'-changedParams'=>{'checkSequenceNumber'=>''}),
-#			"Cancel and return to FAQ");
+#			"Cancel and return to the FAQ");
 
 	$rt .= FAQ::OMatic::HelpMod::helpFor($params, 'editItem', "<br>\n");
 
@@ -1341,13 +1342,13 @@ sub permissionsInfo {
 	'03' => { 'name'=>'PermEditPart', 'desc'=>
 			gettext("Who can edit or remove existing text parts from this item:") },
 	'04' => { 'name'=>'PermEditDirectory', 'desc'=>
-			gettext("Who can move answers or subcategories from this category;").' '
-			.gettext("or turn this category into an answer or vice versa:") },
+			gettext("Who can move answers or subcategories from this category; "
+				."or turn this category into an answer or vice versa:") },
 	'05' => { 'name'=>'PermEditTitle', 'desc'=>
 			gettext("Who can edit the title and options of this answer or category:") },
 	'06' => { 'name'=>'PermUseHTML', 'desc'=>
-			gettext("Who can use untranslated HTML when editing the text of").' '
-			.gettext("this answer or category:") },
+			gettext("Who can use untranslated HTML when editing the text of "
+				."this answer or category:") },
 	'07' => { 'name'=>'PermModOptions', 'desc'=>
 			gettext("Who can change these moderator options and permissions:") },
 	'09' => { 'name'=>'PermNewBag', 'global'=>1, 'desc'=>
@@ -1412,11 +1413,11 @@ sub displayModOptionsEditor {
 			."<td><b>MailModerator</b>"
 			."<br>".gettext("Send mail to the moderator when someone other than the moderator edits this item:")."</td>\n";
 	$rt .= "<td>\n";
-	$rt .= popup('MailModerator', [1, 0, ''], ['Yes', 'No', 'Inherit'],
+	$rt .= popup('MailModerator', [1, 0, ''], [gettext('Yes'), gettext('No'), gettext('Inherit')],
 			$self->{'MailModerator'});
 	$inherited =
 		$self->getInheritance($params, 'MailModerator', '<br>',
-			sub {('No', 'Yes')[shift()] || 'undefined'});
+			sub {(gettext('No'), gettext('Yes'))[shift()] || gettext('undefined')});
 	$rt .= "<td>$inherited</td>\n";
 	$rt .= "</tr>\n";
 
@@ -1442,18 +1443,17 @@ sub displayModOptionsEditor {
 
 	# RelaxChildPerms
 	$rt .= "<tr>"
-			."<td><b>".gettext("RelaxChildPerms")."</b>"
-			."<br>".gettext("Blah")." "
-			.gettext("blah")."</td>\n";
+			."<td><b>"."RelaxChildPerms"."</b>"
+			."<br>".gettext("Blah blah")."</td>\n";
 	$rt .= "<td>\n";
 	$rt .= popup('RelaxChildPerms',
 			['relax', 'norelax', ''],
-			['Relax', 'Don\'t Relax', 'Inherit'],
+			[gettext('Relax'), gettext('Don\'t Relax'), gettext('Inherit')],
 			$self->{'RelaxChildPerms'});
 	$inherited =
 		$self->getInheritance($params, 'RelaxChildPerms', '<br>',
-			sub {{'relax'=>'Relax', 'norelax'=>'Don\'t Relax'}->{shift()}
-				|| 'undefined'});
+			sub {{'relax'=>gettext('Relax'), 'norelax'=>gettext('Don\'t Relax')}->{shift()}
+				|| gettext('undefined')});
 	$rt .= "<td>$inherited</td>\n";
 	$rt .= "</tr>\n";
 
@@ -1565,7 +1565,7 @@ sub addSubItem {
 
 	my $subitem = new FAQ::OMatic::Item($subfilename);
 	if ($subitem->isBroken()) {
-		FAQ::OMatic::gripe('problem', gettext("File $subfilename seems broken."));
+		FAQ::OMatic::gripe('problem', gettexta("File %0 seems broken.", $subfilename));
 	}
 
 	$self->makeDirectory()->mergeDirectory($subfilename);
@@ -1892,16 +1892,18 @@ sub checkSequence {
 				'-params'=>$params,
 				'-changedParams'=>{'partnum'=>'', 'checkSequenceNumber'=>''}
 			),
-			"Return to the FAQ");
+			gettext("Return to the FAQ"));
 		FAQ::OMatic::gripe('error',
-			"Either someone has changed the answer or category you were "
-			."editing since you received the editing form, or you submitted "
-			."the same form twice.\n"
-			."<p>Please $button and "
-			."start again to make sure no changes are lost. Sorry for "
-			."the inconvenience."
-			."<p>(Sequence number in form: $checkSequenceNumber; in item: "
-			.$self->{'SequenceNumber'}.")"
+			gettext("Either someone has changed the answer or category you were "
+			       ."editing since you received the editing form, or you submitted "
+			       ."the same form twice")
+			."\n<p>"
+			.gettexta("Please %0 and start again "
+				 ."to make sure no changes are lost. "
+				 ."Sorry for the inconvenience.", $button)
+			."<p>"
+			.gettexta("(Sequence number in form: %0; in item: %1)",
+				  $checkSequenceNumber, $self->{'SequenceNumber'})
 			);
 	}
 }

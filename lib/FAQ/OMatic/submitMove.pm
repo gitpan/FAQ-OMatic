@@ -48,12 +48,14 @@ sub main {
 	my $movingItem = new FAQ::OMatic::Item($movingFilename);
 	if ($movingItem->isBroken()) {
 		FAQ::OMatic::gripe('error',
-			gettext("The moving file")." ($movingFilename) ".gettext("is broken or missing."));
+			gettext("The moving file (%0) is broken or missing.",
+				$movingFilename));
 	}
 	my $newParentItem = new FAQ::OMatic::Item($newParentFilename);
 	if ($newParentItem->isBroken()) {
 		FAQ::OMatic::gripe('error',
-			gettext("The newParent file")." ($newParentFilename) ".gettext("is broken or missing."));
+			gettext("The newParent file (%0) is broken or missing.",
+				$newParentFilename));
 	}
 
 	# load up the old parent
@@ -61,32 +63,33 @@ sub main {
 	my $oldParentItem = new FAQ::OMatic::Item($oldParentFilename);
 	if ($oldParentItem->isBroken()) {
 		FAQ::OMatic::gripe('error',
-			gettext("The oldParent file")." ($oldParentFilename) ".gettext("is broken or missing."));
+			gettext("The oldParent file (%0) is broken or missing.",
+				$oldParentFilename));
 	}
 
 	# make sure the new parent isn't the old parent or
 	# the moving item itself
 	if ($newParentFilename eq $oldParentFilename) {
 		FAQ::OMatic::gripe('error',
-			gettext("The new parent")." (".$newParentItem->getTitle()
-			.") ".gettext("is the same as the old parent."));
+			gettexta("The new parent (%0) is the same as the old parent.",
+				 $newParentItem->getTitle()));
 	}
 	if ($newParentFilename eq $movingFilename) {
 		FAQ::OMatic::gripe('error',
-			gettext("The new parent")." (".$newParentItem->getTitle()
-			.") ".gettext("is the same as the item you want to move."));
+			gettext("The new parent (%0) is the same as the item you want to move.",
+				$newParentItem->getTitle()));
 	}
 	
 	# make sure the new parent isn't a child of movingItem
 	if ($newParentItem->hasParent($movingFilename)) {
 		FAQ::OMatic::gripe('error',
-			gettext("The new parent")." (".$newParentItem->getTitle()
-			.") ".gettext("is a child of the item being moved")." ("
-			.$movingItem->getTitle().").");
+			gettext("The new parent (%0) is a child of the item being moved (%1).",
+				$newParentItem->getTitle(), $movingItem->getTitle()));
 	}
 
 	if ($movingItem->{'filename'} eq '1') {
-		FAQ::OMatic::gripe('error', gettext("You can't move the top item."));
+		FAQ::OMatic::gripe('error',
+			 gettext("You can't move the top item."));
 	}
 
 	# check permissions on the parents to see that the move is legal
@@ -124,11 +127,11 @@ sub main {
 		FAQ::OMatic::Auth::getInheritedProperty($oldParentItem, 'Moderator');
 	my $newModerator =
 		FAQ::OMatic::Auth::getInheritedProperty($newParentItem, 'Moderator');
-	$oldParentItem->notifyModerator($cgi, gettext("moved a sub-item to")." "
-			.$newParentItem->getTitle());
+	$oldParentItem->notifyModerator($cgi, gettexta("moved a sub-item to %0",
+				$newParentItem->getTitle()));
 	if ($newModerator ne $oldModerator) {
-		$newParentItem->notifyModerator($cgi, gettext("moved a sub-item from")." "
-			.$oldParentItem->getTitle());
+		$newParentItem->notifyModerator($cgi, gettexta("moved a sub-item from %0",
+				$oldParentItem->getTitle()));
 	}
 
 	# If user clicked "trash this item," they probably don't want

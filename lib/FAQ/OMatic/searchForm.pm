@@ -45,12 +45,16 @@ sub main {
 
 	my $useTable = not $params->{'simple'};
 
-	$page.="<table>\n" if $useTable;
-	$page.="<tr><td valign=top align=right>\n" if $useTable;
+	my $labelColor = $FAQ::OMatic::Config::regularPartColor || '#ffff0f';
+	my $labelColorCmd = "bgcolor=\"$labelColor\"";
+	$page.="<table width=\"100%\">\n" if $useTable;
+	$page.="<tr><td $labelColorCmd>\n" if $useTable;
+	$page.=gettext("search for keywords");
+	$page.="</td></tr>\n" if $useTable;
+	$page.="<tr><td valign=top>\n" if $useTable;
 	$page .= FAQ::OMatic::makeAref('search', {}, 'GET');
 	$page .= "<input type=\"submit\" name=\"_submit\" "
 		."value=\"".gettext("Search for")."\">\n";
-	$page.="</td><td valign=top align=left>\n" if $useTable;
 	$page .= "<input type=\"text\" name=\"_search\"> ".gettext("matching")."\n";
 	$page .= "<select name=\"_minMatches\">\n";
 	$page .= "<option value=\"\">".gettext("all")."\n";
@@ -63,14 +67,18 @@ sub main {
 	$page .= gettext("words").".\n";
 	$page .= "</form>\n";
 	$page.="</td></tr>\n" if $useTable;
+	$page.="</table>\n" if $useTable;
 
 	## Recent documents
-	$page.="<tr><td valign=top align=right>\n" if $useTable;
+	$page.="<table width=\"100%\">\n" if $useTable;
+	$page.="<tr><td $labelColorCmd>\n" if $useTable;
+	$page.=gettext("search for recent changes");
+	$page.="</td></tr>\n" if $useTable;
+	$page.="<tr><td valign=top>\n" if $useTable;
 	$page .= FAQ::OMatic::makeAref('recent',
 			{'showLastModified'=>'show'}, 'GET');
 	$page .= "<input type=\"submit\" name=\"_submit\" "
 		."value=\"".gettext("Show documents")."\">\n";
-	$page.="</td><td valign=top align=left>\n" if $useTable;
 	$page .= " ".gettext("modified in the last")." \n";
 	$page .= "<select name=\"_duration\">\n";
 	$page .= "<option value=\"1\">".gettext("day").".\n";
@@ -85,7 +93,7 @@ sub main {
 
 #	$page.=FAQ::OMatic::button(
 #		FAQ::OMatic::makeAref('-command'=>''),
-#		'Return to FAQ')."<br>\n";
+#		'Return to the FAQ')."<br>\n";
 
 	$page.=FAQ::OMatic::HelpMod::helpFor($params,
 		'Search Tips', "<br>");

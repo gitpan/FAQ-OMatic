@@ -51,7 +51,7 @@ use vars	# these are mod_perl-safe
 	# variables that get reset on every invocation
 	qw($theParams $theLocals);
 
-$VERSION = '2.711';
+$VERSION = '2.712';
 
 # can't figure out how to get file-scoped variables in mod_perl, so
 # we ensure that they're all file scoped by reseting them in dispatch.
@@ -1544,6 +1544,12 @@ sub cat {
 	close CATFILE;
 
 	return join('', @lines);
+}
+
+# returns true to enable original DBM-based search database code.
+# (in false mode, search is linear scans of files. Slow, but robust.)
+sub usedbm {
+	return $FAQ::OMatic::Config::useDBMSearch || '';
 }
 
 'true';

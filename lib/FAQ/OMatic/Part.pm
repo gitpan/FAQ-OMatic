@@ -310,7 +310,7 @@ sub displayHTML {
 					'-params'=>$params,
 					'-changedParams'=>{'file'=>$filename,
 						'_target'=>$baglist[0]}),
-				gettext("Replace")." $baglist[0]<br>".gettext("with new upload")),
+				gettexta("Replace %0 with new upload", $baglist[0])),
 					'size'=>'edit'};
 		} elsif (scalar(@baglist)>1) {
 			push @rightEdits, {'text'=>FAQ::OMatic::button(
@@ -692,11 +692,12 @@ sub mergeDirectory {
 	return if ($dirhash{$filename});			# already done
 
 	my $item = new FAQ::OMatic::Item($filename);
+	my $headerpattern = gettext("Answers in this category:");
 	if ((defined $item->{'directoryHint'})
-		and ($self->{'Text'} =~ m/\n\nAnswers in this categ/)) {
+		and ($self->{'Text'} =~ m/\n\n$headerpattern/)) {
 		# Insert subcategories above "Answers in this category" header, if
 		# one exists.
-		$self->{'Text'} =~ s/(\n?\n\nAnswers in this categ)/\n\n<faqomatic:$filename>$&/s;
+		$self->{'Text'} =~ s/(\n?\n\n$headerpattern)/\n\n<faqomatic:$filename>$&/s;
 	} else {
 		# just tack on the end with all the other answers
 		$self->{'Text'} .= "\n<faqomatic:$filename>\n";

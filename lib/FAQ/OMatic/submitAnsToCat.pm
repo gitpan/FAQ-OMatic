@@ -32,6 +32,7 @@ package FAQ::OMatic::submitAnsToCat;
 use CGI;
 use FAQ::OMatic::Item;
 use FAQ::OMatic;
+use FAQ::OMatic::I18N;
 use FAQ::OMatic::Auth;
 use FAQ::OMatic::I18N;
 
@@ -45,8 +46,7 @@ sub main {
 
 	my $item = new FAQ::OMatic::Item($params->{'file'});
 	if ($item->isBroken()) {
-		FAQ::OMatic::gripe('error', "The file (".
-			$params->{'file'}.") doesn't exist.");
+		FAQ::OMatic::gripe('error', gettexta("The file (%0) doesn't exist.", $params->{'file'}));
 	}
 	
 	$item->checkSequence($params);
@@ -64,7 +64,7 @@ sub main {
 	}
 
 	$item->makeDirectory()->
-		setText(gettext("Subcategories:\n\n\nAnswers in this category:\n"));
+		setText(gettext("Subcategories:")."\n\n\n".gettext("Answers in this category:")."\n");
 
 	# parent and any see-also linkers have changed, since their icons will
 	# be wrong. This is just like changing the title, although it doesn't

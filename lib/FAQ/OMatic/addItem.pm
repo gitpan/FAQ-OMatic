@@ -45,7 +45,7 @@ sub main {
 	my $file = $params->{'file'} || '';
 	my $item = new FAQ::OMatic::Item($file);
 	if ($item->isBroken()) {
-		FAQ::OMatic::gripe('error', "The file ($file) doesn't exist.");
+		FAQ::OMatic::gripe('error', gettexta("The file (%0) doesn't exist.", $file));
 	}
 
 	FAQ::OMatic::Auth::ensurePerm('-item'=>$item,
@@ -82,7 +82,7 @@ sub main {
 	# make him feel better
 	if ($params->{'_insert'} eq 'category') {
 		$newitem->makeDirectory()->
-			setText(gettext("Subcategories:\n\n\nAnswers in this category:\n"));
+			setText(gettext("Subcategories:")."\n\n\n".gettext("Answers in this category:")."\n");
 	}
 
 	# passing $file as a name ensures that new child will have the

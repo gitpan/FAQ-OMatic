@@ -46,8 +46,7 @@ sub main {
 	$id =~ s/^anonymous$//;
 
 	$rt.=gettext("Please enter your username, and select a password.")."\n";
-	$rt.="<p>".gettext("I will send a secret number to the email address you enter")." \n"
-		.gettext("to verify that it is valid.")." "
+	$rt.="<p>".gettext("I will send a secret number to the email address you enter to verify that it is valid.")."\n"
 		.gettext("If you prefer not to give your email address to this web form, please contact")
                 ." $FAQ::OMatic::Config::adminEmail. <p>"
 		.gettext("Please <b>do not</b> use a password you use anywhere else, as it will not be transferred or stored securely!")."\n";

@@ -44,8 +44,7 @@ sub main {
 
 	my $item = new FAQ::OMatic::Item($params->{'file'});
 	if ($item->isBroken()) {
-		FAQ::OMatic::gripe('error', "The file (".
-			$params->{'file'}.") doesn't exist.");
+		FAQ::OMatic::gripe('error', gettexta("The file (%0) doesn't exist.", $params->{'file'}));
 	}
 	
 	my $insertpart = $params->{'_insertpart'} || $params->{'s_insertpart'};

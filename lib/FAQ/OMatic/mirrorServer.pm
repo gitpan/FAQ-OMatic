@@ -85,8 +85,13 @@ sub main {
 	print $rt;
 }
 
+# sort numeric things numerically, but don't fail (sort lexically) otherwise.
 sub numerically {
-	return $a <=> $b;
+	my $compare = int($a) <=> int($b);
+	if ($compare == 0) {
+		$compare = $a cmp $b;
+	}
+	return $compare;
 }
 
 1;

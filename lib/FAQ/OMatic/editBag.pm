@@ -78,9 +78,10 @@ sub main {
 		my $itemTitle = $item->getTitle();
 		my $partnum = $params->{'partnum'};
 		$partnum = -1 if (not defined $partnum);
-		$rt .= gettext("Upload new bag to show in the")." "
-			.FAQ::OMatic::cardinal($partnum+1)
-			." ".gettext("part in")." <b>$itemTitle</b>.\n";
+		$rt .= gettexta("Upload new bag to show in the %0 part in <b>%1</b>.",
+				FAQ::OMatic::cardinal($partnum+1),
+				$itemTitle)
+			."\n";
 	}
 
 	$rt .= "<table>\n";
@@ -101,7 +102,7 @@ sub main {
 	$rt .= "<tr><td align=right>".gettext("Bag data:")."</td><td>"
 			."<input type=file name=\"_bagData\">";
 	if ($bagName ne '') {
-			$rt .= " ".gettext("(Leave blank to keep original bag data and change only the associated information below.)");
+			$rt .= " <br>".gettext("(Leave blank to keep original bag data and change only the associated information below.)");
 	}
 	$rt .= "</td></tr>\n";
 

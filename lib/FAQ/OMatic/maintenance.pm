@@ -71,17 +71,24 @@ sub main {
 
 	my $slow = '';
 	my $tasks = $cgi->param('tasks') || '';
-	if ($tasks ne 'mirrorClient'
-		and $tasks ne 'rebuildCache') {
-		# (don't force out the header for Slow processes, which need
-		# to be able to redirect.)
-		hprint(FAQ::OMatic::header($cgi, '-type'=>'text/html'));
-		hprint("<title>FAQ-O-Matic Maintenance</title>\n");
-		hflush();
-			# just in case some other junk sneaks out on the fd
-	} else {
-		$slow = '-slow';	# tell task to run interactively
-	}
+#	if ($tasks ne 'mirrorClient'
+#		and $tasks ne 'rebuildCache') {
+#		# (don't force out the header for Slow processes, which need
+#		# to be able to redirect.)
+#		hprint(FAQ::OMatic::header($cgi, '-type'=>'text/html'));
+#		hprint("<title>FAQ-O-Matic Maintenance</title>\n");
+#		hflush();
+#			# just in case some other junk sneaks out on the fd
+#	} else {
+#		$slow = '-slow';	# tell task to run interactively
+#	}
+
+	# do everything in "slow" mode -- fork a process (so the web
+	# server won't kill it), and redirect all output to a Slow file.
+	my $fh = FAQ::OMatic::Slow::split();
+	hSetFilehandle($fh);
+	hprint("This is process ID ".$$."<p>\n");
+	hflush();
 
 	my %schedules = ('month'=>1,'week'=>1,'day'=>1,'hour'=>1);
 	my @tasks = split(',', ($cgi->param('tasks')||''));
@@ -100,13 +107,17 @@ sub main {
 		$i =~ s/\d+ //;
 		if (defined $taskUntaint{$i}) {
 			$i = $taskUntaint{$i};
-			hprint("--- $i($slow)\n");
-			if (not eval "$i($slow); return 1;") {
+			hprint("--- $i\n");
+			hflush();
+			if (not eval "$i(); return 1;") {
 				hprint("*** Task $i failed\n    Error: $@\n");
 				hprint(FAQ::OMatic::stackTrace('html'));
+				hflush();
 			}
+			hflush();
 		} else {
 			hprint("*** Task $i undefined\n");
+			hflush();
 		}
 	}
 
@@ -405,7 +416,9 @@ sub cronInvoke {
 	# so that the user knows to fix it. (most crons mail the message
 	# to the user.)
 	my ($proto,$code,@rest) = split(' ', $reply[0]);
-	if ($code != '200') {
+	# THANKS to Andrew W. Nosenko <awn@bcs.zp.ua>
+	# for this patch to ignore 'Moved Temporarily' response.
+	if ($code != '200' && $code != '302') {
 		print "Unable to invoke maintenance task; HTTP reply follows:\n\n";
 		print $reply;
 	}

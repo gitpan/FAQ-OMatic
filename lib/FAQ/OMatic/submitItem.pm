@@ -45,8 +45,7 @@ sub main {
 
 	my $item = new FAQ::OMatic::Item($params->{'file'});
 	if ($item->isBroken()) {
-		FAQ::OMatic::gripe('error', gettext("The file")." (".
-			$params->{'file'}.") ".gettext("doesn't exist."));
+		FAQ::OMatic::gripe('error', gettexta("The file (%0) doesn't exist.", $params->{'file'}));
 	}
 
 	FAQ::OMatic::Auth::ensurePerm('-item'=>$item,
@@ -70,7 +69,7 @@ sub main {
 		my $oldTitle = $item->getProperty('Title');
 		my $newTitle = FAQ::OMatic::getParam($params, '_Title');
 		if ($oldTitle ne $newTitle) {
-			$titleMessage = " ".gettext("Changed the item title, was")." \"$oldTitle\"";
+			$titleMessage = " ".gettext("Changed the item title, was \"%0\"", $oldTitle);
 		}
 		$item->setProperty('Title', $newTitle); 
 	}
@@ -86,11 +85,8 @@ sub main {
 
 		# verify that there are as many items in the new order as the old:
 		if (scalar @newOrder != $item->numParts()) {
-			FAQ::OMatic::gripe('error', gettext("Your part order list")." ("
-				.join(", ", @newOrder)
-				.") ".gettext("doesn't have the same number of parts")." ("
-				.$item->numParts()
-				.") ".gettext("as the original item."));
+			FAQ::OMatic::gripe('error', gettexta("Your part order list (%0) ", join(", ", @newOrder))
+				.gettexta("doesn't have the same number of parts (%0) as the original item.", $item->numParts()));
 		}
 
 		# verify now that every number 0 .. numParts()-1 appears exactly
@@ -99,9 +95,8 @@ sub main {
 		my $i;
 		for ($i=0; $i<$item->numParts(); $i++) {
 			if (not $newOrderHash{$i}) {
-				FAQ::OMatic::gripe('error', gettext("Your part order list")." ("
-					.join(", ", @newOrder)
-					.") ".gettext("doesn't say what to do with part")." $i.");
+				FAQ::OMatic::gripe('error', gettexta("Your part order list (%0) ", join(", ", @newOrder))
+					.gettexta("doesn't say what to do with part %0.", $i));
 			}
 		}
 

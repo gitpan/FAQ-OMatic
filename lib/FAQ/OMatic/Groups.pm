@@ -35,6 +35,7 @@ use strict;
 package FAQ::OMatic::Groups;
 
 use FAQ::OMatic;
+use FAQ::OMatic::I18N;
 
 sub readGroups {
 	# groups are cached per CGI invocation so we don't have to read
@@ -138,15 +139,17 @@ sub displayHTML {
 	my $groupCache = readGroups();
 
 	if (not $group) {
-		$html.="Select a group to edit:<dl>\n";
+		$html.=gettext("Select a group to edit:")."<dl>\n";
 		my ($groupName,$member);
 		foreach $groupName (getGroupNameList()) {
 			$html.="<dt>"
 				.FAQ::OMatic::makeAref('editGroups', {'group'=>$groupName})
 				."$groupName</a>\n";
 			if ($groupName eq 'Administrators') {
-				$html.="<dd><i>(Members of this group are allowed to "
-					."access these group definition pages.)</i>\n";
+				$html.="<dd><i>"
+					.gettext("(Members of this group are allowed to "
+						."access these group definition pages.)")
+					."</i>\n";
 			}
 			my $limit=4;
 			foreach $member
@@ -162,13 +165,15 @@ sub displayHTML {
 		$html.="</dl>\n";
 		$html.=FAQ::OMatic::makeAref('editGroups', {'group'=>''}, 'GET')
 			."<input type=text size=30 name=\"group\">\n"
-			."<input type=submit name=\"_junk\" value=\"Add Group\">\n"
+			."<input type=submit name=\"_junk\" value=\""
+			.gettext("Add Group")
+			."\">\n"
 			."</form>\n";
 	} else {
 		validGroupName($group);
 		$html.="<p>".FAQ::OMatic::button(
 			FAQ::OMatic::makeAref('editGroups', {'group'=>''}),
-			"Up To List Of Groups");
+			gettext("Up To List Of Groups"));
 
 		$html.="<table>\n"
 			."<tr><td></td><td><b>$group</b></td></tr>\n";
@@ -180,7 +185,7 @@ sub displayHTML {
 				.FAQ::OMatic::button(
 					FAQ::OMatic::makeAref('submitGroup',
 						{'_action'=>'remove', '_member'=>$member}),
-					"Remove Member")
+					gettext("Remove Member"))
 				."</td><td>"
 				."$member\n"
 				."</td></tr>\n";
@@ -188,7 +193,9 @@ sub displayHTML {
 		$html.="<form><tr><td align=right valign=bottom>"
 				.FAQ::OMatic::makeAref('submitGroup',
 					{'_action'=>'add'}, 'GET')
-				."<input type=submit name=\"_junk\" value=\"Add Member\">\n"
+				."<input type=submit name=\"_junk\" value=\""
+				.gettext("Add Member")
+				."\">\n"
 				."</td><td valign=bottom>\n"
 				."<input type=text size=50 name=\"_member\">\n"
 				."</td></tr></form>\n";
@@ -197,10 +204,10 @@ sub displayHTML {
 
 	$html.="<p>".FAQ::OMatic::button(
 			FAQ::OMatic::makeAref('faq', {'group'=>''}),
-			"Go To FAQ");
+			gettext("Go to the Faq-O-Matic"));
 	$html.=" ".FAQ::OMatic::button(
 			FAQ::OMatic::makeAref('install', {'group'=>''}),
-			"Go To Install");
+			gettext("Go To Install/Configuration Page"));
 	$html.="\n";
 
 	return $html;

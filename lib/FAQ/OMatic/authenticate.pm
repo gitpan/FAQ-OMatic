@@ -148,7 +148,7 @@ sub main {
 	$rt .= "<br>Email: <input type=text name=\"_pass_id\" value=\"\" size=60>\n";
 	$rt .= "<br>".gettext("Password:")." <input type=password name=\"_pass_pass\" value=\"\" size=10>\n";
 
-	$rt .= "<p><input type=submit name=\"_submit\" value=\"Login\">\n";
+	$rt .= "<p><input type=submit name=\"_submit\" value=\"".gettext("Log In")."\">\n";
 	$rt .= "</form>\n";
 
 	# Give them the option of leaving whatever authentication they
@@ -169,14 +169,5 @@ sub main {
 }
 
 1;
-
-
-
-
-
-
-
-
-
 
 

@@ -143,20 +143,20 @@ sub main {
 	if ($params->{'_insertpart'}) {
 		my $insertHint = $params->{'_insert'} || '';
 		if ($insertHint eq 'answer') {
-			$rt .= gettext("Enter the answer to")." <b>".$item->getTitle()."</b>\n";
+			$rt .= gettexta("Enter the answer to <b>%0</b>", $item->getTitle())."\n";
 		} elsif ($insertHint eq 'category') {
-			$rt .= gettext("Enter a description for")." <b>".$item->getTitle()."</b>\n";
+			$rt .= gettexta("Enter a description for <b>%0</b>", $item->getTitle())."\n";
 		} elsif ($params->{'_duplicate'}) {
-			$rt .= gettext("Edit duplicated text for")." <b>".$item->getTitle()."</b>\n";
+			$rt .= gettexta("Edit duplicated text for <b>%0</b>", $item->getTitle())."\n";
 		} else {
-			$rt .= gettext("Enter new text for")." <b>".$item->getTitle()."</b>\n";
+			$rt .= gettexta("Enter new text for <b>%0</b>", $item->getTitle())."\n";
 		}
 	} else {
 		# little white lie -- user sees 1-based indices, but parts
 		# are stored 0-based. Is this bad?
-		$rt .= gettext("Editing the")." "
-			.FAQ::OMatic::cardinal($partnum+1)." ".gettext("text part in")." <b>"
-			.$item->getTitle()."</b>\n";
+		$rt .= gettexta("Editing the %0 text part in <b>%1</b>.", 
+				FAQ::OMatic::cardinal($partnum+1), $item->getTitle())
+			."\n";
 	}
 	$rt .= $part->displayPartEditor($item, $partnum, $params);
 
@@ -168,7 +168,7 @@ sub main {
 	if (FAQ::OMatic::getParam($params, 'editCmds') eq 'hide') {
 		$rt .=
 		    "<p>" .
-		    gettexta("If you later need to edit or delete this text, use the [%0] page to turn on the expert editing commands.",gettext("Appearance")) .
+		    gettexta("If you later need to edit or delete this text, use the [Appearance] page to turn on the expert editing commands.") .
 		    "\n";
 	}
 
@@ -178,18 +178,6 @@ sub main {
 }
 
 1;
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

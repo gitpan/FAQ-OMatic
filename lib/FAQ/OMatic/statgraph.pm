@@ -32,6 +32,14 @@ package FAQ::OMatic::statgraph;
 use CGI;
 use GD;
 
+my $image_type;
+{
+  my $image = new GD::Image (10, 10);
+  $image_type = $image->can('gif') ? "gif" : "png";
+
+}
+
+
 use FAQ::OMatic;
 use FAQ::OMatic::Item;
 use FAQ::OMatic::Log;
@@ -69,7 +77,7 @@ sub emptygraph {
 	my $red = $image->colorAllocate(255, 0, 0);
 	$image->filledRectangle(0, 0, $width, $height, $white);
 	$image->string(gdSmallFont, 0, 0, $message, $red);
-	print $image->gif;
+	print $image->$image_type();
 	FAQ::OMatic::myExit(0);
 }
 
@@ -133,7 +141,7 @@ sub main {
 
 	$cgi->cache('NO');	# recommend that netscape not cache this image
 	print FAQ::OMatic::header($cgi, 
-							'-type' => "image/gif",
+							'-type' => "image/$image_type",
 							 '-nph' => 1,
 						 '-expires' => 0.000000001);
 
@@ -329,8 +337,8 @@ sub main {
 	# in the browser
 	$image->transparent($transparent);
 
-	# send GIF
-	print $image->gif();
+	# send image
+	print $image->$image_type();
 }
 
 1;

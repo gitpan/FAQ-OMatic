@@ -81,7 +81,7 @@ sub main {
 #				'last modified date']
 #			,
 		['showAttributions',
-			[gettext("Show All"), gettext("Default"), gettext("Hide")],
+			[gettext("Show"), gettext("Default"), gettext("Hide")],
 			['all', 'default', 'hide'],
 			gettext("attributions")],
 		['render',

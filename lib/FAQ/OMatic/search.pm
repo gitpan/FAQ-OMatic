@@ -98,7 +98,7 @@ sub main {
 
 #	$rt.=FAQ::OMatic::button(
 #		FAQ::OMatic::makeAref('faq', {'_minMatches'=>'','search'=>''}),
-#		'Return to FAQ');
+#		'Return to the FAQ');
 	
 	$rt .= FAQ::OMatic::pageFooter($params, ['search', 'faq']);
 
