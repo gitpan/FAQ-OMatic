@@ -261,7 +261,6 @@ sub initConfigStep {
 			'$adminAuth'		=> "''",
 			'$adminEmail'		=> "\$adminAuth",
 			'$metaDir'			=> "'$metaDfl'",
-			#'$itemDir'			=> "'$itemDfl'",
 			'$authorEmail'		=> "''",
 			'$maintSendErrors'	=> "'true'",
 			'$mailCommand'		=> "'$mailDfl'",
@@ -330,6 +329,7 @@ sub mainMenuStep {
 	rereadConfig();
 
 	my $maintenanceSecret = $FAQ::OMatic::Config::maintenanceSecret || '';
+	my $mirror = $FAQ::OMatic::Config::mirrorURL ne '';
 
 	my $par = "";	# "<p>" for more space between items
 
@@ -359,38 +359,43 @@ sub mainMenuStep {
 			.checkBoxFor('configItem')
 			."Create item, cache, and bags directories in serve dir.</a>\n";
 
-	if (defined($FAQ::OMatic::Config::itemDir_Old)) {
+	if (not $mirror) {
+		if (defined($FAQ::OMatic::Config::itemDir_Old)) {
+			$rt.="$par<li>"
+				."<a href=\"".installUrl('copyItems')."\">"
+				.checkBoxFor('copyItems')
+				."Copy old items</a> from "
+				."<tt>$FAQ::OMatic::Config::itemDir_Old</tt> "
+				."to <tt>$FAQ::OMatic::Config::itemDir</tt>.\n";
+			$rt.="$par<li>"
+				."<a href=\"".installUrl('firstItem')."\">"
+				.checkBoxFor('firstItem')
+				."Install any new items that come with the system.</a>\n"
+		} else {
+			$rt.="$par<li><a href=\"".installUrl('firstItem')."\">"
+				.checkBoxFor('firstItem')
+				."Create system default items.</a>\n";
+		}
+
 		$rt.="$par<li>"
-			."<a href=\"".installUrl('copyItems')."\">"
-			.checkBoxFor('copyItems')
-			."Copy old items</a> from "
-			."<tt>$FAQ::OMatic::Config::itemDir_Old</tt> "
-			."to <tt>$FAQ::OMatic::Config::itemDir</tt>.\n";
+			.checkBoxFor('rebuildCache')
+			."<a href=\"".installUrl('', 'url', 'maintenance')
+			."&secret=$maintenanceSecret&tasks=rebuildCache\">"
+			."Rebuild the cache and dependency files.</a>\n";
+	
 		$rt.="$par<li>"
-			."<a href=\"".installUrl('firstItem')."\">"
-			.checkBoxFor('firstItem')
-			."Install any new items that come with the system.</a>\n"
-	} elsif (not isDone('firstItem')) {
-		$rt.="$par<li><a href=\"".installUrl('firstItem')."\">"
-			.checkBoxFor('firstItem')
-			."Create system default items.</a>\n";
+			.checkBoxFor('systemBags')
+			."<a href=\"".installUrl('', 'url', 'maintenance')
+			."&secret=$maintenanceSecret&tasks=bagAllImages\">"
+			."Install system images and icons.</a>\n";
 	} else {
+		# mirror sites should update now
 		$rt.="$par<li>"
-			.checkBoxFor('firstItem')
-			."Items are installed.\n";
+			.checkBoxFor('nothing')
+			."<a href=\"".installUrl('', 'url', 'maintenance')
+			."&secret=$maintenanceSecret&tasks=mirrorClient\">"
+			."Update mirror from master now. (this can be slow!)</a>\n";
 	}
-
-	$rt.="$par<li>"
-		.checkBoxFor('rebuildCache')
-		."<a href=\"".installUrl('', 'url', 'maintenance')
-		."&secret=$maintenanceSecret&tasks=rebuildCache\">"
-		."Rebuild the cache and dependency files.</a>\n";
-
-	$rt.="$par<li>"
-		.checkBoxFor('systemBags')
-		."<a href=\"".installUrl('', 'url', 'maintenance')
-		."&secret=$maintenanceSecret&tasks=bagAllImages\">"
-		."Install system images and icons.</a>\n";
 
 	$rt.="$par<li><a href=\"".installUrl('maintenance')."\">"
 			.checkBoxFor('maintenance')
@@ -454,6 +459,14 @@ sub mainMenuStep {
 		."<a href=\"".installUrl('', 'url', 'maintenance')
 		."&secret=$maintenanceSecret&tasks=expireBags\">"
 		."Check for unreferenced bags (not linked by any FAQ item).</a>\n";
+	# rebuildCache shows up again at the end, because it doesn't show
+	# up in the numbered list if this is a mirror site.
+	$rt.="$par<li>"
+		.checkBoxFor('nothing')
+		."<a href=\"".installUrl('', 'url', 'maintenance')
+		."&secret=$maintenanceSecret&tasks=rebuildCache\">"
+		."Rebuild the cache and dependency files.</a>\n";
+	
 	$rt.="</ul>\n";
 
 	$rt.="The Faq-O-Matic modules are version $FAQ::OMatic::VERSION.\n";
@@ -469,11 +482,11 @@ sub isDone {
 		&& ($FAQ::OMatic::Config::adminAuth)
 		&& not undefinedConfigsExist());
 	return 1 if (($thing eq 'configItem')
-		&& (defined $FAQ::OMatic::Config::itemDir)
+		&& (($FAQ::OMatic::Config::itemDir||'') ne '')
 		&& (-d "$FAQ::OMatic::Config::itemDir/.")
-		&& (defined $FAQ::OMatic::Config::cacheDir)
+		&& (($FAQ::OMatic::Config::cacheDir||'') ne '')
 		&& (-d "$FAQ::OMatic::Config::cacheDir/.")
-		&& (defined $FAQ::OMatic::Config::bagsDir)
+		&& (($FAQ::OMatic::Config::bagsDir||'') ne '')
 		&& (-d "$FAQ::OMatic::Config::bagsDir/."));
 	return 1 if (($thing eq 'firstItem')
 		&& FAQ::OMatic::Versions::getVersion('Items') eq $FAQ::OMatic::VERSION);
@@ -603,86 +616,113 @@ sub dirFail {
 	doStep('mainMenu');
 }
 
+# lets me succinctly define configInfo entries
+sub ci {
+	my $key = shift;
+	my $mymap = {};
+	my $property;
+	while ($property = shift(@_)) {
+		if (not $property=~m/^-/) {
+			FAQ::OMatic::gripe('error',
+				"Jon made a mistake here; key=$key, property=$property.")
+		}
+		my $val = 1;
+		if (scalar(@_) and not $_[0]=~m/^-/) {
+			$val = shift(@_);	# shift an argument on, if possible
+		}
+		$mymap->{$property} = $val;
+	}
+	return ($key,$mymap);
+}
+
 $configInfo = {
 #	config var => [ 'sortOrder|hide', 'description',
 #					['unquoted values'], free-input-okay, is-a-command ]
-	'RCSargs' =>	[ 'hide',
-		'Arguments to make ci quietly log changes (default is probably fine)',
-		[], 1 ],
-	'RCSci' =>		[ 'a-r1',
-		'RCS ci command',
-		[], 1, 'isCommand' ],
-	'RCSuser' =>	[ 'y-r3',
-		'User to use for RCS ci command (default is process UID)',
-		['getpwuid($<)'], 1 ],
-	'useServerRelativeRefs' =>	[ 'y-s1',
-		'Links from cache to CGI are relative to the server root, rather than '
-		.'absolute URLs including hostname:',
-		[ "'true'", "''" ], 0 ],
-	'showLastModifiedAlways' =>	[ 'y-s2',
-		'Items always display their last-modified date.',
-		[ "'true'", "''" ], 0 ],
-	'adminAuth' =>	[ 'a-a1',
-		'Identity of local FAQ-O-Matic administrator (an email address)',
-		[], 1 ],
-	'adminEmail' =>	[ 'n-e2',
-		'Where FAQ-O-Matic should send email when it wants to alert the administrator'
-		.' (usually same as $adminAuth)',
-		[ '$adminAuth' ], 1 ],
-	'pageHeader' => [ 'm-p1',
-		'An HTML fragment inserted at the top of each page. '
-		.'You might use this to place a corporate logo.',
-		[], 1 ],
-	'pageFooter' => [ 'm-p2',
-		'An HTML fragment appended to the bottom of each page. '
-		.'You might use this to identify the webmaster for this site.',
-		[], 1 ],
-# Disabled -- I don't think I care anymore about everybody's install problems.
-# It's popular enough now that folks can probably bear to email me
-# themselves if things go south.
-#	'authorEmail'=>	[ 'n-a3',
-#		'Where FAQ-O-Matic should send email when it wants to alert its author about'
-#		.' bugs (use \'\' to disable emailing the author)',
-#		[ "'jonh\@cs.dartmouth.edu'", "''" ], 0 ],
-	'itemDir' =>	[ 'hide' ],
-	'authorEmail' =>[ 'hide' ],
-	'mailCommand'=>	[ 'a-m1',
+# -desc=>'...'	-- description of variable
+# -choices=>[]	-- list of potential choices
+# -free			-- provide a free-form input field
+# -hide			-- hide variable from define page
+# -sort=key		-- variable sorts in this order on define page
+# -cmd			-- variable is a Unix command string
+# -mirror		-- variable should be mirrored from server
+
+	ci('sep_a', '-sort'=>'a--sep', '-separator', '-desc'=>
+		'Mandatory configurations... these must be correct'),
+	ci('adminAuth',	'-sort'=>'a-a1', '-free', '-desc'=>
+		'Identity of local FAQ-O-Matic administrator (an email address)'),
+	ci('mailCommand',	'-sort'=>'a-m1', '-free', '-cmd', '-desc' =>
 		'A command FAQ-O-Matic can use to send mail. It must either be '
-		.'sendmail, or it must understand the -s (Subject) switch.',
-		[], 1, 'isCommand' ],
-	'maintSendErrors'=>[ 'n-m2',
-		'If true, FAQ-O-Matic will mail the log file to the administrator whenever'
-		.' it is truncated.',
-		[ "'true'", "''" ], 0 ],
-	'metaDir' =>	[ 'hide' ],
-	'statUniqueHosts'=>[ 'hide' ],
-	'backgroundColor'=>['hide'],
-	'directoryPartColor'=>['hide'],
-	'highlightColor'=>['hide'],
-	'itemBarColor'=>['hide'],
-	'linkColor'=>['hide'],
-	'regularPartColor'=>['hide'],
-	'textColor'=>['hide'],
-	'vlinkColor'=>['hide'],
-	'secureInstall'=>[ 'hide' ],
-	'version'=>[ 'hide' ],
-	'maintenanceSecret'=>[ 'hide' ],
-	'cacheDir'=>[ 'hide' ],
-	'cacheURL'=>[ 'hide' ],
-	'itemDir'=>[ 'hide' ],
-	'serveDir' =>	[ 'c-c1',
+		.'sendmail, or it must understand the -s (Subject) switch.'),
+	ci('RCSci',		'-sort'=>'a-r1', '-free', '-cmd', '-desc'=>
+		'RCS ci command.'),
+
+	ci('sep_c', '-sort'=>'c--sep', '-separator', '-desc'=>
+		'Server Directory Configuration'),
+	ci('serveDir', '-sort'=>'c-c1', '-free', '-desc'=>
 		'Filesystem directory where FAQ-O-Matic will keep item files, '
-		.'image and other bit-bag files,'
-		.'and a cache of generated HTML files. '
+		.'image and other bit-bag files, and a cache of generated HTML files. '
 		.'This directory must be accesible directly via the http server. '
-		.'It might be something like /home/faqomatic/public_html/fom-serve/.',
-		[], 1 ],
-	'serveURL' =>	[ 'c-c2',
+		.'It might be something like /home/faqomatic/public_html/fom-serve/.'),
+	ci('serveURL', '-sort'=>'c-c2', '-free', '-desc'=>
 		'The URL prefix needed to access files in <b>$serveDir</b>. '
 		.'It should be relative to the root of the server '
 		.'(omit http://hostname:port, but include a leading /). '
-		.'It should also end with a /.',
-		[], 1 ],
+		.'It should also end with a /.'),
+
+	ci('sep_e', '-sort'=>'e--sep', '-separator', '-desc'=>
+		'Optional configurations... defaults are pretty good.'),
+	ci('mirrorURL',		'-sort'=>'k-m1', '-free', '-choices'=>[ "''"], '-desc'=>
+		'If this parameter is set, this FAQ will become a mirror of the '
+		.'one at the given URL. The URL should be the base name of '
+		.'the CGI script of the master FAQ-O-Matic.'),
+	ci('pageHeader',	'-sort'=>'m-p1', '-free', '-mirror', '-desc'=>
+		'An HTML fragment inserted at the top of each page. '
+		.'You might use this to place a corporate logo.'),
+	ci('pageFooter',	'-sort'=>'m-p2', '-free', '-mirror', '-desc'=>
+		'An HTML fragment appended to the bottom of each page. '
+		.'You might use this to identify the webmaster for this site.'),
+	ci('adminEmail','-sort'=>'n-e2', '-free', '-choices'=>[ '$adminAuth' ],
+		'-desc'=> 'Where FAQ-O-Matic should send email when it wants to '
+		.'alert the administrator (usually same as $adminAuth)'),
+	ci('maintSendErrors',	'-sort'=>'n-m2', '-choices'=>[ "'true'", "''" ],
+		'-desc'=> 'If true, FAQ-O-Matic will mail the log file to the '
+		.'administrator whenever it is truncated.'),
+	ci('RCSuser',	'-sort'=>'y-r3', '-free', '-choices'=>['getpwuid($<)'],
+		'-desc'=> 'User to use for RCS ci command (default is process UID)'),
+	ci('useServerRelativeRefs', '-sort'=>'y-s1',
+		'-choices'=>[ "'true'", "''" ], '-desc'=>
+		'Links from cache to CGI are relative to the server root, rather than '
+		.'absolute URLs including hostname:'),
+	ci('showLastModifiedAlways', '-sort'=>'y-s2', '-mirror',
+		'-choices'=>[ "'true'", "''" ], '-desc'=>
+		'Items always display their last-modified dates.'),
+
+	ci('sep_z', '-sort'=>'z--sep', '-separator', '-desc'=>
+			'Other configurations that you should probably ignore if present.'),
+
+
+	ci('RCSargs',	'-hide', '-free', '-desc'=>
+		'Arguments to make ci quietly log changes (default is probably fine)'),
+	ci('authorEmail', '-hide'),
+	ci('backgroundColor', '-hide', '-mirror'),
+	ci('bagsDir', '-hide'),
+	ci('bagsURL', '-hide'),
+	ci('cacheDir', '-hide'),
+	ci('cacheURL', '-hide'),
+	ci('directoryPartColor', '-hide', '-mirror'),
+	ci('highlightColor', '-hide', '-mirror'),
+	ci('itemBarColor', '-hide', '-mirror'),
+	ci('itemDir', '-hide'),
+	ci('itemURL', '-hide'),
+	ci('linkColor', '-hide', '-mirror'),
+	ci('maintenanceSecret', '-hide'),
+	ci('metaDir', '-hide'),
+	ci('regularPartColor', '-hide', '-mirror'),
+	ci('secureInstall', '-hide'),
+	ci('statUniqueHosts', '-hide'),
+	ci('textColor', '-hide', '-mirror'),
+	ci('version', '-hide'),
+	ci('vlinkColor', '-hide', '-mirror'),
 };
 # THANKS: John Goerzen and someone else (sorry I forgot who since I
 # THANKS: fixed it!) pointed out that the serveURL (then the cacheURL) needs
@@ -698,7 +738,8 @@ sub getPotentialConfig {
 	my $ckey;
 	foreach $ckey (sort keys %{$configInfo}) {
 		next if defined($map->{'$'.$ckey});
-		$map->{'$'.$ckey} = "''";		# provide a nulll default
+		next if $configInfo->{$ckey}->{'-separator'};
+		$map->{'$'.$ckey} = "''";		# provide a null default
 	}
 
 	return $map;
@@ -708,7 +749,10 @@ sub undefinedConfigsExist {
 	my $map = readConfig();
 	my $ckey;
 	foreach $ckey (sort keys %{$configInfo}) {
-		return 1 if not defined($map->{'$'.$ckey});
+		if (not defined($map->{'$'.$ckey})
+			and not $configInfo->{$ckey}->{'-separator'}) {
+			return 1;
+		}
 	}
 	return 0;
 }
@@ -724,39 +768,54 @@ sub askConfigStep {
 	my $map = getPotentialConfig();
 
 	my $widgets = {};	# collect widgets here for sorting later
-	foreach $left (sort keys %{$map}) {
+	# want to list any widget that either in the existing $map, or
+	# in the list of possible configs ($configInfo); but of course
+	# any given widget should appear only once (hence the hash).
+	my %keylist = map {$_=>$_}
+						((keys %{$map}),
+						(map {'$'.$_} keys %{$configInfo}));
+	foreach $left (sort keys %keylist) {
 		$right = $map->{$left};
 		my $aleft = $left;
 		$aleft =~ s/^\$//;
 		my $aright = stripQuotes($right);
-		my ($sort,$desc,$fopts,$freeok,$isCmd);
-		if ($configInfo->{$aleft}) {
-			($sort,$desc,$fopts,$freeok,$isCmd) = @{$configInfo->{$aleft}};
+		my ($sort,$desc,$choices,$free,$cmd,$separator,$mirror);
+		my $ch = $configInfo->{$aleft} || {'-free'=>1};
+		if (defined $ch) {
+			$sort		= $ch->{'-sort'} || 'zzzz';
+			$desc		= $ch->{'-desc'} || '(no description)';
+			$choices	= $ch->{'-choices'} || [];
+			$free		= $ch->{'-free'} || 0;
+			$cmd		= $ch->{'-cmd'} || 0;
+			$separator	= $ch->{'-separator'} || 0;
+			$mirror	= $ch->{'-mirror'} || 0;
+			$sort = 'hide' if ($ch->{'-hide'});
 			$desc.="<br>This is a command, so only letters, hyphens, and"
-				." slashes are allowed." if ($isCmd);
-		} else {
-			$sort = 'zzzz';
-			$desc = '(no description)';
-			$fopts = [];
-			$freeok = 1;
-			$isCmd = 0;
+				." slashes are allowed." if ($cmd);
 		}
-		if ($sort ne 'hide') {
+		if ($separator) {
+			$widgets->{$sort} =
+			"<tr><td colspan=2>\n<hr>$desc<hr>\n</td></tr>\n";
+		} elsif ($sort eq 'hide') {
+			# don't show hidden widgets
+		} elsif (($FAQ::OMatic::Config::mirrorURL ne '') and $mirror) {
+			# don't show mirrorable widgets if this is a mirror site --
+			# they'll get automatically defined at mirroring time.
+		} else {
 			my $wd = '';
 			$wd.="<tr><td align=right valign=top><b>$left</b></td>"
 				."<td align=left valign=top>\n";
 			$wd.="$desc<br>\n";
-			#$wd.="/$aleft/".join(",", @{$fopts})."/free=".$freeok."/<br>";
 			my $selected = 0;		# don't show $right in free field if
 									# it was available by a select button
-			if (scalar(@{$fopts})) {
-				foreach $choice (@{$fopts}) {
+			if (scalar(@{$choices})) {
+				foreach $choice (@{$choices}) {
 					$wd.="<input type=radio name=\"$left-select\" "
 						.($right eq $choice ? ' checked' : '')
 						." value=\"$choice\"> $choice<br>\n";
 					$selected = 1 if ($right eq $choice);
 				}
-				if ($freeok) {
+				if ($free) {
 					$wd.="<input type=radio name=\"$left-select\" "
 						.($selected ? '' : ' checked')
 						." value=\"free\">\n";
@@ -764,7 +823,7 @@ sub askConfigStep {
 			} else {
 				$wd.="<input type=hidden name=$left-select value=\"free\">\n";
 			}
-			if ($freeok) {
+			if ($free) {
 				$wd.="<input type=text size=40 name=\"$left-free\" "
 					."value=\""
 					.($selected ? '' : $aright)
@@ -776,21 +835,21 @@ sub askConfigStep {
 	}
 
 	# insert separator widgets
-	$widgets->{'a--separator'} = "<tr><td colspan=2>"
-			."<hr>Mandatory configurations... these must be correct<hr>"
-			."</td></tr>\n";
-	$widgets->{'c--separator'} = "<tr><td colspan=2>"
-			."<hr>Server Directory Configuration<hr>"
-			."</td></tr>\n";
-	$widgets->{'e--separator'} = "<tr><td colspan=2>"
-			."<hr>Optional configurations... defaults are pretty good.<hr>"
-			."</td></tr>\n";
-	$widgets->{'z--separator'} = "<tr><td colspan=2>"
-			."<hr>Other configurations that you should probably "
-			."ignore if present.<hr>"
-			."</td></tr>\n";
-			# ...because install doesn't have any docs on them, so they're
-			# probably obsolete anyway.
+#	$widgets->{'a--separator'} = "<tr><td colspan=2>"
+#			."<hr>Mandatory configurations... these must be correct<hr>"
+#			."</td></tr>\n";
+#	$widgets->{'c--separator'} = "<tr><td colspan=2>"
+#			."<hr>Server Directory Configuration<hr>"
+#			."</td></tr>\n";
+#	$widgets->{'e--separator'} = "<tr><td colspan=2>"
+#			."<hr>Optional configurations... defaults are pretty good.<hr>"
+#			."</td></tr>\n";
+#	$widgets->{'z--separator'} = "<tr><td colspan=2>"
+#			."<hr>Other configurations that you should probably "
+#			."ignore if present.<hr>"
+#			."</td></tr>\n";
+#			# ...because install doesn't have any docs on them, so they're
+#			# probably obsolete anyway.
 
 	# now display the widgets in sorted order
 	$rt.= join('', map {$widgets->{$_}} sort(keys %{$widgets}));
@@ -817,7 +876,7 @@ sub setConfigStep {
 		}
 		my $aleft = $left;
 		$aleft =~ s/^\$//;
-		if ($configInfo->{$aleft}->[4]) {	# it represents a command...
+		if ($configInfo->{$aleft}->{'-cmd'}) {	# it represents a command...
 			$map->{$left} =~ s#[^\w/'-]##gs;	# be very restrictive
 		}
 		my $warn = checkConfig($left, $map->{$left});

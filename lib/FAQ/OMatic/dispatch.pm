@@ -78,7 +78,7 @@ sub main {
 		'selectBag',		'editBag',			'submitBag',
 		'install',			'maintenance',
 		'editGroups',		'submitGroup',
-		'img'
+		'img',				'mirrorServer',		'displaySlow'
 	);
 
 	# functions that we need to run even if the versions mismatch.

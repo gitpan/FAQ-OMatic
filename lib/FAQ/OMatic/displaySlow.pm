@@ -25,65 +25,15 @@
 #                                                                            #
 ##############################################################################
 
-###
-### The Bags module provides services related to bit bags,
-### binary files stored with and linked to by a FAQ-O-Matic.
-###
+package FAQ::OMatic::displaySlow;
 
-package FAQ::OMatic::Bags;
-
+use CGI;
 use FAQ::OMatic;
-use FAQ::OMatic::Item;
+use FAQ::OMatic::Slow;
 
-sub getBagDesc {
-	# return an item containing descriptive properties about
-	# a bag
-	my $bagName = shift;
-
-	my $bagDesc = new FAQ::OMatic::Item($bagName.".desc",
-		$FAQ::OMatic::Config::bagsDir);
-
-	# if it didn't exist before...
-	$bagDesc->setProperty('Title', 'Bag Description');
-	$bagDesc->setProperty('filename', $bagName.".desc");
-
-	return $bagDesc;
-}
-
-sub getBagProperty {
-	my $bagName = shift;
-	my $property = shift;
-	my $default = shift || '';
-
-	my $bagDesc = getBagDesc($bagName);
-	return $bagDesc->getProperty($property) || $default;
-}
-
-sub saveBagDesc {
-	my $bagDesc = shift;
-
-	$bagDesc->saveToFile('',
-		$FAQ::OMatic::Config::bagsDir);
-}
-
-sub untaintBagName {
-	# untaint a bag name -- result is either a valid name or ''
-	my $name = shift;
-	$name =~ m/^([\w-.]+)$/;
-	$name = $1 || '';
-	# Don't want user overwriting .desc files with binary bags -- YUK!
-	return '' if ($name =~ m/\.desc$/);
-	return $name;
-}
-
-sub updateDependents {
-	my $bagName = shift;
-
-	my $dependent;
-	foreach $dependent (FAQ::OMatic::Item::getDependencies("bags.".$bagName)) {
-		my $dependentItem = new FAQ::OMatic::Item($dependent);
-		$dependentItem->writeCacheCopy();
-	}
+sub main {
+	my $cgi = $FAQ::OMatic::dispatch::cgi;
+	FAQ::OMatic::Slow::display(FAQ::OMatic::getParams($cgi));
 }
 
 1;

@@ -41,7 +41,7 @@ use FAQ::OMatic::Appearance;
 use FAQ::OMatic::Intl;
 use FAQ::OMatic::Bags;
 
-$VERSION = '2.610';
+$VERSION = '2.611';
 
 # This is never used to automatically send mail to (that's authorEmail),
 # but when we need to report the author's address, we use this constant:
@@ -305,10 +305,12 @@ sub hostAndPath {
 	my ($urlRoot,$urlPath) = $cgiUrl =~ m#^(https?://[^/]+)/(.*)$#;
 	if (not defined $urlRoot or not defined $urlPath) {
 		if (not $cgi->protocol() =~ m/^http/i) {
-			FAQ::OMatic::gripe('abort', "The server protocol ("
+			FAQ::OMatic::gripe('error', "The server protocol ("
 				.$cgi->protocol()
 				.") seems wrong. The author has seen this happen when "
-				."broken browsers don't escape a space in the GET URL."
+				."broken browsers don't escape a space in the GET URL. "
+				."(KDE Konqueror 1.0 is known broken; upgrade to "
+				."Konquerer 1.1.) "
 				."\n\n<p>\nThe URL (as CGI.pm saw it) was:\n"
 				.$ENV{'QUERY_STRING'}
 				."\n\n<br>The REQUEST_URI was:\n"
@@ -322,10 +324,8 @@ sub hostAndPath {
 			);
 			# TODO: This seems to happen when you search on two words,
 			# then get an <a href> with a %20 in the _highlightWords
-			# field. Perhaps some browsers mistakenly unescape that.
-			# Until I figure out what's going on, this remains an 'abort'
-			# condition, so I get email and can discover the browser
-			# type that causes it.
+			# field. Turns out KDE's integrated Konquerer browser
+			# version 1.0 has this problem; version 1.1 fixes it.
 		}
 		FAQ::OMatic::gripe('problem', "Can't parse my own URL: $cgiUrl");
 	}
@@ -448,6 +448,7 @@ sub makeAref {
 	my $params = \%theParams;	# default to global params (not preferred, tho)
 	my $target = '';			# <a TARGET=""> tag
 	my $thisDocIs = '';			# prevent conversion to a cache URL
+	my $urlBase = '';			# use included params, but specified urlBase
 
 	if ($_[0] =~ m/^\-/) {
 		# named-parameter style
@@ -469,6 +470,8 @@ sub makeAref {
 				$target = $argVal;
 			} elsif ($argName =~ m/\-thisDocIs$/i) {
 				$thisDocIs = $argVal;
+			} elsif ($argName =~ m/\-urlBase$/i) {
+				$urlBase = $argVal;
 			}
 		}
 		if (scalar(@_)) {
@@ -548,7 +551,9 @@ sub makeAref {
 	# accessed through a ssh forwarder. (Why not just use https?)
 
 	my $cgiName;
-	if (not $thisDocIs and
+	if ($urlBase ne '') {
+		$cgiName = $urlBase;
+	} elsif (not $thisDocIs and
 		($FAQ::OMatic::Config::useServerRelativeRefs || 0)) {
 		# return a server-relative path (starts with /)
 		$cgiName = $FAQ::OMatic::dispatch::cgi->script_name();

@@ -57,6 +57,18 @@ sub main {
 		exit(0);
 	}
 
+	if ($FAQ::OMatic::Config::mirrorURL
+		and $params->{'showEditCmds'}) {
+		# whoah -- we're a mirror site, and the user wants to
+		# edit! (they either used the [Show Edit Cmds] link, or the
+		# Appearance page.) Send them to the original site.
+		my $url = FAQ::OMatic::makeAref('-command' => 'faq',
+			'-urlBase'=>$FAQ::OMatic::Config::mirrorURL,
+			'-refType'=>'url');
+		print $cgi->redirect($url);
+		exit 0;
+	}
+
 	$item = new FAQ::OMatic::Item($params->{'file'});
 	if ($item->isBroken()) {
 		FAQ::OMatic::gripe('error', "The file (".

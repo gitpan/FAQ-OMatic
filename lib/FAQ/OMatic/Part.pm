@@ -538,7 +538,9 @@ sub unmergeDirectory {
 
 	# since directories can now contain textual content, we
 	# unmerge by simply "substituting out" the faqomatic link:
-	$self->{'Text'} =~ s/ ?faqomatic:$filename\n?\n?//;
+	# THANKS: to erinker@beasys.com for helping me get the whitespace
+	# removal right (or at least better)
+	$self->{'Text'} =~ s/\n?\n? ?faqomatic:$filename//;
 }
 
 sub addAuthor {

@@ -90,8 +90,8 @@ sub main {
 
 	# select source of data: file or textarea
 	if ($params->{'_inputType'} eq 'file') {
-		my $formFileHandle = "FAQ::OMatic::dispatch::"
-			.$cgi->param('_newTextFile');
+		# THANKS: John Nolan's fix applies here, too.
+		my $formFileHandle = $cgi->param('_newTextFile');
 		$params->{'_newText'} = '';		# scrap <textarea> text and load file
 		my $sizesum = 0;
 		while (my $line = <$formFileHandle>) {

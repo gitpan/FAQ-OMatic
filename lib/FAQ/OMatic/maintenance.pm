@@ -50,6 +50,7 @@ use FAQ::OMatic::Auth;
 use FAQ::OMatic::buildSearchDB;
 use FAQ::OMatic::Versions;
 use FAQ::OMatic::ImageRef;
+use FAQ::OMatic::Slow;
 
 $metaDir = $FAQ::OMatic::Config::metaDir;
 
@@ -59,7 +60,8 @@ my $html = '';
 my %taskUntaint = map {$_=>$_}
 	( 'writeMaintenanceHint', 'trimUHDB', 'trimSubmitTmps',
 	 'buildSearchDB', 'trim', 'cookies', 'errors', 'logSummary',
-	 'rebuildAllSummaries', 'rebuildCache', 'expireBags', 'bagAllImages' );
+	 'rebuildAllSummaries', 'rebuildCache', 'expireBags', 'bagAllImages',
+	 'mirrorClient', 'trimSlowOutput');
 
 sub main {
 	my $cgi = $FAQ::OMatic::dispatch::cgi;
@@ -80,16 +82,26 @@ sub main {
 		@tasks = periodicTasks($tasks[0] || '');
 	}
 
-	print $cgi->header("-type"=>"text/html");
-	print "<title>FAQ-O-Matic Maintenance</title>\n";
-	FAQ::OMatic::flush('STDOUT');	# just in case some other junk sneaks out on the fd
+	my $slow = '';
+	if ($cgi->param('tasks') ne 'mirrorClient'
+		and $cgi->param('tasks') ne 'rebuildCache') {
+		# (don't force out the header for Slow processes, which need
+		# to be able to redirect.)
+		print $cgi->header("-type"=>"text/html");
+		print "<title>FAQ-O-Matic Maintenance</title>\n";
+		FAQ::OMatic::flush('STDOUT');
+			# just in case some other junk sneaks out on the fd
+	} else {
+		$slow = '-slow';	# tell task to run interactively
+	}
 
+	$html.="<pre>\n";
 	foreach $i (sort @tasks) {
 		$i =~ s/\d+ //;
 		if (defined $taskUntaint{$i}) {
 			$i = $taskUntaint{$i};
-			$html.= "--- $i()\n";
-			if (not eval "$i(); return 1;") {
+			$html.= "--- $i($slow)\n";
+			if (not eval "$i($slow); return 1;") {
 				$html.= "*** Task $i failed\n    Error: $@\n";
 			}
 		} else {
@@ -98,7 +110,7 @@ sub main {
 	}
 
 	# output results
-	print "<pre>\n".$html."\n</pre>\n";
+	print $html."\n</pre>\n";
 
 	# provide a link to the install page, just for kicks
 	FAQ::OMatic::getParams($cgi);
@@ -149,10 +161,12 @@ sub periodicTasks {
 		'10 buildSearchDB'
 		) if $newHour;
 	push @tasks, (
+		'40 mirrorClient',	# if we're a mirror, this will do an update.
 		'50 cookies',
 		'60 logSummary',
 		'80 trimUHDB',		# turns on a flag so trim() will trim uhdbs
 		'81 trimSubmitTmps',# turns on a flag so trim() will trim submitTmps
+		'82 trimSlowOutput',# turns on a flag so trim() will trim slow-outputs
 		'89 trim' 		# traverse metadir (needed for trim() to do anything)
 		) if $newDay;
 	push @tasks, (
@@ -199,6 +213,10 @@ sub trimUHDB {
 
 sub trimSubmitTmps {
 	$trimset{'submitTmp'} = 1;
+}
+
+sub trimSlowOutput {
+	$trimset{'slow'} = 1;
 }
 
 sub buildSearchDB {
@@ -248,6 +266,15 @@ sub trim {
 
 		# submitTmp
 		if ($trimset{'submitTmp'} and ($file =~ m/^submitTmp\./)) {
+			# only trim files older than a day
+			if (-M "$metaDir/$file" > 1.0) {
+				$html.= "removing $file\n";
+				unlink "$metaDir/$file";
+			}
+		}
+
+		# slow
+		if ($trimset{'slow'} and ($file =~ m/^slow-output\./)) {
 			# only trim files older than a day
 			if (-M "$metaDir/$file" > 1.0) {
 				$html.= "removing $file\n";
@@ -342,6 +369,7 @@ sub invoke {
 	if ($verbose) {
 		print join('', @reply);
 	}
+	return @reply if wantarray();
 }
 
 # We used to have a verifyCache task that rebuilt cached files if
@@ -355,14 +383,28 @@ sub invoke {
 # (note also the 'updateAllDependencies' flag to saveToFile().)
 #
 sub rebuildCache {
+	my $slow = shift || '';
+
 	return if ((not defined $FAQ::OMatic::Config::cacheDir)
 				or ($FAQ::OMatic::Config::cacheDir eq ''));
 	
+	if ($slow) {
+		FAQ::OMatic::Slow::split();
+		# from now on, our output goes into the slow-output file
+		# to be periodically loaded by the browser. We should
+		# flush STDOUT pretty often.
+	}
+
 	my $itemName;
 	foreach $itemName (FAQ::OMatic::getAllItemNames()) {
 		$html.="<br>Updating $itemName\n";
 		my $item = new FAQ::OMatic::Item($itemName);
 		$item->saveToFile('', '', 'noChange', 'updateAllDependencies');
+
+		# flush stdout
+		print STDOUT $html;
+		FAQ::OMatic::flush('STDOUT');
+		$html = '';
 	}
 
 	FAQ::OMatic::Versions::setVersion('CacheRebuild');
@@ -413,6 +455,268 @@ sub bagAllImages {
 	FAQ::OMatic::ImageRef::bagAllImages();
 
 	FAQ::OMatic::Versions::setVersion('SystemBags');
+}
+
+sub mirrorClient {
+	my $slow = shift || '';
+	my $url = $FAQ::OMatic::Config::mirrorURL;
+
+	if (not defined $url) {
+		die "This FAQ-O-Matic is not configured to be a mirror.";
+	}
+
+	if ($slow) {
+		FAQ::OMatic::Slow::split();
+		# from now on, our output goes into the slow-output file
+		# to be periodically loaded by the browser. We should
+		# flush STDOUT pretty often.
+	}
+
+	my $limit = -1;	# Set to a small number for debugging, so you don't
+					# have to wait for the whole mirror to complete.
+					# Set to -1 for normal operation.
+
+	require FAQ::OMatic::install;
+
+	# cheesily parse the URL. This seemed better than use'ing the
+	# whole URL.pm kit. I had bad luck with it once. Maybe I'm irrational.
+	my ($host, $port, $path) =
+		$url =~ m#http://([^/:]+)(:\d+)?/(.*)$#;
+	if (defined $port) {
+		$port =~ s/^://;
+	} else {
+		$port = 80;
+	}
+	$path = "/$path?cmd=mirrorServer";
+
+	my @reply = invoke($host, $port, $path);
+
+	# chew HTTP headers until a blank line
+	while (not $reply[0] =~ m/^[\r\n]*$/) {
+		shift @reply;
+	}
+	shift @reply;	# chew off that blank line
+	@reply = grep { not m/^#/ } @reply;		# chew off comment lines
+	@reply = map { chomp $_; $_ } @reply;		# chomp LFs
+
+	# first line of remaining content must be version number
+	my $version = shift @reply;
+	if ($version ne 'version 1.0') {
+		die "This FAQ-O-Matic version $FAQ::OMatic::VERSION only understands "
+			."mirrorServer data version 1.0; received $version.";
+	}
+
+	#$html = join("\n", @reply);
+
+	my @itemURL = grep { m/^itemURL\s/ } @reply;
+	my $itemURL = ($itemURL[0] =~ m/^itemURL\s+(.*)$/)[0];
+	if (not defined $itemURL) {
+		die "master didn't send itemURL line.";
+	}
+
+	my @configs = grep { m/^config\s/ } @reply;
+	my $config;
+	my $map = FAQ::OMatic::install::readConfig();
+	foreach $config (@configs) {
+		my ($left,$right) =
+			($config =~ m/config (\$\S+) = (.*)$/);
+		$map->{$left} = $right;
+		#$html.="$left => $right\n";
+	}
+	FAQ::OMatic::install::writeConfig($map);
+	# now make sure that config takes effect for all the cache
+	# files we're about to write
+	FAQ::OMatic::install::rereadConfig();
+
+	my $count = 0;
+	my @items = grep { m/^item\s/ } @reply;
+	my $line;
+	foreach $line (@items) {
+		my ($file,$lms) =
+			($line =~ m/item\s+(\S+)\s+(\S+)/);
+		if (not defined $file || $file eq '') {
+			$html .= "<br>Can't parse: $line\n";
+			next;
+		}
+		my $item = new FAQ::OMatic::Item($file);
+		my $existingLms = $item->{'LastModifiedSecs'} || -1;
+		if ($lms != $existingLms) {
+			$html .= "<br>Needs update: item $file ".$item->getTitle()."\n";
+			mirrorItem($host, $port, $itemURL."$file", $file, '');
+			$count++;	# each net access counts 1, whether or not it takes
+		} else {
+			# $html .= "<br>Already have: $file ".$item->getTitle()."\n";
+			# Benign output supressed so you can see which items you
+			# don't have.
+		}
+
+		if ($limit>=0 && $count >= $limit) {
+			$html .= "<p>stopping because count = limit ($limit)\n";
+			return;
+		}
+		# flush stdout
+		print STDOUT $html;
+		FAQ::OMatic::flush('STDOUT');
+		$html = '';
+	}
+
+	my @bagsURL = grep { m/^bagsURL\s/ } @reply;
+	my $bagsURL = ($bagsURL[0] =~ m/^bagsURL\s+(.*)$/)[0];
+	if (not defined $bagsURL) {
+		die "master didn't send bagsURL line.";
+	}
+
+	my @bags = grep { m/^bag\s/ } @reply;
+	foreach $line (@bags) {
+		my ($file,$lms) =
+			($line =~ m/bag\s+(\S+)\s+(\S+)/);
+		$file = FAQ::OMatic::Bags::untaintBagName($file);
+		if ($file eq '') {
+			$html .= "<br>Tainted bag name in '$line'\n";
+			next;
+		}
+
+		my $descFile = $file.".desc";
+		my $descItem = new FAQ::OMatic::Item($descFile,
+							$FAQ::OMatic::Config::bagsDir);
+		my $existingLms = $descItem->{'LastModifiedSecs'} || -1;
+
+		if ($lms != $existingLms) {
+			$html .= "<br>Needs update: bag $file ($lms,$existingLms)\n";
+			# transfer bag byte-for-byte to my bags dir
+			mirrorBag($host, $port, $bagsURL."$file", $file);
+			# transfer the .desc file, using same item mirroring code as above
+			mirrorItem($host, $port, $bagsURL.$descFile,
+				$descFile, $FAQ::OMatic::Config::bagsDir);
+			# update the link in any items that point to this bag
+			FAQ::OMatic::Bags::updateDependents($file);
+			$count += 2;
+		} else {
+			# $html .= "<br>Already have: $file\n";
+		}
+
+		if ($limit>=0 && $count >= $limit) {
+			$html .= "<p>stopping because count = limit ($limit)\n";
+			return;
+		}
+		# flush stdout
+		print STDOUT $html;
+		FAQ::OMatic::flush('STDOUT');
+		$html = '';
+	}
+}
+
+# a close relative of previous function invoke().
+sub mirrorItem {
+	my $host = shift;
+	my $port = shift;
+	my $path = shift;
+	my $itemFilename = shift;
+	my $itemDir = shift;
+
+	my $proto = getprotobyname('tcp');
+	socket(HTTPSOCK, PF_INET, SOCK_STREAM, $proto);
+	$sin = sockaddr_in($port, inet_aton($host));
+	if (not connect(HTTPSOCK, $sin)) {
+		die "bang, $!, $@!\n"
+	}
+	my $request = "GET $path HTTP/1.0";
+	print HTTPSOCK "$request\n\n";
+	FAQ::OMatic::flush(FAQ::OMatic::maintenance::HTTPSOCK);
+		# Thanks to Miro Jurisic <meeroh@MIT.EDU> for this fix.
+	my $httpstatus = <HTTPSOCK>;	# get initial result
+	chomp $httpstatus;
+	my ($statusNum) = ($httpstatus =~ m/\s(\d+)\s/);
+	if ($statusNum != 200) {
+		$html .= "<br>Request '$request' for $itemFilename from "
+			."$host:$port failed: ($statusNum) $httpstatus\n";
+		close(HTTPSOCK);
+		return;
+	}
+	while (<HTTPSOCK>) {			# blow past HTTP headers
+		last if ($_ =~ m/^[\r\n]*$/);
+	}
+
+	my $item = new FAQ::OMatic::Item();
+	$item->{'filename'} = $itemFilename;
+	$item->loadFromFileHandle(\*HTTPSOCK);
+	close(HTTPSOCK);
+
+	$item->{'titleChanged'} = 'true';
+		# since we just mirrored this guy, the title may very well
+		# have changed, so we need to be sure to rewrite dependent items.
+	$item->saveToFile($itemFilename, $itemDir, 'noChange', 'updateAllDeps');
+		# notice we're passing in a filename we got from that
+		#	web server -- an insidious master might try to pass
+		#	off bogus item filenames with '..'s in them. But saveToFile()
+		#	has a taint-check to prevent that sort of thing.
+		# 'noChange' keeps lastModified date intact, so we won't keep
+		#	re-mirroring this item.
+		# 'updateAllDependencies' is necessary, because otherwise
+		#	saveToFile only adds those dependencies that are "new" to
+		#	this item -- but we only have the item, not the .dep file,
+		#	so we need to always regenerate all deps.
+	$html.="<br>I think I mirrored $itemFilename successfully.\n";
+}
+
+sub mirrorBag {
+	my $host = shift;
+	my $port = shift;
+	my $path = shift;
+	my $bagFilename = shift;	# already untainted by caller
+
+	my $proto = getprotobyname('tcp');
+	socket(HTTPSOCK, PF_INET, SOCK_STREAM, $proto);
+	$sin = sockaddr_in($port, inet_aton($host));
+	if (not connect(HTTPSOCK, $sin)) {
+		die "bang, $!, $@!\n"
+	}
+	my $request = "GET $path HTTP/1.0";
+	print HTTPSOCK "$request\n\n";
+	FAQ::OMatic::flush(FAQ::OMatic::maintenance::HTTPSOCK);
+		# Thanks to Miro Jurisic <meeroh@MIT.EDU> for this fix.
+	my $httpstatus = <HTTPSOCK>;	# get initial result
+	chomp $httpstatus;
+	my ($statusNum) = ($httpstatus =~ m/\s(\d+)\s/);
+	if ($statusNum != 200) {
+		$html .= "<br>Request '$request' for $bagFilename from "
+			."$host:$port failed: ($statusNum) $httpstatus\n";
+		close(HTTPSOCK);
+		return;
+	}
+	while (<HTTPSOCK>) {			# blow past HTTP headers
+		last if ($_ =~ m/^[\r\n]*$/);
+	}
+
+	# input looks good at this point -- open output bag file
+	if (not open(BAGFILE, ">".$FAQ::OMatic::Config::bagsDir.$bagFilename)) {
+		$html .= "<br>open of $bagFilename failed: $!\n";
+		close HTTPSOCK;
+		return;
+	}
+
+	my $sizeBytes = 0;
+	my $buf;
+	while (read(HTTPSOCK, $buf, 4096)) {
+		print BAGFILE $buf;
+		$sizeBytes += length($buf);
+		# TODO: maybe have (mirror-site-admin)-configurable length limit here
+	}
+	close(BAGFILE);
+	close(HTTPSOCK);
+
+	if (not chmod(0644, $FAQ::OMatic::Config::bagsDir.$bagFilename)) {
+		FAQ::OMatic::gripe('problem', "chmod("
+			.$FAQ::OMatic::Config::bagsDir.$bagFileame
+			." failed: $!");
+	}
+
+	if ($sizeBytes == 0) {
+		$html .= "<br><b>Uh oh, I read no bytes for $bagFilename.</b>\n";
+		return;
+	}
+
+	$html.="<br>I think I mirrored $bagFilename successfully.\n";
 }
 
 sub mtime {

@@ -19,6 +19,7 @@ lib/FAQ/OMatic/Log.pm
 lib/FAQ/OMatic/Part.pm
 lib/FAQ/OMatic/Search.pm
 lib/FAQ/OMatic/Set.pm
+lib/FAQ/OMatic/Slow.pm
 lib/FAQ/OMatic/Versions.pm
 lib/FAQ/OMatic/Words.pm
 lib/FAQ/OMatic/addItem.pm
@@ -28,6 +29,7 @@ lib/FAQ/OMatic/buildSearchDB.pm
 lib/FAQ/OMatic/changePass.pm
 lib/FAQ/OMatic/delPart.pm
 lib/FAQ/OMatic/dispatch.pm
+lib/FAQ/OMatic/displaySlow.pm
 lib/FAQ/OMatic/editBag.pm
 lib/FAQ/OMatic/editGroups.pm
 lib/FAQ/OMatic/editItem.pm
@@ -38,6 +40,7 @@ lib/FAQ/OMatic/help.pm
 lib/FAQ/OMatic/img.pm
 lib/FAQ/OMatic/install.pm
 lib/FAQ/OMatic/maintenance.pm
+lib/FAQ/OMatic/mirrorServer.pm
 lib/FAQ/OMatic/moveItem.pm
 lib/FAQ/OMatic/recent.pm
 lib/FAQ/OMatic/search.pm

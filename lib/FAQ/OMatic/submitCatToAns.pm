@@ -63,17 +63,23 @@ sub main {
 
 	if ($params->{'_removePart'}) {
 		# just delete the entire part outright
-		$item->removeSubItem();
+		my $partnum = $item->{'directoryHint'};
+		if (not defined $partnum) {
+			FAQ::OMatic::gripe('abort',
+				"spooky: directoryHint not defined in category "
+				.$self->{'filename'});
+		}
+		splice @{$item->{'Parts'}}, $partnum, 1;
+		delete $item->{'directoryHint'};
 	} else {
 		# the directory part has no faqomatic: links, so it won't hurt to
 		# turn it into a regular text part.
 		my $part = $item->getDirPart();
 		$part->setProperty('Type', '');
 		$part->setProperty('DateOfPart', FAQ::OMatic::Item::compactDate());
-		delete $item->{'directoryHint'};	# probably doesn't matter, but
-					# if any code beyond this point were to try to test
-					# the $item for being a category, we'd want it to test
-					# correctly.
+		delete $item->{'directoryHint'};
+		# makes sure later code (such as that that rewrites the cache)
+		# thinks this is an answer now, not a category.
 	}
 
 	# parent and any see-also linkers have changed, since their icons will

@@ -120,13 +120,24 @@ sub loadFromFile {
 	# take note of which file we came from
 	$self->{'filename'} = $filename;
 
+	$self->loadFromFileHandle(\*FILE);
+
+	close(FILE);
+
+	return $self;
+}
+
+sub loadFromFileHandle {
+	my $self = shift;
+	my $fh = shift;
+
 	# process item headers
-	while (<FILE>) {
+	while (<$fh>) {
 		chomp;
 		my ($key,$value) = FAQ::OMatic::keyValue($_);
 		if ($key eq 'Part') {
 			my $newPart = new FAQ::OMatic::Part;
-			$newPart->loadFromFile(\*FILE, $filename, $self,
+			$newPart->loadFromFile($fh, $self->{'filename'}, $self,
 					scalar @{$self->{'Parts'}});	# partnum
 			push @{$self->{'Parts'}}, $newPart;
 		} elsif ($key eq 'LastModified') {
@@ -350,6 +361,11 @@ sub saveToFile {
 				"RCS \"$cmd\" failed, saying \"$problem\"");
 		}
 	}
+	# RCS has a habit of making item files read-only by the user -- fix that
+	# (umask might also be uptight)
+	if (not chmod(0644, "$dir/$filename")) {
+		FAQ::OMatic::gripe('problem', "chmod($dir/$filename) failed: $!");
+	}
 
 	# if $lastModified was specified, correct filesystem mtime
 	# (If not specified, the fs mtime is already set to 'now',
@@ -513,10 +529,13 @@ sub writeCacheCopy {
 		if (not open(CACHEFILE, ">$staticFilename")) {
 			FAQ::OMatic::gripe('problem',
 				"Can't write $staticFilename: $!");
-			} else {
+		} else {
 			print CACHEFILE $staticHtml;
 			close CACHEFILE;
-			chmod(0644, $staticFilename);
+			if (not chmod(0644, $staticFilename)) {
+				FAQ::OMatic::gripe('problem',
+					"chmod($staticFilename) failed: $!");
+			}
 		}
 	}
 }

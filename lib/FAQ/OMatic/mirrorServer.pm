@@ -25,65 +25,65 @@
 #                                                                            #
 ##############################################################################
 
-###
-### The Bags module provides services related to bit bags,
-### binary files stored with and linked to by a FAQ-O-Matic.
-###
+package FAQ::OMatic::mirrorServer;
 
-package FAQ::OMatic::Bags;
-
+use CGI;
 use FAQ::OMatic;
 use FAQ::OMatic::Item;
+use FAQ::OMatic::install;
 
-sub getBagDesc {
-	# return an item containing descriptive properties about
-	# a bag
-	my $bagName = shift;
+sub main {
+	my $cgi = $FAQ::OMatic::dispatch::cgi;
+	
+	my $params = FAQ::OMatic::getParams($cgi);
 
-	my $bagDesc = new FAQ::OMatic::Item($bagName.".desc",
-		$FAQ::OMatic::Config::bagsDir);
+	my $rt = "Content-type: text/plain\n\n";
+	$rt .= "# FAQ-O-Matic mirror master\n";
+	$rt .= "# This file describes the configuration, items, and bags of a\n"
+		."# FAQ-O-Matic, so it can be mirrored at another site.\n";
 
-	# if it didn't exist before...
-	$bagDesc->setProperty('Title', 'Bag Description');
-	$bagDesc->setProperty('filename', $bagName.".desc");
+	# mirror format version number -- sent so client (mirror) can make
+	# sure he understands the structure of the following data.
+	$rt .= "version 1.0\n";
+	$rt .= "itemURL $FAQ::OMatic::Config::itemURL\n";
+	$rt .= "bagsURL $FAQ::OMatic::Config::bagsURL\n";
 
-	return $bagDesc;
-}
-
-sub getBagProperty {
-	my $bagName = shift;
-	my $property = shift;
-	my $default = shift || '';
-
-	my $bagDesc = getBagDesc($bagName);
-	return $bagDesc->getProperty($property) || $default;
-}
-
-sub saveBagDesc {
-	my $bagDesc = shift;
-
-	$bagDesc->saveToFile('',
-		$FAQ::OMatic::Config::bagsDir);
-}
-
-sub untaintBagName {
-	# untaint a bag name -- result is either a valid name or ''
-	my $name = shift;
-	$name =~ m/^([\w-.]+)$/;
-	$name = $1 || '';
-	# Don't want user overwriting .desc files with binary bags -- YUK!
-	return '' if ($name =~ m/\.desc$/);
-	return $name;
-}
-
-sub updateDependents {
-	my $bagName = shift;
-
-	my $dependent;
-	foreach $dependent (FAQ::OMatic::Item::getDependencies("bags.".$bagName)) {
-		my $dependentItem = new FAQ::OMatic::Item($dependent);
-		$dependentItem->writeCacheCopy();
+	# send mirrorable config params
+	my $configInfo = $FAQ::OMatic::install::configInfo;
+	my $map = FAQ::OMatic::install::readConfig();
+	my $key;
+	foreach $key (sort keys %{$configInfo}) {
+		my $ch = $configInfo->{$key};
+		next if (not $ch->{'-mirror'});
+		my $value = $map->{'$'.$key};
+		$rt.='config $'."$key = $value\n";
 	}
+
+	# send item catalog
+	my $file;
+	my @allItems = sort numerically FAQ::OMatic::getAllItemNames();
+	foreach $file (@allItems) {
+		my $item = new FAQ::OMatic::Item($file);
+		my $lms = $item->{'LastModifiedSecs'};
+		$rt.="item $file $lms\n";
+	}
+
+	# send meta catalog
+	my @bagList = grep { not m/\.desc$/ }
+		FAQ::OMatic::getAllItemNames($FAQ::OMatic::Config::bagsDir);
+	my $bagName;
+	foreach $bagName (sort @bagList) {
+		my $item = new FAQ::OMatic::Item($bagName.".desc",
+							$FAQ::OMatic::Config::bagsDir);
+		my $lms = $item->{'LastModifiedSecs'};
+		$rt.="bag $bagName $lms\n";
+	}
+
+	print $rt;
+}
+
+sub numerically {
+	return $a <=> $b;
 }
 
 1;

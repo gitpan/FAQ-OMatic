@@ -39,18 +39,13 @@ sub main {
 	
 	my $params = FAQ::OMatic::getParams($cgi);
 	
-	my $bagName = $params->{'_bagName'};
+	my $bagName = FAQ::OMatic::Bags::untaintBagName($params->{'_bagName'});
 
-	if (not $bagName =~ m/^([\w-.]+)$/) {
+	if ($bagName eq '') {
 		FAQ::OMatic::gripe('error', "Bag names may only contain letters, "
-			."numbers, underscores (_), hyphens (-), and periods (.). "
+			."numbers, underscores (_), hyphens (-), and periods (.), and "
+			."may not end in ".desc". "
 			."Yours was \"$bagName\".");
-	} else {
-		$bagName = $1;
-	}
-	if ($bagName =~ m/\.desc$/) {
-		# Don't want user overwriting .desc files with binary bags -- YUK!
-		FAQ::OMatic::gripe('error', "Bag names may not end with \".desc\".");
 	}
 
 	if (-f $FAQ::OMatic::Config::bagsDir.$bagName) {
@@ -69,7 +64,9 @@ sub main {
 	if (not open(BAGFILE, ">".$FAQ::OMatic::Config::bagsDir."newbag.$$")) {
 		FAQ::OMatic::gripe('error', "Couldn't store incoming bag $bagName: $!");
 	}
-	my $formDataHandle = "FAQ::OMatic::dispatch::".$cgi->param('_bagData');
+	# THANKS: to John Nolan <JNolan@n2k.com> for fixing the reference
+	# to the filehandle returned by CGI.pm in the next line.
+	my $formDataHandle = $cgi->param('_bagData');
 	my $sizeBytes = 0;
 	my $buf;
 	while (read($formDataHandle, $buf, 4096)) {
@@ -87,6 +84,11 @@ sub main {
 					.$FAQ::OMatic::Config::bagsDir."newbag.$$"
 					." to "
 					.$FAQ::OMatic::Config::bagsDir.$bagName);
+		}
+		if (not chmod(0644, $FAQ::OMatic::Config::bagsDir.$bagName)) {
+			FAQ::OMatic::gripe('problem', "chmod("
+				.$FAQ::OMatic::Config::bagsDir.$bagName
+				.") failed: $!");
 		}
 	} else {
 		# no bag file sent; discard bag file
