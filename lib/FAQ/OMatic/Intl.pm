@@ -26,7 +26,7 @@
 ##############################################################################
 
 ##
-## FaqIntl.pm
+## Intl.pm
 ##
 ## This file will contain data that assists in the internationalization
 ## of Faq-O-Matic. That way, all the user-visible text can be translated
@@ -49,3 +49,8 @@ package FAQ::OMatic::Intl;
 	'stats' => 'Access Statistics',
 	'submitPass' => 'Validate'
 );
+
+# These are the characters that make up words in the local language.
+# This defines how we extract words from text to put into the search
+# database, and how we split search queries into words.
+$wordchars = '[A-Za-z0-9\-]';

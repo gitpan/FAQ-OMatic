@@ -25,55 +25,28 @@
 #                                                                            #
 ##############################################################################
 
-### FaqLocalAuth.pm -- where you can define a local authorization
-### routine. It should take parameters from 
-
 package FAQ::OMatic::AuthLocal;
 
-sub authenticate {
-	my $params = shift;
+# To implement a local authentication scheme, return a true value
+# if the id and password are valid, else return a false value.
+#
+# (There should be a way for you to also hide or override the
+# 'set a new password' mechanism, but there isn't as of this writing,
+# version 2.504.)
 
-	my $auth = $params->{'auth'};
+sub checkPassword {
+	my $id = shift;
+	my $pass = shift;
 
-	# if there's a cookie...
-	if ($auth =~ m/^ck/) {
-		my ($cookie,$cid,$ctime) = FAQ::OMatic::Auth::findCookie($auth,'cookie');
-		# and it's good, then return the implied id
-		return ($cid,5) if (defined $cid);
-		# if it's bad, fall through and inherit anonymous auth
+	my ($idf,$passf,@rest) = FAQ::OMatic::Auth::readIDfile($id);
+	if ((defined $idf)
+		and ($idf eq $id)
+		and ($passf ne '__INVALID__')	# avoid the obvious vandal's hole...
+		and FAQ::OMatic::Auth::checkCryptPass($pass, $passf)) {
+		return 'true';
 	}
 
-	# if we authenticate...
-	if ($params->{'auth'} eq 'pass') {
-		my $id = $params->{'_pass_id'};
-		my $pass = $params->{'_pass_pass'};
-		my ($idf,$passf,@rest) = FAQ::OMatic::Auth::readIDfile($id);
-		if ((defined $idf)
-			and ($idf eq $id)
-			and ($passf ne '__INVALID__')	# avoid the obvious vandal's hole...
-			and FAQ::OMatic::Auth::checkCryptPass($pass, $passf)) {
-			# set up a cookie to use for a shortcut later,
-			# and return the authentication pair
-			$params->{'auth'} = FAQ::OMatic::Auth::newCookie($id);
-			return ($id,5);
-		} else {
-			# let authenticate know to report the bad password
-			$params->{'badPass'} = 1;
-			# fall through to inherit some crummier Authentication Quality
-		}
-	}
-
-	if (($params->{'auth'} eq 'none')
-		and (defined $params->{'_none_id'})) {
-		# move id where we can pass it around
-		$params->{'id'} = $params->{'_none_id'};
-	}
-
-	# default authentication: whatever id we can come up with,
-	# but quality is at most 3
-	my $id = $params->{'id'} || 'anonymous';
-	my $aq = $params->{'id'} ? 3 : 1;
-	return ($id, $aq);
+	return undef;
 }
 
 1;

@@ -69,7 +69,7 @@ sub getID {
 	if (not defined $trustedID) {
 		if (defined $params->{'auth'}) {
 			# use a user-overridable auth function
-			($trustedID,$authQuality) = FAQ::OMatic::AuthLocal::authenticate($params);
+			($trustedID,$authQuality) = authenticate($params);
 		} elsif (defined $params->{'id'}) {
 			# id without authorization
 			$trustedID = $params->{'id'};
@@ -324,7 +324,11 @@ sub readIDfile {
 
 sub checkCryptPass {
 	my ($cleartext, $crypted) = @_;
-	my $salt = substr($crypted, 0, 2);
+	#my $salt = substr($crypted, 0, 2);
+	# specific fix from Evan Torrie <torrie@pi.pair.com>: most crypt()s
+	# don't care of there's excess salt, and those with MD5 crypts use
+	# more than the first two bytes as salt.
+	my $salt = $crypted;
 	return (crypt($cleartext, $salt) eq $crypted);
 }
 
@@ -334,6 +338,48 @@ sub cryptPass {
 	my $salt = pack('cc', 65+rand(16), 65+rand(16));
 	#FAQ::OMatic::gripe('note', "crypt($pass,$salt) = ".crypt($pass,$salt));
 	return crypt($pass,$salt);
+}
+
+sub authenticate {
+	my $params = shift;
+
+	my $auth = $params->{'auth'};
+
+	# if there's a cookie...
+	if ($auth =~ m/^ck/) {
+		my ($cookie,$cid,$ctime) = findCookie($auth,'cookie');
+		# and it's good, then return the implied id
+		return ($cid,5) if (defined $cid);
+		# if it's bad, fall through and inherit anonymous auth
+	}
+
+	# if we authenticate...
+	if ($params->{'auth'} eq 'pass') {
+		my $id = $params->{'_pass_id'};
+		my $pass = $params->{'_pass_pass'};
+		if (FAQ::OMatic::AuthLocal::checkPassword($id, $pass)) {
+			# set up a cookie to use for a shortcut later,
+			# and return the authentication pair
+			$params->{'auth'} = newCookie($id);
+			return ($id,5);
+		} else {
+			# let authenticate know to report the bad password
+			$params->{'badPass'} = 1;
+			# fall through to inherit some crummier Authentication Quality
+		}
+	}
+
+	if (($params->{'auth'} eq 'none')
+		and (defined $params->{'_none_id'})) {
+		# move id where we can pass it around
+		$params->{'id'} = $params->{'_none_id'};
+	}
+
+	# default authentication: whatever id we can come up with,
+	# but quality is at most 3
+	my $id = $params->{'id'} || 'anonymous';
+	my $aq = $params->{'id'} ? 3 : 1;
+	return ($id, $aq);
 }
 
 %staticErrors = (

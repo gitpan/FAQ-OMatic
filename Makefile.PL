@@ -28,7 +28,7 @@ WriteMakefile(
 						 'SUFFIX'=>'gz',
 						 'POSTOP'=>
 				'mv FAQ-OMatic-$(VERSION).tar.gz $(HOME)/dist; '
-				.'rcp $(HOME)/dist/FAQ-OMatic-$(VERSION).tar.gz zealand.cs:ftp; '
-				.'rsh zealand.cs chmod 644 ftp/FAQ-OMatic-$(VERSION).tar.gz'
+				.'scp $(HOME)/dist/FAQ-OMatic-$(VERSION).tar.gz zealand.cs:ftp; '
+				.'ssh zealand.cs chmod 644 ftp/FAQ-OMatic-$(VERSION).tar.gz'
 						},
 );

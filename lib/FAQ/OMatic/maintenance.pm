@@ -43,6 +43,7 @@ package FAQ::OMatic::maintenance;
 
 use CGI;
 use Socket;
+require 'flush.pl';
 
 use FAQ::OMatic;
 use FAQ::OMatic::Log;
@@ -307,6 +308,8 @@ sub invoke {
 		die "bang, $!, $@!\n"
 	}
 	print HTTPSOCK "GET $url HTTP/1.0\n\n";
+	flush(HTTPSOCK);
+
 	my @reply = <HTTPSOCK>;
 	close HTTPSOCK;
 

@@ -873,7 +873,7 @@ sub extractWordsFromString {
 
 	$string =~ s/'//g;			# apostrophes are not word breaks
 	$string =~ tr/[A-Z]/[a-z]/;	# searches are case-insensitive
-	my @wordlist = ($string =~ m/([A-Za-z0-9]+)/gs);
+	my @wordlist = ($string =~ m/($FAQ::OMatic::Intl::wordchars+)/gso);
 
 	# Associate words with this file in index
 	my $i;

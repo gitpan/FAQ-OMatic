@@ -151,7 +151,7 @@ sub convertSearchParams {
 	$pattern = $params->{'_search'};
 	$pattern =~ s/'//g;		# apostrophes don't count
 	$pattern =~ tr/[A-Z/[a-z]/;
-	@patternwords = ($pattern =~ m/[A-Za-z0-9]+/gs);
+	my @patternwords = ($pattern =~ m/($FAQ::OMatic::Intl::wordchars+)/gso);
 
 	$params->{'_searchArray'} = \@patternwords;
 }
