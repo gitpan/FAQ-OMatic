@@ -1,11 +1,11 @@
 #!/usr/bin/env perl -w
 use strict;
 use Test;
-BEGIN { plan tests => 6 }
+BEGIN { plan tests => 7 }
 
 my $language;
 foreach $language  ("de_iso8859_1","fi","fr","ja_JP.EUC","ru","uk","hu") {
-    print STDERR $language;
+    print STDERR $language," ";
     my $kit  = "FAQ/OMatic/Language_".$language . ".pm";
     my $func = "FAQ::OMatic::Language_" . $language . "::translations";
    eval {

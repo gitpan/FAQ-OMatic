@@ -1892,7 +1892,7 @@ msgstr "moved a sub-item from %0"
 
 #: lib/FAQ/OMatic/submitPass.pm:49
 msgid "An email address must look like 'name\\@some.domain'."
-msgstr "Az E-mail cím formátuma: 'nev@domain' legyen"
+msgstr "Az E-mail cím formátuma: 'nev\\@domain' legyen"
 
 #: lib/FAQ/OMatic/submitPass.pm:51
 msgid ""

@@ -1,5 +1,5 @@
 #--------------------------------------------------------------------
-#   Language_hu.pm
+#   (stdout)
 #   Generated automatically from hu.po by po2pm
 #--------------------------------------------------------------------
 
@@ -1660,7 +1660,7 @@ sub translations {
 
 #: lib/FAQ/OMatic/submitPass.pm:49
  "An email address must look like 'name\@some.domain'."
- => "Az E-mail cím formátuma: 'nev@domain' legyen",
+ => "Az E-mail cím formátuma: 'nev\@domain' legyen",
 
 #: lib/FAQ/OMatic/submitPass.pm:51
  "If yours (%0) does and I keep rejecting it, please mail the administrator of this FAQ at %1 and tell him or her what's happening."
