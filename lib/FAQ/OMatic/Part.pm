@@ -235,7 +235,7 @@ sub displayHTML {
 	$rt .= FAQ::OMatic::Appearance::partEnd($params);
 
 	my $filename = $item->{'filename'};
-	if ($params->{'showEditCmds'}) {
+	if ($params->{'showEditCmds'} and $item->ordinaryItem()) {
 		#$rt .= "<br>\n" if ($showAttributions eq 'all');
 		$rt .= $FAQ::OMatic::Appearance::editStart;
 			#."Edit Part: ";

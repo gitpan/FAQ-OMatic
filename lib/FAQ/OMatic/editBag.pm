@@ -82,8 +82,13 @@ sub main {
 		$rt .= 
 		"<input type=hidden name=\"_bagName\" value=\"$bagName\" size=30>\n";
 	} else {
-		$rt .= "<tr><td align=right>Bag name:</td><td>"
+		$rt .= "<tr><td align=right valign=top>Bag name:</td><td valign=top>"
 			."<input type=text name=\"_bagName\" value=\"\" size=30>"
+			."<br><i>The bag name is used as a filename, so it is restricted "
+			."to only contain letters, "
+            ."numbers, underscores (_), hyphens (-), and periods (.). "
+			."It should also carry a meaningful extension (such as .gif) so "
+			."that web browsers will know what to do with the data."
 			."</td></tr>\n";
 	}
 	$rt .= "<tr><td align=right>Bag data:</td><td>"

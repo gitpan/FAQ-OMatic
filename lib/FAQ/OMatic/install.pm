@@ -399,6 +399,16 @@ sub mainMenuStep {
 	$rt.="$par<li><a href=\"".installUrl('', 'url', 'editGroups')."\">"
 			.checkBoxFor('customGroups')
 			."Define groups</a> (optional).\n";
+
+	# THANKS: to John Goerzen for discovering the CGI.pm/bags bug
+	$rt.="$par<li>"
+			.checkBoxFor('CGIversion')
+			."Upgrade to CGI.pm version 2.42 or newer. "
+			.($CGI::VERSION >= 2.42
+				? ''
+				: "(optional; older versions have bugs that affect bags).\n" )
+			."You are using version $CGI::VERSION now.\n";
+
 	$rt.="$par<li>".checkBoxFor('nothing')
 			."<a href=\"".installUrl('mainMenu')."\">"
 			."Bookmark this link to be able to return to this menu.</a>\n";
@@ -445,6 +455,10 @@ sub checkBoxFor {
 		&& (-d "$FAQ::OMatic::Config::bagsDir/."));
 	$done = 1 if (($thing eq 'firstItem')
 		&& FAQ::OMatic::Versions::getVersion('Items') eq $FAQ::OMatic::VERSION);
+		# The above test ensures that the "create initial items" routine
+		# has been run once by this version of the faq. That way as new
+		# default initial items are supplied, upgraders don't get a checkbox
+		# until they're installed.
 	$done = 1
 		if (($thing eq 'maintenance') && ($FAQ::OMatic::Config::maintenanceSecret));
 	$done = 1 if (($thing eq 'makeSecure') && ($FAQ::OMatic::Config::secureInstall));
@@ -460,6 +474,7 @@ sub checkBoxFor {
 	$done = 1 if (($thing eq 'systemBags')
 					&& (FAQ::OMatic::Versions::getVersion('SystemBags')
 						eq $FAQ::OMatic::VERSION));
+	$done = 1 if ($CGI::VERSION >= 2.42);
 
 	if ($thing eq 'nothing') {
 		$rt.=installUrl('', 'url', 'img', 'space');

@@ -129,6 +129,11 @@ sub loadFromFile {
 			$newPart->loadFromFile(\*FILE, $filename, $self,
 					scalar @{$self->{'Parts'}});	# partnum
 			push @{$self->{'Parts'}}, $newPart;
+		} elsif ($key eq 'LastModified') {
+			# Transparently update older items with LastModified keys
+			# to use new LastModifiedSecs key.
+			my $secs = compactDateToSecs($value);	# turn back into seconds
+			$self->{'LastModifiedSecs'} = $secs;
 		} elsif ($key =~ m/-Set$/) {
 			if (not defined($self->{$key})) {
 				$self->{$key} = new FAQ::OMatic::Set;
@@ -176,6 +181,8 @@ sub compactDate {
 	my ($forsecs) = shift;	# optional; default is now
 	$forsecs = time() if (not $forsecs);
 	my ($sec,$min,$hr,$day,$mo,$yr,$wday,$yday,$isdst) = localtime($forsecs);
+	# TODO: should we really be storing times in GMT, since it's not
+	# TODO: like time zones mean much here?
 	my $ampm = "am";
 	if ($hr >= 12) {
 		$hr -= 12;
@@ -187,13 +194,48 @@ sub compactDate {
 			$yr+1900, $monthMap[$mo], $day, $hr, $min, $ampm);
 }
 
+# undo the previous transformation
+# TODO: this is only used (I think) for updating LastModified: fields
+# TODO: to LastModifiedSecs: fields. It could eventually be discarded.
+sub compactDateToSecs {
+	my $cd = shift;
+	my ($yr,$mo,$dy,$hr,$mn,$ampm) =
+		($cd =~ m/(\d+)-([a-z]+)-(\d+) +(\d+):(\d+)([ap])m/i);
+	if (not defined $ampm) {
+		return -1;		# can't parse string
+	}
+	for ($month_i=0; $month_i<12; $month_i++) {
+		if ($mo eq $monthMap[$month_i]) {
+			$mo = $month_i;		# notice months run 0..11
+			last;
+		}
+	}
+	if ($month_i == 12) {
+		return -1;				# can't parse month
+	}
+	$hr = 0 if ($hr == 12);		# noon/midnight
+	$hr += 12 if ($ampm eq 'p');	# am/pm
+	$yr -= 1900;	 			# year is biased in struct
+
+	require Time::Local;
+	# LastModified: keys were represented in local time, not GMT.
+	return Time::Local::timelocal(0, $mn, $hr, $dy, $mo, $yr);
+}
+
 sub saveToFile {
 	my $self = shift;
 	my $filename = shift || '';
 	my $dir = shift || '';			# optional -- almost always itemDir
-	my $lastModified = shift || '';	# optional -- normally today
+	my $lastModified = shift || '';	# optional -- normally today.
+									# 'noChange' is allowed; used when
+									# regenerating files (mod date hasn't
+									# really changed.).
 	my $updateAllDependencies = shift || '';	# optional. only specified
 						# by maintenance when regenerating all dependencies.
+# TODO: I don't think maintenance.pm really needs to actually write the
+# TODO: item files when regenerating dependencies/HTML cache files.
+# TODO: If not, that part of saveToFile should be factored out, so we're
+# TODO: not really writing out item/ files.
 
 	$dir = $FAQ::OMatic::Config::itemDir if (not $dir);
 
@@ -236,7 +278,15 @@ sub saveToFile {
 	}
 
 	# note last modified date in item itself
-	$self->{'LastModified'} = compactDate($lastModified);
+	if ($lastModified ne 'noChange') {
+		# Time now stored in file in Unix-style seconds.
+		# (but as an ASCII integer, which isn't 31-bit limited,
+		# so I'm sure you'll be pleased to note that we're
+		# Y2.038K-compliant. :v)
+		$lastModified = time() if ($lastModified eq '');
+		$self->{'LastModifiedSecs'} = $lastModified;
+		# $self->{'LastModified'} = compactDate($lastModified);
+	}
 
 	my $lock = FAQ::OMatic::lockFile("$filename");
 	return if not $lock;
@@ -302,8 +352,10 @@ sub saveToFile {
 	}
 
 	# if $lastModified was specified, correct filesystem mtime
+	# (If not specified, the fs mtime is already set to 'now',
+	# which is correct.)
 	if ($lastModified) {
-		utime(time(),$lastModified,"$dir/$filename");
+		utime(time(),$self->{'LastModifiedSecs'},"$dir/$filename");
 	}
 
 	# As I was saying, ...
@@ -670,90 +722,104 @@ sub displayCoreHTML {
 					'-changedParams'=>{@fixfn}),
 			"Edit $whatAmI Permissions")."\n";
 
-		# Duplicate it
-		my $dupTitle = ($whatAmI eq 'Answer')
-					? "Duplicate Answer"
-					: "Duplicate Category as Answer";
-		$rt .= FAQ::OMatic::button(
-			FAQ::OMatic::makeAref('-command'=>'addItem',
-					'-params'=>$params,
-					'-changedParams'=>{'_insert'=>'answer',
-				 			'_duplicate'=>$self->{'filename'},
-							'file'=>$self->{'Parent'}}
-				),
-				$dupTitle)."\n";
-
-		# Move it (if not at the top)
-		if ($self->{'Parent'} ne $self->{'filename'}) {
-			$rt .= FAQ::OMatic::button(
-					FAQ::OMatic::makeAref('-command'=>'moveItem',
-						'-params'=>$params,
-						'-changedParams'=>{@fixfn}),
-					"Move $whatAmI")."\n";
-
-			# Trash it (same rules as for moving)
-			$rt .= FAQ::OMatic::button(
-					FAQ::OMatic::makeAref('-command'=>'submitMove',
-						'-params'=>$params,
-						'-changedParams'=>{@fixfn,
-							'_newParent'=>'trash'}),
-					"Trash $whatAmI")."\n";
-		}
-
-		# Convert category to answer / answer to category
-		# THANKS: to Steve Herber for suggesting pulling this out of
-		# THANKS: editPart and putting it here as a distinct command
-		# THANKS: for clarity.
-		if ($self->isCategory()
-				and scalar($self->getChildren())==0) {
-			$rt .= FAQ::OMatic::button(
-				FAQ::OMatic::makeAref('-command'=>'submitCatToAns',
-						'-params'=>$params,
-						'-changedParams'=>{
-							'checkSequenceNumber'=>$self->{'SequenceNumber'},
-							@fixfn}),
-					"Convert to Answer")."\n";
-		} elsif (not $self->isCategory()) {
-			$rt .= FAQ::OMatic::button(
-				FAQ::OMatic::makeAref('-command'=>'submitAnsToCat',
-						'-params'=>$params,
-						'-changedParams'=>{
-							'checkSequenceNumber'=>$self->{'SequenceNumber'},
-							@fixfn}),
-					"Convert to Category")."\n";
-		}
-
-		# Create new children
-		if ($self->isCategory()) {
+		# These don't make sense if we're in a special-case item file, such
+		# as 'trash'. We'll assume here that items whose file names end in
+		# a digit are 'incrementable' and can thus have children.
+		# TODO: default system should ship with help000 having moderator-only
+		# TODO: permissions to discourage the public from modifying the
+		# TODO: help system. This will matter more when the help system
+		# TODO: is implemented. :v)
+		# THANKS: to Doug Becker <becker@foxvalley.net> for
+		# accidentally making a 'trasi' item (perl incremented 'trash' :v)
+		# and discovering this problem.
+		if ($self->ordinaryItem()) {
+			# Duplicate it
+			my $dupTitle = ($whatAmI eq 'Answer')
+						? "Duplicate Answer"
+						: "Duplicate Category as Answer";
 			$rt .= FAQ::OMatic::button(
 				FAQ::OMatic::makeAref('-command'=>'addItem',
 						'-params'=>$params,
-						'-changedParams'=>{'_insert'=>'answer', @fixfn}),
-					"New Answer")."\n";
-			$rt .= FAQ::OMatic::button(
-				FAQ::OMatic::makeAref('-command'=>'addItem',
-						'-params'=>$params,
-						'-changedParams'=>{'_insert'=>'category', @fixfn}),
-					"New Subcategory")."\n";
+						'-changedParams'=>{'_insert'=>'answer',
+					 			'_duplicate'=>$self->{'filename'},
+								'file'=>$self->{'Parent'}}
+					),
+					$dupTitle)."\n";
+	
+			# Move it (if not at the top)
+			if ($self->{'Parent'} ne $self->{'filename'}) {
+				$rt .= FAQ::OMatic::button(
+						FAQ::OMatic::makeAref('-command'=>'moveItem',
+							'-params'=>$params,
+							'-changedParams'=>{@fixfn}),
+						"Move $whatAmI")."\n";
+	
+				# Trash it (same rules as for moving)
+				$rt .= FAQ::OMatic::button(
+						FAQ::OMatic::makeAref('-command'=>'submitMove',
+							'-params'=>$params,
+							'-changedParams'=>{@fixfn,
+								'_newParent'=>'trash'}),
+						"Trash $whatAmI")."\n";
+			}
+	
+			# Convert category to answer / answer to category
+			# THANKS: to Steve Herber for suggesting pulling this out of
+			# THANKS: editPart and putting it here as a distinct command
+			# THANKS: for clarity.
+			if ($self->isCategory()
+					and scalar($self->getChildren())==0) {
+				$rt .= FAQ::OMatic::button(
+					FAQ::OMatic::makeAref('-command'=>'submitCatToAns',
+							'-params'=>$params,
+							'-changedParams'=>{
+							  'checkSequenceNumber'=>$self->{'SequenceNumber'},
+							  @fixfn}),
+						"Convert to Answer")."\n";
+			} elsif (not $self->isCategory()) {
+				$rt .= FAQ::OMatic::button(
+					FAQ::OMatic::makeAref('-command'=>'submitAnsToCat',
+							'-params'=>$params,
+							'-changedParams'=>{
+							  'checkSequenceNumber'=>$self->{'SequenceNumber'},
+							  @fixfn}),
+						"Convert to Category")."\n";
+			}
+	
+			# Create new children
+			if ($self->isCategory()) {
+				$rt .= FAQ::OMatic::button(
+					FAQ::OMatic::makeAref('-command'=>'addItem',
+							'-params'=>$params,
+							'-changedParams'=>{'_insert'=>'answer', @fixfn}),
+						"New Answer")."\n";
+				$rt .= FAQ::OMatic::button(
+					FAQ::OMatic::makeAref('-command'=>'addItem',
+							'-params'=>$params,
+							'-changedParams'=>{'_insert'=>'category', @fixfn}),
+						"New Subcategory")."\n";
+			}
 		}
 
 		$rt .= $FAQ::OMatic::Appearance::editEnd."\n";
 		$needbr = 1;
 
 		# Allow user to insert a part before any other
-		$rt .= "<br>"
-			.$FAQ::OMatic::Appearance::editStart
-			#."Edit Part: "
-			.FAQ::OMatic::button(
-				FAQ::OMatic::makeAref('-command'=>'editPart',
-					'-params'=>$params,
-					'-changedParams'=>{'partnum'=>'-1',
+		if ($self->ordinaryItem()) {
+			$rt .= "<br>"
+				.$FAQ::OMatic::Appearance::editStart
+				#."Edit Part: "
+				.FAQ::OMatic::button(
+					FAQ::OMatic::makeAref('-command'=>'editPart',
+						'-params'=>$params,
+						'-changedParams'=>{'partnum'=>'-1',
 							'_insertpart'=>'1',
 							'checkSequenceNumber'=>$self->{'SequenceNumber'},
 							@fixfn}
-					),
-				"Insert Text Here")
-			.$FAQ::OMatic::Appearance::editEnd."\n";
+						),
+					"Insert Text Here")
+				.$FAQ::OMatic::Appearance::editEnd."\n";
+		}
 	}
 
 	my $partnum = 0;
@@ -785,10 +851,10 @@ sub displayCoreHTML {
 	}
 
 	my $showLastModified = $params->{'showLastModified'};
-	my $lastModified = $self->{'LastModified'};
+	my $lastModified = $self->{'LastModifiedSecs'};
 	if ($showLastModified and $lastModified) {
 		$rt .= "<br>" if ($needbr);
-		$rt .= "<i>".$self->{'LastModified'}."</i>\n";
+		$rt .= "<i>".compactDate($self->{'LastModifiedSecs'})."</i>\n";
 		$needbr = 1;
 	}
 
@@ -803,6 +869,11 @@ sub displayCoreHTML {
 	}
 
 	return $rt;
+}
+
+sub ordinaryItem {
+	my $self = shift;
+	return ($self->{'filename'} =~ m/\d$/);
 }
 
 sub displayHTML {
@@ -1196,10 +1267,17 @@ sub removeSubItem {
 		# regenerate their cached html.
 		$self->updateAllChildren();
 	}
-	if ($dirPart->{'Text'} =~ m/^\s*$/s) {
-		splice @{$self->{'Parts'}}, $self->{'directoryHint'}, 1;
-		delete $self->{'directoryHint'};
-	}
+
+# I'm not sure why I thought automatically converting categories to answers
+# when their directories become empty was a good idea. When the trash is
+# emptied, it becomes an answer. If you empty a category, and expect
+# to refill it with moves, you won't see your category in the (default)
+# move target list anymore. That would be confusing. Hmmm.
+#	if ($dirPart->{'Text'} =~ m/^\s*$/s) {
+#		splice @{$self->{'Parts'}}, $self->{'directoryHint'}, 1;
+#		delete $self->{'directoryHint'};
+#	}
+
 	$self->incrementSequence();
 }
 

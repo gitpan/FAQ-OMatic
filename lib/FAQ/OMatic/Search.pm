@@ -205,10 +205,22 @@ sub getRecentSet {
 	my $recentList = [];
 
 	$durationdays = $params->{'_duration'};
+		# used directly to compare against perl's floating-point -M file test
+	my $then = time() - $durationdays*24*60*60;
+		# Used to compare against LastModifiedSecs field.
+		# By 'days' we mean 24-hour periods, not calendar days.
+		# (In the US, for example, there is a 23-hour calendar day in
+		# April and a 25-hour one in the fall, what, in October? for daylight
+		# savings time.)
 
 	my $filei;
 	foreach $filei (FAQ::OMatic::getAllItemNames()) {
-		if (-M "$FAQ::OMatic::Config::itemDir/$filei" < $durationdays) {
+		# use file time as a hint for which items we even need to open up.
+		next if (-M "$FAQ::OMatic::Config::itemDir/$filei" >= $durationdays);
+		# ...but only trust LastModifiedSecs field for final say on mod time.
+		my $item = new FAQ::OMatic::Item($filei);
+		my $lm = $item->{'LastModifiedSecs'};
+		if ($lm > $then) {
 			push @{$recentList}, $filei;
 		}
 	}

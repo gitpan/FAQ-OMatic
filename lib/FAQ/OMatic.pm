@@ -41,7 +41,7 @@ use FAQ::OMatic::Appearance;
 use FAQ::OMatic::Intl;
 use FAQ::OMatic::Bags;
 
-$VERSION = '2.607';
+$VERSION = '2.609';
 
 # This is never used to automatically send mail to (that's authorEmail),
 # but when we need to report the author's address, we use this constant:
@@ -177,6 +177,7 @@ sub gripe {
 		$message.="The message is: \"$msg\".\n";
 		$message.="The process number is: $$\n";
 		$message.="The user had given this ID: <$id>\n";
+		$message.="The browser was: <".$ENV{'HTTP_USER_AGENT'}.">\n";
 		sendEmail($mailguys,
 				"Faq-O-Matic $severity Mail",
 				$message);
@@ -299,9 +300,33 @@ my @hapCache;
 sub hostAndPath {
 	return @hapCache if (scalar(@hapCache)==2);
 
-	my $cgiUrl = $FAQ::OMatic::dispatch::cgi->url();
+	my $cgi = $FAQ::OMatic::dispatch::cgi;	# TODO ugly global for $cgi
+	my $cgiUrl = $cgi->url();
 	my ($urlRoot,$urlPath) = $cgiUrl =~ m#^(http://[^/]+)/(.*)$#;
 	if (not defined $urlRoot or not defined $urlPath) {
+		if (not $cgi->protocol() =~ m/^http/i) {
+			FAQ::OMatic::gripe('abort', "The server protocol ("
+				.$cgi->protocol()
+				.") seems wrong. The author has seen this happen when "
+				."broken browsers don't escape a space in the GET URL."
+				."\n\n<p>\nThe URL (as CGI.pm saw it) was:\n"
+				.$ENV{'QUERY_STRING'}
+				."\n\n<br>The REQUEST_URI was:\n"
+				.$ENV{'REQUEST_URI'}
+				."\n\n<br>The SERVER_PROTOCOL was:\n"
+				.$ENV{'SERVER_PROTOCOL'}
+				."\n\n<br>The browser was:\n"
+				.$ENV{'HTTP_USER_AGENT'}."\n"
+				."\n\n<p>If you are confused, please ask "
+				."$FAQ::OMatic::Config::adminEmail.\n"
+			);
+			# TODO: This seems to happen when you search on two words,
+			# then get an <a href> with a %20 in the _highlightWords
+			# field. Perhaps some browsers mistakenly unescape that.
+			# Until I figure out what's going on, this remains an 'abort'
+			# condition, so I get email and can discover the browser
+			# type that causes it.
+		}
 		FAQ::OMatic::gripe('problem', "Can't parse my own URL: $cgiUrl");
 	}
 	return @hapCache = ($urlRoot, $urlPath);
@@ -531,10 +556,19 @@ sub makeAref {
 		}
 	}
 	if (($refType eq 'POST') or ($refType eq 'GET')) {
+		my $encoding = '';
+		if ($refType eq 'POST') {
+			# don't generate ENCTYPE fields for GET method forms
+			# (I wonder if we even should always generate ENCTYPEs
+			# for all POSTs?)
+			# THANKS: charlie buckheit <buckheit@olg.com> for discovering
+			# THANKS: this bug, which only shows up in MSIE.
+			$encoding = " ENCTYPE=\"multipart/form-data\""
+						  ." ENCODING";
+		}
 		return "<form action=\"".$cgiName."\" "
 				."method=\"$refType\""
-				." ENCTYPE=\"multipart/form-data\""
-				." ENCODING>\n$rt";
+				."$encoding>\n$rt";
 	}
 
 	$rt =~ s/^\&/\?/;	# turn initial & into ?

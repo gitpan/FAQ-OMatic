@@ -40,14 +40,23 @@ sub main {
 
 	# Get the names of the recent files
 	my $matchset = FAQ::OMatic::Search::getRecentSet($params);
+
+	# reasonable text for 'n' days
+	my %dayMap = (
+		0 => 'zero days',
+		1 => 'day',
+		2 => 'two days',
+		7 => 'week',
+		14 => 'fortnight',
+		31 => 'month' ); # (31? a month, give or take. :v)
+	my $englishDays = $dayMap{$params->{'_duration'}} ||
+			$params->{'_duration'}." days";
 	
 	my $rt = FAQ::OMatic::pageHeader($params);
 	if (scalar(@{$matchset})==0) {
-		$rt.="No items were modified in the last ".$params->{'_duration'}
-			." days.\n<br>\n";
+		$rt.="No items were modified in the last $englishDays.\n<br>\n";
 	} else {
-		$rt.="Items modified in the last ".$params->{'_duration'}
-			." days:\n<p>\n";
+		$rt.="Items modified in the last $englishDays:\n<p>\n";
 
 		my ($file, $item);
 		foreach $file (@{$matchset}) {
@@ -57,7 +66,9 @@ sub main {
 			$rt .= FAQ::OMatic::makeAref("faq",
 					{ 'file'	=>	$item->{'filename'} })
 					.$item->getTitle()."</a>";
-			$rt .= "<br>".$item->{'LastModified'}."\n";
+			$rt .= "<br>"
+					.FAQ::OMatic::Item::compactDate($item->{'LastModified'})
+					."\n";
 		}
 		$rt .= FAQ::OMatic::Appearance::itemEnd($params);		# goes after items
 	}

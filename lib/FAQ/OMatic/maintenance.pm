@@ -49,6 +49,7 @@ use FAQ::OMatic::Log;
 use FAQ::OMatic::Auth;
 use FAQ::OMatic::buildSearchDB;
 use FAQ::OMatic::Versions;
+use FAQ::OMatic::ImageRef;
 
 $metaDir = $FAQ::OMatic::Config::metaDir;
 
@@ -360,7 +361,7 @@ sub rebuildCache {
 	foreach $itemName (FAQ::OMatic::getAllItemNames()) {
 		$html.="<br>Updating $itemName\n";
 		my $item = new FAQ::OMatic::Item($itemName);
-		$item->saveToFile('', '', '', 'updateAllDependencies');
+		$item->saveToFile('', '', 'noChange', 'updateAllDependencies');
 	}
 
 	FAQ::OMatic::Versions::setVersion('CacheRebuild');
@@ -380,6 +381,11 @@ sub expireBags {
 		#$html.="<br>Checking $bagName\n";
 		my @dependents = FAQ::OMatic::Item::getDependencies("bags.".$bagName);
 		if (scalar(@dependents) == 0) {
+			# don't declare system-supplied bags invalid
+			# THANKS: to John Goerzen for pointing this out
+			my ($prefix) = ($bagName =~ m/^(.*)\.[^\.]+$/);
+			next if (FAQ::OMatic::ImageRef::validImage($prefix));
+
 			if (not $anyMessages) {
 				$html .= "The following suggestion(s) are based on "
 					."dependency files.\n You might run rebuildCache first "
