@@ -38,7 +38,7 @@ sub main {
 	
 	FAQ::OMatic::getParams($cgi);
 	
-	$rt = FAQ::OMatic::pageHeader(1);
+	$rt = FAQ::OMatic::pageHeader();
 	
 	$item = new FAQ::OMatic::Item($FAQ::OMatic::theParams{'file'});
 	if ($item->isBroken()) {

@@ -635,21 +635,7 @@ sub maintenanceStep {
 	require FAQ::OMatic::Auth;
 	my $secret = FAQ::OMatic::Auth::getRandomHex();
 
-	my $crontab = which('crontab');
-	if (not $crontab) {
-		displayMessage("I can't find a suitable crontab program in "
-			.$ENV{'PATH'}.".", 'default');
-		return;
-	}
-	open(CRONTAB, "$crontab -l 2>&1 |");
-	my @oldTab = <CRONTAB>;
-	close CRONTAB;
-
-	if ((scalar(@oldTab)==1) and ($oldTab[0] =~ m/^crontab/)) {
-		# this looks like an error message, the one you get
-		# if you don't already have a crontab.
-		@oldTab = ();
-	}
+	my @oldTab = getCurrentCrontab();
 
 	# The parameters we'll be passing to the maintenance module
 	# via the CGI dispatch mechanism:
@@ -699,16 +685,19 @@ sub maintenanceStep {
 			."mine (path matches <b>$path</b>). "
 			."I'm not going to touch them. You better add\n"
 			."<pre><font size=-1>$cronLine</font></pre>\n"
-			."to some crontab yourself with <b><tt>crotab -e</tt></b>.\n",
-			'default');
+			."to some crontab yourself with <b><tt>crontab -e</tt></b>.\n",
+			'default', 'abort');
 	}
 
-	open(CRONTAB, "|crontab");
+	open(CRONTAB, ">$FAQ::OMatic::Config::metaDir/cronfile") ||
+		displayMessage("Can't write to $FAQ::OMatic::Config::metaDir/cronfile."
+			." No crontab entry added.", 'default', 'abort');
 	# preserve existing entries
 	print CRONTAB join('', @oldUnrelated);
 	# and add our new one.
 	print CRONTAB $cronLine;
 	close CRONTAB;
+	system("crontab $FAQ::OMatic::Config::metaDir/cronfile");
 
 	my $map = readConfig();
 	$map->{'$maintenanceSecret'} = "'$secret'";
@@ -721,9 +710,43 @@ sub maintenanceStep {
 			.$oldReplacing[0]
 			."</font></pre>\n";
 	}
+
+	# perform a simple test to verify our cron line got installed
+	my @newTab = getCurrentCrontab();
+	if (scalar(grep {m/$path/} @newTab) != 1) {
+		displayMessage("I thought I installed a new cron job, but it didn't\n"
+			."appear to take.\n"
+			."You better add\n"
+			."<pre><font size=-1>$cronLine</font></pre>\n"
+			."to some crontab yourself with <b><tt>crontab -e</tt></b>.\n",
+			'default', 'abort');
+	}
+
 	$rt.="<p>Cron job installed. The maintenance script should run hourly.\n";
 	displayMessage($rt);
 	doStep('default');
+}
+
+sub getCurrentCrontab {
+	my $crontab = which('crontab');
+	if (not $crontab) {
+		displayMessage("I can't find a suitable crontab program in "
+			.$ENV{'PATH'}.".", 'default', 'abort');
+	}
+
+	open(CRONTAB, "$crontab -l 2>&1 |");
+	my @oldTab = <CRONTAB>;
+	close CRONTAB;
+
+	if ((scalar(@oldTab)==1) and (not $oldTab[0] =~ m/^\s*[0-9*#]/)) {
+		# crontab returned one line, and it doesn't look like a
+		# cron comment or command line. It's probably the error
+		# message you get if you don't already have a crontab.
+		# (Unfortunately, the text of the message varies across versions.)
+		@oldTab = ();
+	}
+
+	return @oldTab;
 }
 
 sub makeSecureStep {

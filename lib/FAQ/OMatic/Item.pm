@@ -516,109 +516,111 @@ sub displayHTML {
 
 	$rt.= $self->displaySiblings($params);
 
-	if (not $params->{'suppressControls'}) {
-		## Searching
-		$rt.="<tr><td valign=top align=right>\n" if $useTable;
-		$rt .= FAQ::OMatic::makeAref('search', {}, 'GET');
-		$rt .= "<input type=\"submit\" name=\"_submit\" "
-			."value=\"Search for\">\n";
-		$rt.="</td><td valign=top align=left>\n" if $useTable;
-		$rt .= "<input type=\"text\" name=\"_search\"> matching\n";
-		$rt .= "<select name=\"_minMatches\">\n";
-		$rt .= "<option value=\"\">all\n";
-		$rt .= "<option value=\"1\">any\n";
-		$rt .= "<option value=\"2\">two\n";
-		$rt .= "<option value=\"3\">three\n";
-		$rt .= "<option value=\"4\">four\n";
-		$rt .= "<option value=\"5\">five\n";
-		$rt .= "</select>\n";
-		$rt .= "words.\n";
-		$rt .= "</form>\n";
-		$rt.="</td></tr>\n" if $useTable;
-	
-		## Recent documents
-		$rt.="<tr><td valign=top align=right>\n" if $useTable;
-		$rt .= FAQ::OMatic::makeAref('recent',
-				{'showLastModified'=>'1'}, 'GET');
-		$rt .= "<input type=\"submit\" name=\"_submit\" "
-			."value=\"Show documents\">\n";
-		$rt.="</td><td valign=top align=left>\n" if $useTable;
-		$rt .= " modified in the last \n";
-		$rt .= "<select name=\"_duration\">\n";
-		$rt .= "<option value=\"1\">day.\n";
-		$rt .= "<option value=\"2\">two days.\n";
-		$rt .= "<option value=\"3\">three days.\n";
-		$rt .= "<option value=\"7\" SELECTED>week.\n";
-		$rt .= "<option value=\"14\">fortnight.\n";
-		$rt .= "<option value=\"31\">month.\n";
-		$rt .= "</select>\n";
-		$rt .= "</form>\n";
-		$rt.="</td></tr>\n" if $useTable;
-	
-		## User switches:
-		$rt.="<tr><td valign=top align=right>\n" if $useTable;
-		$rt.=FAQ::OMatic::makeAref('faq', {}, 'GET')
-			."\n"
-			."<input type=submit name=\"appearance\" "
-			."value=\"Change Appearance:\">\n";
-		$rt.="</td><td valign=top align=left>\n" if $useTable;
-		$rt.="<select name=\"theChange\">\n";
-		$rt .= "<option value=\"\">( choose one )</option>\n";
-		$rt .= ($params->{'recurse'})
-			?	"<option value=\"recurseEQUALS\">"
-				."Show Only This Item</option>\n"
-			:	"<option value=\"recurseEQUALS1\">"
-				."Show All Items Below Here</option>\n";
-		$rt .= ($params->{'simple'})
-			?	"<option value=\"simpleEQUALS\">"
-				."Use Fancy HTML</option>\n"
-			:	"<option value=\"simpleEQUALS1\">"
-				."Use Simple HTML</option>\n";
-		$rt .= ($params->{'showModerator'})
-			?	"<option value=\"showModeratorEQUALS\">"
-				."Hide Moderator</option>\n"
-			:	"<option value=\"showModeratorEQUALS1\">"
-				."Show Moderator</option>\n";
-		$rt .= ($params->{'showLastModified'})
-			?	"<option value=\"showLastModifiedEQUALS\">"
-				."Hide Modification Date</option>\n"
-			:	"<option value=\"showLastModifiedEQUALS1\">"
-				."Show Modification Date</option>\n";
-		if ($params->{'showAttributions'} ne 'hide') {
-			$rt .= "<option value=\"showAttributionsEQUALShide\">"
-				."Hide Attributions</option>\n";
-		}
-		if ($params->{'showAttributions'} ne '') {
-			$rt .= "<option value=\"showAttributionsEQUALS\">"
-				."Default Attributions</option>\n";
-		}
-		if ($params->{'showAttributions'} ne 'all') {
-			$rt .= "<option value=\"showAttributionsEQUALSall\">"
-				."Show All Attributions</option>\n";
-		}
-		$rt.="</select>\n"
-			."</form>\n";
-		$rt.="</td></tr>\n" if $useTable;
-	
-		## Show Editing Commands button
-		$rt.="<tr><td valign=top align=right>\n" if $useTable;
-		$rt .= FAQ::OMatic::makeAref(FAQ::OMatic::commandName(),
-			{}, 'GET');
-		if ($params->{'showEditCmds'}) {
-			$rt.="<input type=\"submit\" name=\"appearance\" "
-				."value=\"Hide Editing Commands\">\n";
-			$rt.="<input type=\"hidden\" name=\"theChange\" "
-				."value=\"showEditCmdsEQUALS\">\n";
-		} else {
-			$rt.="<input type=\"submit\" name=\"appearance\" "
-				."value=\"Show Editing Commands\">\n";
-			$rt.="<input type=\"hidden\" name=\"theChange\" "
-				."value=\"showEditCmdsEQUALS1\">\n";
-		}
-		$rt.="</form>\n";
-		$rt.="</td><td valign=top align=left>\n" if $useTable;
-		$rt.="</td></tr>\n" if $useTable;
-	}
+#### -- now defunct code -- from how I used to control appearance/search
+#### options with a menu rather than a separate page.
+#	if (0 and (not $params->{'suppressControls'})) {
+#		## Searching
+#		$rt.="<tr><td valign=top align=right>\n" if $useTable;
+#		$rt .= FAQ::OMatic::makeAref('search', {}, 'GET');
+#		$rt .= "<input type=\"submit\" name=\"_submit\" "
+#			."value=\"Search for\">\n";
+#		$rt.="</td><td valign=top align=left>\n" if $useTable;
+#		$rt .= "<input type=\"text\" name=\"_search\"> matching\n";
+#		$rt .= "<select name=\"_minMatches\">\n";
+#		$rt .= "<option value=\"\">all\n";
+#		$rt .= "<option value=\"1\">any\n";
+#		$rt .= "<option value=\"2\">two\n";
+#		$rt .= "<option value=\"3\">three\n";
+#		$rt .= "<option value=\"4\">four\n";
+#		$rt .= "<option value=\"5\">five\n";
+#		$rt .= "</select>\n";
+#		$rt .= "words.\n";
+#		$rt .= "</form>\n";
+#		$rt.="</td></tr>\n" if $useTable;
+#	
+#		## Recent documents
+#		$rt.="<tr><td valign=top align=right>\n" if $useTable;
+#		$rt .= FAQ::OMatic::makeAref('recent',
+#				{'showLastModified'=>'1'}, 'GET');
+#		$rt .= "<input type=\"submit\" name=\"_submit\" "
+#			."value=\"Show documents\">\n";
+#		$rt.="</td><td valign=top align=left>\n" if $useTable;
+#		$rt .= " modified in the last \n";
+#		$rt .= "<select name=\"_duration\">\n";
+#		$rt .= "<option value=\"1\">day.\n";
+#		$rt .= "<option value=\"2\">two days.\n";
+#		$rt .= "<option value=\"3\">three days.\n";
+#		$rt .= "<option value=\"7\" SELECTED>week.\n";
+#		$rt .= "<option value=\"14\">fortnight.\n";
+#		$rt .= "<option value=\"31\">month.\n";
+#		$rt .= "</select>\n";
+#		$rt .= "</form>\n";
+#		$rt.="</td></tr>\n" if $useTable;
+#	
+#		## User switches:
+#		$rt.="<tr><td valign=top align=right>\n" if $useTable;
+#		$rt.=FAQ::OMatic::makeAref('faq', {}, 'GET')
+#			."\n"
+#			."<input type=submit name=\"appearance\" "
+#			."value=\"Change Appearance:\">\n";
+#		$rt.="</td><td valign=top align=left>\n" if $useTable;
+#		$rt.="<select name=\"theChange\">\n";
+#		$rt .= "<option value=\"\">( choose one )</option>\n";
+#		$rt .= ($params->{'recurse'})
+#			?	"<option value=\"recurseEQUALS\">"
+#				."Show Only This Item</option>\n"
+#			:	"<option value=\"recurseEQUALS1\">"
+#				."Show All Items Below Here</option>\n";
+#		$rt .= ($params->{'simple'})
+#			?	"<option value=\"simpleEQUALS\">"
+#				."Use Fancy HTML</option>\n"
+#			:	"<option value=\"simpleEQUALS1\">"
+#				."Use Simple HTML</option>\n";
+#		$rt .= ($params->{'showModerator'})
+#			?	"<option value=\"showModeratorEQUALS\">"
+#				."Hide Moderator</option>\n"
+#			:	"<option value=\"showModeratorEQUALS1\">"
+#				."Show Moderator</option>\n";
+#		$rt .= ($params->{'showLastModified'})
+#			?	"<option value=\"showLastModifiedEQUALS\">"
+#				."Hide Modification Date</option>\n"
+#			:	"<option value=\"showLastModifiedEQUALS1\">"
+#				."Show Modification Date</option>\n";
+#		if ($params->{'showAttributions'} ne 'hide') {
+#			$rt .= "<option value=\"showAttributionsEQUALShide\">"
+#				."Hide Attributions</option>\n";
+#		}
+#		if ($params->{'showAttributions'} ne '') {
+#			$rt .= "<option value=\"showAttributionsEQUALS\">"
+#				."Default Attributions</option>\n";
+#		}
+#		if ($params->{'showAttributions'} ne 'all') {
+#			$rt .= "<option value=\"showAttributionsEQUALSall\">"
+#				."Show All Attributions</option>\n";
+#		}
+#		$rt.="</select>\n"
+#			."</form>\n";
+#		$rt.="</td></tr>\n" if $useTable;
+#	
+#		## Show Editing Commands button
+#		$rt.="<tr><td valign=top align=right>\n" if $useTable;
+#		$rt .= FAQ::OMatic::makeAref(FAQ::OMatic::commandName(),
+#			{}, 'GET');
+#		if ($params->{'showEditCmds'}) {
+#			$rt.="<input type=\"submit\" name=\"appearance\" "
+#				."value=\"Hide Editing Commands\">\n";
+#			$rt.="<input type=\"hidden\" name=\"theChange\" "
+#				."value=\"showEditCmdsEQUALS\">\n";
+#		} else {
+#			$rt.="<input type=\"submit\" name=\"appearance\" "
+#				."value=\"Show Editing Commands\">\n";
+#			$rt.="<input type=\"hidden\" name=\"theChange\" "
+#				."value=\"showEditCmdsEQUALS1\">\n";
+#		}
+#		$rt.="</form>\n";
+#		$rt.="</td><td valign=top align=left>\n" if $useTable;
+#		$rt.="</td></tr>\n" if $useTable;
+#	}
 
 	$rt.="</table>\n" if $useTable;
 

@@ -15,6 +15,7 @@ lib/FAQ/OMatic/Log.pm
 lib/FAQ/OMatic/Part.pm
 lib/FAQ/OMatic/Search.pm
 lib/FAQ/OMatic/addItem.pm
+lib/FAQ/OMatic/appearanceForm.pm
 lib/FAQ/OMatic/authenticate.pm
 lib/FAQ/OMatic/buildSearchDB.pm
 lib/FAQ/OMatic/changePass.pm
@@ -31,6 +32,7 @@ lib/FAQ/OMatic/moveItem.pm
 lib/FAQ/OMatic/pickerImage.pm
 lib/FAQ/OMatic/recent.pm
 lib/FAQ/OMatic/search.pm
+lib/FAQ/OMatic/searchForm.pm
 lib/FAQ/OMatic/spaceImage.pm
 lib/FAQ/OMatic/statgraph.pm
 lib/FAQ/OMatic/stats.pm

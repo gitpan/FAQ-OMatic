@@ -50,11 +50,35 @@ sub cPageHeader {
 }
 
 sub cPageFooter {
-	return "\n"
+	my $params = shift;		# hash ref
+	my $showLinks = shift;
+
+	my $page= "\n"
 			.partStart({})
+			."<table width=\"100%\"><tr><td width=\"50%\" align=left>\n"
 			."The <a href=\"http://www.dartmouth.edu/cgi-bin/cgiwrap/jonh/faq.pl\">Faq-O-Matic</a> is by <a href=\"http://www.cs.dartmouth.edu/~jonh\">Jon Howell</a>.\n"
+			."</td>";
+	if ($showLinks) {
+		$page.="<td width=\"16%\" align=center>"
+			.FAQ::OMatic::makeAref('searchForm', {}, '')
+			."Search</a>"
+			."</td><td width=\"17%\" align=center>"
+			.FAQ::OMatic::makeAref('appearanceForm', {}, '')
+			."Appearance"
+			."</td><td width=\"17%\" align=center>";
+		if ($params->{'showEditCmds'}) {
+			$page.=FAQ::OMatic::makeAref('faq', {'showEditCmds'=>''}, '')
+				."Hide Edit Cmds";
+		} else {
+			$page.=FAQ::OMatic::makeAref('faq', {'showEditCmds'=>'1'}, '')
+				."Show Edit Cmds";
+		}
+		$page.="</td>";
+	}
+	$page .= "</tr></table>"
 			.partEnd({})
 			."</body></html>\n";
+	return $page;
 }
 
 # This is called before every item is printed. (There are multiple

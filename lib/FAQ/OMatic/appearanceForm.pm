@@ -25,67 +25,84 @@
 #                                                                            #
 ##############################################################################
 
-package FAQ::OMatic::faq;
+package FAQ::OMatic::appearanceForm;
 
 use CGI;
-use FAQ::OMatic::Item;
 use FAQ::OMatic;
 
 sub main {
 	my $cgi = $FAQ::OMatic::dispatch::cgi;
 	
 	my $params = FAQ::OMatic::getParams($cgi);
-	# supply some default parameters where necessary
-	$params->{'file'} = 1 if (not $params->{'file'});
 
-#### -- now defunct code that once was how we did appearance changes (from
-#### -- popup menus)
-# 	if ($params->{'appearance'}) {
-# 		my ($paramName,$newValue) = split('EQUALS', $params->{'theChange'});
-# 		my $url = FAQ::OMatic::makeAref('faq',
-# 			{$paramName=>$newValue,
-# 				'appearance'=>'',
-# 				'theChange'=>''},
-# 			'url');
-# 		#print "Content-type: text/plain\n\n";
-# 		#print "url: $url\n";
-# 		print $cgi->redirect(FAQ::OMatic::urlBase($cgi).$url);
-# 		exit(0);
-# 	}
+	my $page = '';
 
-	# strip out null params from params array
-	if ($params->{'_fromAppearance'}) {
-		my $key;
-		foreach $key (keys %{$params}) {
-			delete $params->{$key} if ($params->{$key} eq '');
+	$page.=FAQ::OMatic::pageHeader();
+	
+	$page.="<h3>Appearance Options</h3>";
+
+	my $boxes = [
+		['recurse',
+			['', 'Show', 'Hide'],
+			['', '1', ''],
+			'all categories and answers below current category'],
+		['showModerator',
+			['', 'Show', 'Hide'],
+			['', '1', ''],
+			'name of moderator who organizes current category'],
+		['showLastModified',
+			['', 'Show', 'Hide'],
+			['', '1', ''],
+			'last modified date'],
+		['showEditCmds',
+			['', 'Show', 'Hide'],
+			['', '1', ''],
+			'editing commands'],
+		['showAttributions',
+			['Show All', 'Default', 'Hide'],
+			['all', '', 'hide'],
+			'attributions'],
+		['simple',
+			['', 'Simple', 'Fancy'],
+			['', '1', ''],
+			'HTML']
+	];
+
+	$page.=FAQ::OMatic::makeAref("faq",
+			# kill all params that have a form entry
+			{ map {$_->[0] => ''} @{$boxes} },
+			'POST')
+		."<table>\n";
+	my ($setup, $choice);
+	foreach $setup (@{$boxes}) {
+		$page.="<tr>";
+		foreach $choice (0, 1, 2) {
+			$page.="<td>";
+			if ($setup->[1][$choice]) {
+				$page.="<input type=radio name=\""
+					.$setup->[0]
+					."\" value=\""
+					.$setup->[2][$choice]
+					."\"";
+				if ($params->{$setup->[0]} eq $setup->[2][$choice]) {
+					$page.=" checked\n";
+				}
+				$page.="> "
+					.$setup->[1][$choice];
+			}
+			$page.="</td>\n";
 		}
+		$page.= "<td>".$setup->[3]."</td>\n";
+		$page.="</tr>";
 	}
+	$page.="<tr><td></td><td></td><td></td><td align=left>"
+		."<input type=submit name=\"_fromAppearance\" value=\"Accept\">"
+		."</td></tr>\n";
+	$page.="</table></form>\n";
 
-	print FAQ::OMatic::pageHeader(1);
-	
-	$item = new FAQ::OMatic::Item($params->{'file'});
-	if ($item->isBroken()) {
-		FAQ::OMatic::gripe('error', "The file (".
-			$params->{'file'}.") doesn't exist.");
-	}
+	$page.= FAQ::OMatic::pageFooter();
 
-	if ($params->{'debug'}) {
-		print $item->display();
-	}
-	print $item->displayHTML($params);
-
-	## print the url for people to reference
-	# distill out all the fluffy parameters, keep only the important ones
-	my %killParams = %{$params};
-	delete $killParams{'file'};
-	delete $killParams{'recurse'} if ($params->{'recurse'});
-	my $i; foreach $i (keys %killParams) { $killParams{$i} = ''; }
-
-	my $url = FAQ::OMatic::urlBase($cgi)
-			 .FAQ::OMatic::makeAref('', \%killParams, 'url');
-	print "This document is: <i>$url</i><br>\n";
-	
-	print FAQ::OMatic::pageFooter($params, 'links');
+	print $page;
 }
 
 1;

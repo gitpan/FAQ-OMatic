@@ -25,67 +25,63 @@
 #                                                                            #
 ##############################################################################
 
-package FAQ::OMatic::faq;
+package FAQ::OMatic::searchForm;
 
 use CGI;
-use FAQ::OMatic::Item;
 use FAQ::OMatic;
 
 sub main {
 	my $cgi = $FAQ::OMatic::dispatch::cgi;
 	
 	my $params = FAQ::OMatic::getParams($cgi);
-	# supply some default parameters where necessary
-	$params->{'file'} = 1 if (not $params->{'file'});
 
-#### -- now defunct code that once was how we did appearance changes (from
-#### -- popup menus)
-# 	if ($params->{'appearance'}) {
-# 		my ($paramName,$newValue) = split('EQUALS', $params->{'theChange'});
-# 		my $url = FAQ::OMatic::makeAref('faq',
-# 			{$paramName=>$newValue,
-# 				'appearance'=>'',
-# 				'theChange'=>''},
-# 			'url');
-# 		#print "Content-type: text/plain\n\n";
-# 		#print "url: $url\n";
-# 		print $cgi->redirect(FAQ::OMatic::urlBase($cgi).$url);
-# 		exit(0);
-# 	}
+	my $page = '';
 
-	# strip out null params from params array
-	if ($params->{'_fromAppearance'}) {
-		my $key;
-		foreach $key (keys %{$params}) {
-			delete $params->{$key} if ($params->{$key} eq '');
-		}
-	}
+	$page.=FAQ::OMatic::pageHeader();
 
-	print FAQ::OMatic::pageHeader(1);
-	
-	$item = new FAQ::OMatic::Item($params->{'file'});
-	if ($item->isBroken()) {
-		FAQ::OMatic::gripe('error', "The file (".
-			$params->{'file'}.") doesn't exist.");
-	}
+	my $useTable = not $params->{'simple'};
 
-	if ($params->{'debug'}) {
-		print $item->display();
-	}
-	print $item->displayHTML($params);
+	$page.="<table>\n" if $useTable;
+	$page.="<tr><td valign=top align=right>\n" if $useTable;
+	$page .= FAQ::OMatic::makeAref('search', {}, 'GET');
+	$page .= "<input type=\"submit\" name=\"_submit\" "
+		."value=\"Search for\">\n";
+	$page.="</td><td valign=top align=left>\n" if $useTable;
+	$page .= "<input type=\"text\" name=\"_search\"> matching\n";
+	$page .= "<select name=\"_minMatches\">\n";
+	$page .= "<option value=\"\">all\n";
+	$page .= "<option value=\"1\">any\n";
+	$page .= "<option value=\"2\">two\n";
+	$page .= "<option value=\"3\">three\n";
+	$page .= "<option value=\"4\">four\n";
+	$page .= "<option value=\"5\">five\n";
+	$page .= "</select>\n";
+	$page .= "words.\n";
+	$page .= "</form>\n";
+	$page.="</td></tr>\n" if $useTable;
 
-	## print the url for people to reference
-	# distill out all the fluffy parameters, keep only the important ones
-	my %killParams = %{$params};
-	delete $killParams{'file'};
-	delete $killParams{'recurse'} if ($params->{'recurse'});
-	my $i; foreach $i (keys %killParams) { $killParams{$i} = ''; }
+	## Recent documents
+	$page.="<tr><td valign=top align=right>\n" if $useTable;
+	$page .= FAQ::OMatic::makeAref('recent',
+			{'showLastModified'=>'1'}, 'GET');
+	$page .= "<input type=\"submit\" name=\"_submit\" "
+		."value=\"Show documents\">\n";
+	$page.="</td><td valign=top align=left>\n" if $useTable;
+	$page .= " modified in the last \n";
+	$page .= "<select name=\"_duration\">\n";
+	$page .= "<option value=\"1\">day.\n";
+	$page .= "<option value=\"2\">two days.\n";
+	$page .= "<option value=\"3\">three days.\n";
+	$page .= "<option value=\"7\" SELECTED>week.\n";
+	$page .= "<option value=\"14\">fortnight.\n";
+	$page .= "<option value=\"31\">month.\n";
+	$page .= "</select>\n";
+	$page .= "</form>\n";
+	$page.="</td></tr></table>\n" if $useTable;
 
-	my $url = FAQ::OMatic::urlBase($cgi)
-			 .FAQ::OMatic::makeAref('', \%killParams, 'url');
-	print "This document is: <i>$url</i><br>\n";
-	
-	print FAQ::OMatic::pageFooter($params, 'links');
+	$page.= FAQ::OMatic::pageFooter();
+
+	print $page;
 }
 
 1;

@@ -1,3 +1,21 @@
+===============
+Latest Version:
+===============
+
+Before you get in too deep, make sure you have the latest version
+of the FAQ-O-Matic. Check the main website:
+
+  http://www.dartmouth.edu/cgi-bin/cgiwrap/jonh/faq.pl
+
+Especially the Administrators' Guide:
+
+  http://www.dartmouth.edu/cgi-bin/cgiwrap/jonh/faq.pl?file=3
+
+And check the FTP site for the most recent revision:
+
+  ftp://ftp.cs.dartmouth.edu/pub/jonh/
+
+===========
 Quickstart:
 ===========
 
@@ -17,6 +35,7 @@ the List of Faqomatics (on the FOMFOM).
 
 * send Jon a postcard, if you're feeling generous.
 
+======================
 Themes and Variations:
 ======================
 
@@ -68,15 +87,3 @@ Themes and Variations:
   multiple FAQ-O-Matics on one server. Keep in mind that if the FAQs
   are related, they should probably be kept together as one FAQ with
   a few main categories, so searches will search the entire lot.
-
-
-----------------------------------------------------------------------
-
-The documentation for the Faq-O-Matic is (naturally) in a
-Faq-O-Matic Faq-O-Matic (FOMFOM), at:
-
-http://www.dartmouth.edu/cgi-bin/cgiwrap/jonh/faq.pl
-
-In particular, for a new installation, you should start at:
-
-http://www.dartmouth.edu/cgi-bin/cgiwrap/jonh/faq.pl?file=3

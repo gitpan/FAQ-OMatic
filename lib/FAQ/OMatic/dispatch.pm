@@ -58,6 +58,7 @@ sub main {
 	# our eval()).
 	%knownModules = map {$_=>1} (
 		'faq', 'search', 'recent', 'stats', 'statgraph',
+		'appearanceForm',	'searchForm',
 		'editPart', 'submitPart', 'delPart',
 		'addItem', 'editItem', 'submitItem', 'moveItem', 'submitMove',
 		'authenticate', 'changePass', 'submitPass',

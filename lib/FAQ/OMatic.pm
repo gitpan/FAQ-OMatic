@@ -40,7 +40,7 @@ use FAQ::OMatic::Log;
 use FAQ::OMatic::Appearance;
 use FAQ::OMatic::Intl;
 
-$VERSION = '2.501';
+$VERSION = '2.503';
 
 # This is never used to automatically send mail to (that's authorEmail),
 # but when we need to report the author's address, we use this constant:
@@ -56,11 +56,12 @@ sub pageHeader {
 }
 
 sub pageFooter {
+	my $page = '';
 	if ($userGripes ne '') {
-		return "<hr><h3>Warnings:</h3>\n".$userGripes."<hr>\n".$pageFooter;
-	} else {
-		return FAQ::OMatic::Appearance::cPageFooter();
+		$page.="<hr><h3>Warnings:</h3>\n".$userGripes."<hr>\n";
 	}
+	$page.=FAQ::OMatic::Appearance::cPageFooter(@_);
+	return $page;
 }
 
 # the name of the entire FAQ
