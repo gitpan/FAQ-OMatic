@@ -48,8 +48,8 @@ sub main {
 		if (not FAQ::OMatic::validEmail($id)) {
 			FAQ::OMatic::gripe('error', gettext("An email address must look like 'name\@some.domain'.")
 				."\n"
-				.gettexta("If yours (%0) does and I keep rejecting it, please mail %1 and tell him what's happening.",
-					 $id, $FAQ::OMatic::authorAddress));
+				.gettexta("If yours (%0) does and I keep rejecting it, please mail the administrator of this FAQ at %1 and tell him or her what's happening.",
+					 $id, $FAQ::OMatic::Config::adminEmail));
 		}
 		my $pass = $params->{'_pass'} || '';
 			# THANKS to Mark Shaw <mshaw@dal.asp.ti.com> for catching this
@@ -66,8 +66,15 @@ sub main {
 			my $secret = FAQ::OMatic::Auth::getRandomHex();
 			my $restart = $params->{'_restart'} ||
 				FAQ::OMatic::makeAref('faq', {}, 'url', 0, 'blastAll');
+			# keep passwords out of the GET request fired up
+			# when restarting after an authentication.
+			# THANKS to
+			# Cream-puff Casper Milquetoast <doughnut@doughnut.net>
+			# for reporting this issue.
 			my $saveurl = FAQ::OMatic::makeAref($restart,
-				{'auth'=>'','pass'=>'','id'=>''}, 'url', 'saveTransients');
+				{'auth'=>'','pass'=>'','id'=>'',
+				 '_id'=>'', '_pass'=>''},
+				'url', 'saveTransients');
 
 			# password yet, or we'll have circumvented the whole secret
 			# thing.
@@ -126,12 +133,11 @@ __EOF__
 				."\n<p>\n";
 		}
 		else {
-			$rt .= gettexta("I sent email to you at \"%0\". "
-					."It should arrive soon, containing a URL.", $id)
+			$rt .= gettexta("I sent email to you at \"%0\". It should arrive soon, containing a URL.",
+							$id)
 				."\n<p>\n";
 		}
-		$rt.= gettext("Either open the URL directly, or paste the secret "
-				."into the form below and click Validate.")
+		$rt.= gettext("Either open the URL directly, or paste the secret into the form below and click Validate.")
 			."\n<p>\n"
 			.gettext("Thank you for taking the time to sign up.")
 			."\n";

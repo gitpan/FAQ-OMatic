@@ -100,9 +100,9 @@ sub main {
 		( 'writeMaintenanceHint', 'trimUHDB', 'trimSubmitTmps',
 		 'buildSearchDB', 'trim', 'cookies', 'errors', 'logSummary',
 		 'rebuildAllSummaries', 'rebuildCache', 'expireBags', 'bagAllImages',
-		 'mirrorClient', 'trimSlowOutput');
+		 'mirrorClient', 'trimSlowOutput', 'emptyTrash', 'fsck');
 
-	hprint("<pre>\n");
+		 #hprint("<pre>\n");
 	foreach my $i (sort @tasks) {
 		$i =~ s/\d+ //;
 		if (defined $taskUntaint{$i}) {
@@ -110,6 +110,8 @@ sub main {
 			hprint("--- $i\n");
 			hflush();
 			if (not eval "$i(); return 1;") {
+				FAQ::OMatic::gripe('problem',
+					"*** Task $i failed\n    Error: $@\n");
 				hprint("*** Task $i failed\n    Error: $@\n");
 				hprint(FAQ::OMatic::stackTrace('html'));
 				hflush();
@@ -199,7 +201,9 @@ sub periodicTasks {
 		'80 trimUHDB',		# turns on a flag so trim() will trim uhdbs
 		'81 trimSubmitTmps',# turns on a flag so trim() will trim submitTmps
 		'82 trimSlowOutput',# turns on a flag so trim() will trim slow-outputs
-		'89 trim' 		# traverse metadir (needed for trim() to do anything)
+		'89 trim',	 		# traverse metadir (needed for trim() to do anything)
+		'90 fsck',
+		'91 emptyTrash'
 		) if $newDay;
 	push @tasks, (
 		'55 errors'
@@ -345,11 +349,12 @@ sub cookies {
 		hprint("no cookie file.\n");
 		return;
 	}
-	if (not open NEWCOOKIES, ">$FAQ::OMatic::Config::metaDir/cookies.new") {
+	my $cookiesNewFile = "$FAQ::OMatic::Config::metaDir/cookies.new";
+	if (not open NEWCOOKIES, ">$cookiesNewFile") {
 		hprint("can't create $FAQ::OMatic::Config::metaDir/cookies.new.\n");
 		return;
 	}
-	while (<COOKIES>) {
+	while (defined($_=<COOKIES>)) {
 		my ($cookie,$id,$time) = split(' ');
 		if ($time
 				+($FAQ::OMatic::Config::cookieLife||3600)
@@ -362,6 +367,9 @@ sub cookies {
 	}
 	close COOKIES;
 	close NEWCOOKIES;
+	if (not chmod(0600, "$cookiesNewFile")) {
+		FAQ::OMatic::gripe('problem', "chmod failed on $cookiesNewFile");
+	}
 	unlink "$FAQ::OMatic::Config::metaDir/cookies";
 	if (not rename("$FAQ::OMatic::Config::metaDir/cookies.new","$FAQ::OMatic::Config::metaDir/cookies")) {
 		hprint ("Couldn't rename $FAQ::OMatic::Config::metaDir/cookies.new "
@@ -416,8 +424,12 @@ sub cronInvoke {
 	# so that the user knows to fix it. (most crons mail the message
 	# to the user.)
 	my ($proto,$code,@rest) = split(' ', $reply[0]);
+
 	# THANKS to Andrew W. Nosenko <awn@bcs.zp.ua>
 	# for this patch to ignore 'Moved Temporarily' response.
+	# TODO: I'm not sure 302 guarantees that it actually worked,
+	# but it's something. Why do we return the 'slow' URL to cron?
+	# That seems buggy.
 	if ($code != '200' && $code != '302') {
 		print "Unable to invoke maintenance task; HTTP reply follows:\n\n";
 		print $reply;
@@ -442,7 +454,7 @@ sub invoke {
 	if (not connect(HTTPSOCK, $sin)) {
 		die "maintenance::invoke can't connect(): $!, $@!\n"
 	}
-	print $httpsock "GET $url HTTP/1.0\nHost: $host\n\n";
+	print $httpsock "GET $url HTTP/1.0\nHost: ${host}\n\n";
 		# Thanks to Gabor Melis <gabor.melis@essnet.se> for the "Host:"
 		# header, which makes virtually hosted sites work right.
 	FAQ::OMatic::flush($httpsock);
@@ -484,6 +496,10 @@ sub rebuildCache {
 	foreach $itemName (FAQ::OMatic::getAllItemNames()) {
 		hprint( "<br>Updating $itemName\n");
 		my $item = new FAQ::OMatic::Item($itemName);
+		if ($item->isEmptyStub()) {
+			# skip stubs
+			next;
+		}
 		if (not eval {
 			$item->saveToFile('', '', 'noChange', 'updateAllDependencies');
 			1;
@@ -733,7 +749,9 @@ sub mirrorItem {
 	if (not connect($httpsock, $sin)) {
 		die "mirrorItem can't connect(): $!, $@!\n"
 	}
-	my $request = "GET $path HTTP/1.0";
+	my $request = "GET $path HTTP/1.0\nHost: ${host}";
+		# THANKS to Stefan Stidl <sti@austromail.at> for the
+		# Host: header, to fix mirroring from virtual hosts
 	print $httpsock "$request\n\n";
 	FAQ::OMatic::flush($httpsock);
 		# Thanks to Miro Jurisic <meeroh@MIT.EDU> for this fix.
@@ -746,7 +764,7 @@ sub mirrorItem {
 		close($httpsock);
 		return;
 	}
-	while (<$httpsock>) {			# blow past HTTP headers
+	while (defined($_=<$httpsock>)) {			# blow past HTTP headers
 		last if ($_ =~ m/^[\r\n]*$/);
 	}
 
@@ -793,7 +811,7 @@ sub mirrorBag {
 	if (not connect($httpsock, $sin)) {
 		die "mirrorBag can't connect(): $!, $@!\n"
 	}
-	my $request = "GET $path HTTP/1.0";
+	my $request = "GET $path HTTP/1.0\nHost: ${host}";
 	print $httpsock "$request\n\n";
 	FAQ::OMatic::flush($httpsock);
 		# Thanks to Miro Jurisic <meeroh@MIT.EDU> for this fix.
@@ -806,7 +824,7 @@ sub mirrorBag {
 		close($httpsock);
 		return;
 	}
-	while (<$httpsock>) {			# blow past HTTP headers
+	while (defined($_=<$httpsock>)) {			# blow past HTTP headers
 		last if ($_ =~ m/^[\r\n]*$/);
 	}
 
@@ -844,6 +862,224 @@ sub mirrorBag {
 sub mtime {
 	my $filename = shift;
 	return (stat($filename))[9] || 0;
+}
+
+sub emptyTrash {
+	my $slow = shift || '';
+
+	if ($slow) {
+		my $fh = FAQ::OMatic::Slow::split();
+		hSetFilehandle($fh);
+		# from now on, our output goes into the slow-output file
+		# to be periodically loaded by the browser.
+	}
+
+	my $trashExpirationDays = $FAQ::OMatic::Config::trashTime || 0;
+	if ($trashExpirationDays == 0) {
+		hprint("\$trashTime says to never take out the trash.<br>\n");
+		return;
+	}
+
+	my $trashItem = new FAQ::OMatic::Item('trash');
+	if ($trashItem->isBroken()) {
+		FAQ::OMatic::gripe('problem', gettext('Crud, the trash can is broken.'));
+		return;
+	}
+
+	# walk the trash tree looking for old trash
+	hprint("<br>At top level:\n");
+	my @children = $trashItem->getChildren();
+	emptyTrashVisitChildren($trashItem, \@children, 1);
+	$trashItem->saveToFile();
+	hprint("<p>emptyTrash: Done\n");
+}
+
+sub indent {
+	my $amount = shift;
+	return ("."x($amount*3))." ";
+}
+
+sub emptyTrashVisitChildren {
+	my $parentItem = shift;
+	my $childList = shift;
+	my $indent = shift;
+
+	hprint(indent($indent)."Visit children (".scalar(@$childList).")\n");
+	foreach my $childName (@$childList) {
+		#hprint(indent($indent+1)."Visit children ($childName)\n");
+		my $childItem = new FAQ::OMatic::Item($childName);
+		if ($childItem->isBroken()) {
+			# can't see into child item. Detach, and let fsck find
+			# and destroy te item file.
+			hprint(indent($indent)."detaching broken child $childName\n");
+			$parentItem->removeSubItem($childName, 'deferUpdate');
+				# deferred update okay because caller will
+				# explicitly save this guy
+		} else {
+			emptyTrashVisitItem($childName, $childItem, $indent);
+		}
+		hflush();
+	}
+}
+
+sub emptyTrashVisitItem {
+	my $itemName = shift;
+	my $item = shift;
+	my $indent = shift;
+
+	my $trashExpirationDays = $FAQ::OMatic::Config::trashTime || 0;
+	my $trashExpirationSeconds = $trashExpirationDays*24*60*60;
+
+	my $filename = $item->{'filename'} || '[no filename]';
+	my $title = $item->getTitle() || '[no title]';
+	hprint(indent($indent)."Examining trash node $filename ($itemName) named $title\n");
+
+	# Get (rid of) the children;
+	# if this isn't a category, it'll just get the
+	# empty list, and that's perfect.
+	my @children = $item->getChildren();
+	if (scalar(@children)>0) {
+		emptyTrashVisitChildren($item, \@children, $indent+1);
+	}
+
+	# if there aren't any children now (either there weren't before, or
+	# we actually blasted them all), then consider blasting this guy, too.
+	my $blasted = 0;
+	@children = $item->getChildren();
+	if (scalar(@children)<=0) {
+		# found a leaf
+		hprint(indent($indent)."Found a leaf ".$item->getTitle()."\n");
+		my $lastModified = $item->{'LastModifiedSecs'} || 0;
+		my $age = time() - $lastModified;
+		if ($age > $trashExpirationSeconds) {
+			hprint(indent($indent)." ... and it's old. Should delete.\n");
+			my $filename = $item->{'filename'};
+			my $rc = $item->destroyItem('deferUpdate');
+				# deferred update is okay, because we're going to
+				# save this guy's parent anyway when we return from
+				# the recursion (if the parent isn't blasted.)
+			if ($rc) {
+				hprint(indent($indent)."removed $filename; rc = $rc");
+				$blasted = 1;
+			} else {
+				hprint(indent($indent)."couldn't remove $filename; rc = $rc");
+			}
+		} else {
+			hprint(indent($indent).sprintf("'-but it's not old. (%d sec)\n", $age));
+		}
+	}
+	if (!$blasted) {
+		# make sure changes to directory stick.
+		hprint(indent($indent).scalar(@children)." children remain. This item survives. Saving changed directory\n");
+		$item->saveToFile();
+	}
+}
+
+sub fsck {
+
+	my $reportFreq = 100;
+
+	# check for:
+	# links to broken items -> replace link with text describing broken link
+	# items claimed by multiple parents -> rewrite as links in n-1 parents
+	# roots other than 1, trash -> connect to lost+found
+	hprint("Pass 1: detect broken files\n");
+	hflush();
+	my $count = 0;
+	foreach my $filei (FAQ::OMatic::getAllItemNames()) {
+		my $item = new FAQ::OMatic::Item($filei);
+#		if ($filei eq '1117') {
+#			hprint("1117: broken=".($item->isBroken()?'t':'f')
+#				." emptyStub=".($item->isEmptyStub()?'t':'f')
+#				."\n");
+#		}
+		if ($item->isBroken() and not $item->isEmptyStub()) {
+			# file is broken. disconnect it from parent; delete file
+			fsckReport("found broken item file $filei; destroying");
+			FAQ::OMatic::Item::destroyItemRaw($filei);
+		}
+		if (((++$count)%$reportFreq)==0) {
+			hprint("checked $count items; finished $filei\n");
+		}
+		hflush();
+	}
+
+	my $lostAndFoundItem = undef;
+	hprint("Pass 2: Detect incorrect ownership claims, disconnected subtrees\n");
+	hflush();
+	$count = 0;
+	foreach my $filei (FAQ::OMatic::getAllItemNames()) {
+		my $item = new FAQ::OMatic::Item($filei);
+		if ($item->isBroken() and not $item->isEmptyStub()) {
+			FAQ::OMatic::gripe('abort', "pass 1 failed; can't proceed to pass 2.");
+		}
+		my @children = $item->getChildren();
+		my $changedChildren = 0;
+		foreach my $childName (@children) {
+			my $childItem = new FAQ::OMatic::Item($childName);
+			if ($childItem->isBroken()) {
+				fsckReport("$filei owns broken child $childName; detaching");
+				$item->removeSubItem($childName, 'deferUpdate');
+				$changedChildren = 1;
+			} elsif ($childItem->{'Parent'} ne $filei) {
+				fsckReport("$filei claims to own $childName, but ${childName}'s parent is ".$childItem->{'Parent'}."; detaching");
+
+				$item->removeSubItem($childName, 'deferUpdate');
+				$changedChildren = 1;
+			}
+		}
+		if ($changedChildren) {
+			$item->saveToFile();
+		}
+		hflush();
+		
+		my $parent = $item->getParent();
+		if ($filei eq '1' || $filei eq 'trash' || $filei eq 'help000') {
+			# ignore these; they're okay as roots.
+		} elsif ($parent->isBroken() or ($parent == $item)) {
+			fsckReport("$filei is a root, but shouldn't be");
+			$lostAndFoundItem = getLostAndFoundItem($lostAndFoundItem);
+			$lostAndFoundItem->addSubItem($filei);
+			$item->setProperty('Parent', $lostAndFoundItem->{'filename'});
+			$item->saveToFile();
+			$lostAndFoundItem->saveToFile();
+		}
+		if (((++$count)%$reportFreq)==0) {
+			hprint("checked $count items; finished $filei\n");
+		}
+		hflush();
+	}
+	hprint("fsck complete\n");
+	hflush();
+}
+
+sub fsckReport {
+	my $msg = shift;
+	hprint("$msg\n");
+	FAQ::OMatic::gripe('note', $msg);
+}
+
+sub getLostAndFoundItem {
+	my $lostAndFoundItem = shift;
+	if (defined($lostAndFoundItem)) {
+		return $lostAndFoundItem;
+	}
+	my $top = new FAQ::OMatic::Item('1');
+	foreach my $childName ($top->getChildren) {
+		my $childItem = new FAQ::OMatic::Item($childName);
+		if (($childItem->{'Title'}||'') eq 'lost+found') {
+			return $childItem;
+		}
+	}
+	# have to create one.
+	$lostAndFoundItem = new FAQ::OMatic::Item();
+	$lostAndFoundItem->setProperty('Parent', '1');
+	$lostAndFoundItem->setProperty('Title', 'lost+found');
+	$lostAndFoundItem->saveToFile(FAQ::OMatic::unallocatedItemName('1'));
+
+	$top->addSubItem($lostAndFoundItem->{'filename'});
+	$top->saveToFile();
+	return $lostAndFoundItem;
 }
 
 1;

@@ -91,20 +91,24 @@ sub main {
 						'-multipart'=>1,
 						'-saveTransients'=>1);
 	if ($bagName ne '') {
-		$rt .= 
-		"<input type=hidden name=\"_bagName\" value=\"$bagName\" size=30>\n";
+		$rt .= "<input type=hidden name=\"_bagName\" value=\"$bagName\" size=30>\n";
 	} else {
 		$rt .= "<tr><td align=right valign=top>".gettext("Bag name:")."</td><td valign=top>"
 			."<input type=text name=\"_bagName\" value=\"\" size=30>"
 			."<br><i>".gettext("The bag name is used as a filename, so it is restricted to only contain letters, numbers, underscores (_), hyphens (-), and periods (.). It should also carry a meaningful extension (such as .gif) so that web browsers will know what to do with the data.")
+			."</i><br>".gettext("Hint: Leave blank and Bag Data filename will be used.")
 			."</td></tr>\n";
 	}
 	$rt .= "<tr><td align=right>".gettext("Bag data:")."</td><td>"
-			."<input type=file name=\"_bagData\">";
-	if ($bagName ne '') {
-			$rt .= " <br>".gettext("(Leave blank to keep original bag data and change only the associated information below.)");
+			."<input type=file name=\"_bagData\"></td></tr>";
+	
+	if ($bagName eq ''){
+		$rt .= "<tr><td align=right>".gettext("Inline (Images only):")."</td><td><input type=checkbox value=\"y\" name=\"_bagInline\"></td></tr>";
 	}
-	$rt .= "</td></tr>\n";
+	
+	if ($bagName ne '') {
+			$rt .= "<tr><td colspan=2 align=right>".gettext("(Leave blank to keep original bag data and change only the associated information below.)")."</td></tr>";
+	}
 
 	$rt .= "<tr><td colspan=2>"
 		.gettext("If this bag is an image, fill in its dimensions.")."</td></tr>\n"

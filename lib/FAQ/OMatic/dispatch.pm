@@ -90,6 +90,7 @@ sub main {
 	my %knownModules = map { $_ => $_ } (
 		'faq', 				'help',				'appearanceForm',
 		'search',			'searchForm',		'recent',
+		'recentrdf',
 		'stats', 			'statgraph',
 		'authenticate',		'changePass',		'submitPass',
 		'editPart',			'submitPart',		'delPart',
@@ -122,7 +123,8 @@ sub main {
 				? ($cgi->param('cmd') || 'faq')
 				: 'install';
 
-	my $problem = '';
+	my $problemDesc = '';
+	my $severity = 'problem';
 	my $func;
 
 	# notice we take the value of the hash lookup, rather than just
@@ -151,19 +153,33 @@ sub main {
 					.FAQ::OMatic::makeAref('-command'=>'install')
 					."installer</a>. "
 					."This message has been sent to "
-					."$FAQ::OMatic::Config::adminEmail.");
+					."$FAQ::OMatic::Config::adminEmail.", {'noentify'=>1});
 			}
 
 			$^T = time();	# when running in mod_perl, -M's get stale w/o this
 			eval "FAQ::OMatic::".$func."::main();";
 			die $@ if ($@);	# pass internal errors out to next eval
 		};
-		$problem = $@;
+		$problemDesc = $@;
+		$severity = 'problem';
 	} else {
-		$problem = "Unknown command: $cmd";
+		# THANKS to Bob Van Cleef <vancleef@microunit.com>
+		# and <superpetz@hushmail.com> for pointing out a
+		# cross-site scripting problem with this error report.
+		# I wonder how many other such helpful debugging features
+		# hide lurking CSS issues?
+		#
+		# Unknown commands seem to come from either broken robots
+		# or 3L33T H@X0RZ, so let's not bother sending mail to
+		# the admin about it.
+		# If you see errors in your log that you wonder about,
+		# then add the $cmd to the problemDesc to find out
+		# what's going on.
+		$problemDesc = 'Unknown command. Are you a confused robot or an 3l33t h@X0r? If neither, check with site admin to debug the problem.';
+		$severity = 'error';
 	}
 	
-	if ($problem ne '') {
+	if ($problemDesc ne '') {
 		# something broken happened. Let the admin know,
 		# lest it was a script that failed to compile, or a
 		# 'use strict' message or -w warning.
@@ -172,7 +188,8 @@ sub main {
 		eval {
 			$SIG{'__WARN__'} = sub { die "x"; }; # warnings => something's amok
 			require FAQ::OMatic;
-			FAQ::OMatic::gripe('problem', 'problem: '.$problem);
+			FAQ::OMatic::gripe($severity,
+				"${severity}: ${problemDesc}");
 			# don't use 'abort', because in mod_perl that calls
 			# Apache::exit(), which looks like a die, which makes us
 			# think this eval failed.
@@ -184,7 +201,7 @@ sub main {
 			# can't use FAQ::OMatic::header() here because FAQ::OMatic
 			# isn't imported here.
 			print $cgi->header('-type'=>"text/html");
-			print "<tt>\n$problem\n</tt><br><font color=blue>"
+			print "<tt>\n$problemDesc\n</tt><br><font color=blue>"
 				.($@ ne '')."</font>\n";
 		}
 	}

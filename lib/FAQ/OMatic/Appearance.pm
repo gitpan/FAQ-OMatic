@@ -203,13 +203,26 @@ sub navigationBlock {
 	}
 
 	if ($showLinks->{'renderText'}) {
-		my $whatAmI = gettext($item->whatAmI());
+		my $text;
+		if ($item->isCategory())
+		{
+			$text = gettext("Show This Category As Text");
+		}
+		elsif ($item->isAnswer())
+		{
+			$text = gettext("Show This Answer As Text");
+		}
+		else # fixup for unexpected cases
+		{
+			my $whatAmI = gettext($item->whatAmI());
+			gettexta("Show This %0 As Text", $whatAmI)
+		}
 		push @cells,
 			FAQ::OMatic::button(
 				FAQ::OMatic::makeAref('-command'=>'faq',
 					'-params'=>$params,
 					'-changedParams'=>{'render'=>'text'}),
-				gettexta("Show This %0 As Text",$whatAmI));
+				$text);
 		if ($item->isCategory() and $showLinks->{'entire'}) {
 			push @cells,
 				FAQ::OMatic::button(
@@ -328,7 +341,7 @@ sub helpButton {
 
 sub max {
 	my $champ = shift;
-	while (my $contender = shift) {
+	while (defined(my $contender = shift)) {
 		$champ = ($champ > $contender) ? $champ : $contender;
 	}
 	return $champ;

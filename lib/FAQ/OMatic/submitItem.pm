@@ -69,7 +69,7 @@ sub main {
 		my $oldTitle = $item->getProperty('Title');
 		my $newTitle = FAQ::OMatic::getParam($params, '_Title');
 		if ($oldTitle ne $newTitle) {
-			$titleMessage = " ".gettext("Changed the item title, was \"%0\"", $oldTitle);
+			$titleMessage = " ".gettexta("Changed the item title, was \"%0\"", $oldTitle);
 		}
 		$item->setProperty('Title', $newTitle); 
 	}

@@ -87,7 +87,7 @@ sub main {
 
 # sort numeric things numerically, but don't fail (sort lexically) otherwise.
 sub numerically {
-	my $compare = int($a) <=> int($b);
+	my $compare = FAQ::OMatic::stripInt($a) <=> FAQ::OMatic::stripInt($b);
 	if ($compare == 0) {
 		$compare = $a cmp $b;
 	}

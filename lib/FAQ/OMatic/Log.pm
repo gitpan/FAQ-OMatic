@@ -177,7 +177,7 @@ sub summarizeDay {
 
 	# treat missing logs as very uninteresting days
 	if (open LOG, "$FAQ::OMatic::Config::metaDir/$date.rawlog") {
-		while (<LOG>) {
+		while (defined($_=<LOG>)) {
 			chomp;
 			my ($date,$host,$op,$arg) = split(' ');
 			$host = '' if (not defined $host);

@@ -184,7 +184,7 @@ sub askMetaStep {
 		.installUrl('default')
 		."\">".gettext("click here to use the new location")."</a>.<p>\n";
 
-	$rt.=gettext("FAQ-O-Matic stores files in two main directories.<p>The <b>meta/</b> directory path is encoded in your CGI stub ($0). It contains:");
+	$rt.=gettexta("FAQ-O-Matic stores files in two main directories.<p>The <b>meta/</b> directory path is encoded in your CGI stub (%0). It contains:", $0);
         $rt.=gettext("<ul><li>the <b>config</b> file that tells FAQ-O-Matic where everything else lives. That's why the CGI stub needs to know where meta/ is, so it can figure out the rest of its configuration. <li>the <b>idfile</b> file that lists user identities. Therefore, meta/ should not be accessible via the web server. <li>the <b>RCS/</b> subdirectory that tracks revisions to FAQ items. <li>various hint files that are used as FAQ-O-Matic runs. These can be regenerated automatically.</ul>");
         $rt.=gettext("<p>The <b>serve/</b> directory contains three subdirectories <b>item/</b>, <b>cache/</b>, and <b>bags/</b>. These directories are created and populated by the FAQ-O-Matic CGI, but should be directly accessible via the web server (without invoking the CGI).");
         $rt.=gettext("<ul><li>serve/item/ contains only FAQ-O-Matic formatted source files, which encode both user-entered text and the hierarchical structure of the answers and categories in the FAQ. These files are only accessed through the web server (rather than the CGI) when another FAQ-O-Matic is mirroring this one. <li>serve/cache/ contains a cache of automatically-generated HTML versions of FAQ answers and categories. When possible, the CGI directs users to the cache to reduce load on the server. (CGI hits are far more expensive than regular file loads.) <li>serve/bags/ contains image files and other ``bags of bits.'' Bit-bags can be linked to or inlined into FAQ items (in the case of images). </ul>");
@@ -251,14 +251,14 @@ sub initConfigStep {
 	
 		my $map = getPotentialConfig();
 
-		$map->{'$RCSci'} = "'".which("ci")."'";
 		# THANKS: to Jim Adler <jima@sr.hp.com> for this fix that
 		# keeps HP-UX's RCS happy. (I'd recommend just installing
 		# GNU RCS, but this will be convenient for some.)
 		my $ciDfl = $map->{'$RCSci'};
 		if ($Config{osname} eq 'hpux' and
 			($ciDfl eq '/usr/bin/ci' or $ciDfl eq '/bin/ci')) {
-			$map->{'$RCSargs'} = "'-l -mnull'";
+			#TODO don't know if this handles '-k' correctly.
+			$map->{'$RCSciArgs'} = "'-l -mnull'";
 		}
 
 		$map->{'$metaDir'} = "'".$metaDfl."'";
@@ -489,6 +489,18 @@ sub mainMenuStep {
 		."&secret=$maintenanceSecret&tasks=expireBags\">"
 		.gettext("Check for unreferenced bags (not linked by any FAQ item)")
 		."</a>\n";
+	$rt.="$par<li>"
+		.checkBoxFor('nothing')
+		."<a href=\"".installUrl('', 'url', 'maintenance')
+		."&secret=$maintenanceSecret&tasks=emptyTrash\">"
+		.gettext("Empty old trash now")
+		."</a>\n";
+	$rt.="$par<li>"
+		.checkBoxFor('nothing')
+		."<a href=\"".installUrl('', 'url', 'maintenance')
+		."&secret=$maintenanceSecret&tasks=fsck\">"
+		.gettext("fsck (check and repair tree structure)")
+		."</a>\n";
 	# rebuildCache shows up again at the end, because it doesn't show
 	# up in the numbered list if this is a mirror site.
 	$rt.="$par<li>"
@@ -619,8 +631,8 @@ sub createDir {
 		return;
 	}
 	if (not chmod 0755, $dirPath) {
-		dirFail(gettexta("I wasn't able to change the permissions on <b>%0</b> "
-				."to 755 (readable/searchable by all).", $dirPath));
+		dirFail(gettexta("I wasn't able to change the permissions on <b>%0</b> to 755 (readable/searchable by all).",
+						 $dirPath));
 		return;
 	}
 
@@ -651,7 +663,7 @@ sub ci {
 	my $key = shift;
 	my $mymap = {};
 	my $property;
-	while ($property = shift(@_)) {
+	while (defined($property = shift(@_))) {
 		if (not $property=~m/^-/) {
 			FAQ::OMatic::gripe('error',
 				gettexta("Jon made a mistake here; key=%0, property=%1.", $key, $property))
@@ -692,8 +704,12 @@ sub configInfo {
 	ci('crontabCommand','-sort'=>'a-m4', '-free', '-cmd', '-desc' =>
 		gettext("The command FAQ-O-Matic can use to install a cron job."),
 		'-default'=>"'".which('crontab')."'"),
-	ci('RCSci',		'-sort'=>'a-r1', '-free', '-cmd', '-desc'=>
+	ci('RCSci',		'-sort'=>'a-r1', '-free', '-cmd',
+		'-default'=>"'".which('ci')."'", '-desc'=>
 		gettext("Path to the <b>ci</b> command from the RCS package.")),
+	ci('RCSco',		'-sort'=>'a-r2', '-free', '-cmd',
+		'-default'=>"'".which('co')."'", '-desc'=>
+		gettext("Path to the <b>co</b> command from the RCS package.")),
 
 	ci('sep_c', '-sort'=>'c--sep', '-separator', '-desc'=>
 		gettext("<b>Mandatory:</b> Server directory configuration")),
@@ -704,14 +720,15 @@ sub configInfo {
 		gettext("The path part of the URL used to access this CGI script, beginning with '/' and omitting any parameters after the '?'. For example: <tt>/cgi-bin/cgiwrap/jonh/faq.pl</tt>"),
 		'-default'=>"'".FAQ::OMatic::cgiURL()."'" ),
 	ci('serveDir', '-sort'=>'c-c1', '-free', '-desc'=>
-		gettext("Filesystem directory where FAQ-O-Matic will keep item files, image and other bit-bag files, and a cache of generated HTML files. This directory must be accesible directly via the http server. It might be something like /home/faqomatic/public_html/fom-serve/"),'-default'=>"''"),
+		gettext("Filesystem directory where FAQ-O-Matic will keep item files, image and other bit-bag files, and a cache of generated HTML files. This directory must be accessible directly via the http server. It might be something like /home/faqomatic/public_html/fom-serve/"),'-default'=>"''"),
 	ci('serveURL', '-sort'=>'c-c2', '-free', '-desc'=>
 		gettext("The path prefix of the URL needed to access files in <b>\$serveDir</b>. It should be relative to the root of the server (omit http://hostname:port, but include a leading '/'). It should also end with a '/'.") , '-default'=>"''" ),
 
 	ci('sep_e', '-sort'=>'e--sep', '-separator', '-desc'=>
 		gettext("<i>Optional:</i> Miscellaneous configurations")),
 	ci('language',		'-sort'=>'k-m00',
-		'-choices'=>[ "'en'", "'de_iso8859_1'", "'fr'"],
+		'-choices'=>[ "'en'", "'de_iso8859_1'", "'fr'", "'ru'",
+					  "'uk'", "'fi'"],
 		'-desc'=>
 		gettext("Select the display language."),
 		'-default'=>"'en'"),
@@ -742,7 +759,7 @@ sub configInfo {
 		.gettext("If this field begins with <tt>file=</tt>, the text will come from the named file in the meta directory; otherwise, this field is included verbatim.")),
 	ci('adminEmail','-sort'=>'n-e2', '-free', '-choices'=>[ '$adminAuth' ],
 		'-default' => "\$adminAuth",
-		'-desc'=> gettext('Where FAQ-O-Matic should send email when it wants to alert the administrator (usually same as $adminAuth)')),
+		'-desc'=> gettext("Where FAQ-O-Matic should send email when it wants to alert the administrator (usually same as \$adminAuth)")),
 	ci('maintSendErrors',	'-sort'=>'n-m2', '-choices'=>[ "'true'", "''" ],
 		'-desc'=> gettext("If true, FAQ-O-Matic will mail the log file to the administrator whenever it is truncated."),
 		'-default'=>"'true'"),
@@ -760,6 +777,10 @@ sub configInfo {
 		'-choices'=>[ "'3600'" ],
 		'-default'=>"'3600'",
 		'-desc'=> gettext("Number of seconds that authentication cookies remain valid. These cookies are stored in URLs, and so can be retrieved from a browser history file. Hence they should usually time-out fairly quickly.")),
+	ci('trashTime', '-sort'=>'r-s9', '-free',
+		'-choices'=>[ "'14'" ],
+		'-default'=>"'14'",
+		'-desc'=> gettext("Number of days that trash sits in the trash category before maintenance cleans it up. '0' lets it stay forever.")),
 
 	ci('sep_t', '-sort'=>'t--sep', '-separator', '-desc'=>
 			gettext("<i>Optional:</i> These options set the default [Appearance] modes.")),
@@ -828,9 +849,14 @@ sub configInfo {
 			'-default'=>"''", '-desc'=>
 			gettext("Use DBM-based search databases. Faster on machines with non-broken DBM.")),
 
+	ci('RCSciArgs',	'-sort'=>'a-r1-args', '-free', '-desc'=>
+	'Arguments to make ci quietly log changes and not mash RCS tags (use default with GNU RCS)',
+		'-default'=>"'-mnull -t-null'"),
+	ci('RCScoArgs',	'-sort'=>'a-r2-args', '-free', '-desc'=>
+		'Arguments to make co not mash RCS tags (use default with GNU RCS)',
+		'-default'=>"'-ko -l'"),
 	ci('RCSargs',	'-hide', '-free', '-desc'=>
-		'Arguments to make ci quietly log changes (default is probably fine)',
-		'-default'=>"'-l -mnull -t-null'"),
+		'deprecated; subsumed by RCSciArgs and RCScoArgs.'),
 	ci('authorEmail', '-hide', '-default'=>"''"),
 	ci('backgroundColor', '-hide', '-mirror', '-default'=>"'#ffffff'"),
 	ci('bagsDir', '-hide'),
@@ -992,8 +1018,7 @@ sub askConfigStep {
 		}
 	}
 
-	$rt.=gettext("If this is your first time installing a FAQ-O-Matic, I recommend "
-		    ."only filling in the sections marked <b>Mandatory</b>.");
+	$rt.=gettext("If this is your first time installing a FAQ-O-Matic, I recommend only filling in the sections marked <b>Mandatory</b>.");
 	# now display the widgets in sorted order
 	$rt.= join('', map {$widgets->{$_}} sort(keys %{$widgets}));
 	$rt.="<tr><td></td><td>"
@@ -1033,6 +1058,8 @@ sub setConfigStep {
 	}
 	writeConfig($map);
 	FAQ::OMatic::I18N::reload();	# future displays should be in new language
+		# TODO except in practice the next configuration screen
+		# stays in the old language.
 	if ($notices) {
 		$notices = "<ul>$notices</ul>\n";
 	}
@@ -1122,15 +1149,13 @@ sub checkConfig {
 sub firstItemStep {
 	if (not -f "$FAQ::OMatic::Config::itemDir/1") {
 		my $item = new FAQ::OMatic::Item();
-		$item->setProperty('Title', gettext('Untitled Faq-O-Matic'));
+		$item->setProperty('Title', gettext("Untitled Faq-O-Matic"));
 		$item->setProperty('Parent', '1');
 		$item->setProperty('Moderator', $FAQ::OMatic::Config::adminAuth);
 
 		# tell the user how to name his FAQ
 		my $helpPart = new FAQ::OMatic::Part();
-		$helpPart->{'Text'} = gettext('To name your FAQ-O-Matic, use the '
-			.'[Appearance] page to show the expert editing commands, '
-			.'then click [Edit Category Title and Options].');
+		$helpPart->{'Text'} = gettext("To name your FAQ-O-Matic, use the [Appearance] page to show the expert editing commands, then click [Edit Category Title and Options].");
 		push @{$item->{'Parts'}}, $helpPart;
 
 		# prevent user from feeling dumb because he can't find
@@ -1612,7 +1637,7 @@ sub readConfig {
 	}
 
 	my $map = {};
-	while (<CONFIG>) {
+	while (defined($_=<CONFIG>)) {
 		chomp;
 		next if (not m/=/);
 		my ($left,$right) = m/(\S+)\s*=\s*(\S+.*);$/;

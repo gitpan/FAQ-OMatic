@@ -122,25 +122,34 @@ sub display {
 	print "\n";
 
 	my @tail = ();
-	my $cropped = '';
-	while (<SLOW>) {
-		if ((not $params->{'_wholeFile'})
+	my $cropped = '<pre>';
+	while (defined($_=<SLOW>)) {
+		if ((not $params->{'wholeFile'})
 			and (scalar(@tail) >= $tailSize)) {
 			shift(@tail);
-			$cropped = "...<br>\n";
+			$cropped = "<pre>...(cropped)...<br>\n";
 		}
 		push @tail, $_;
 	}
 	close(SLOW);
 	print "<title>Slow page</title>\n";
-	if (not $params->{'tailSize'}) {
-		print gettexta("This page will reload every %0 seconds, showing the last %1 lines of the process output.",
-			$reloadFrequency, $tailSize)."\n";
-		my $url2 = FAQ::OMatic::makeAref('-command'=>'displaySlow',
-			'-changedParams' => {'_wholeFile' => '1'});
-		print "[".$url2.gettext("Show the entire process log")."</a>]\n";
-		print "<hr>\n";
+
+	my $msg;
+	print gettexta("This page will reload every %0 seconds,", $reloadFrequency);
+	print " ";
+	if ($params->{'wholeFile'}) {
+		print gettexta("showing the entire process output.");
+		$msg = gettexta("Show the tail of the process log");
+	} else {
+		print gettexta("showing the last %0 lines of the process output.", $tailSize);
+		$msg = gettexta("Show the entire process log")
 	}
+	print "\n";
+	my $url2 = FAQ::OMatic::makeAref('-command'=>'displaySlow',
+		'-changedParams' => {'wholeFile' => !$params->{'wholeFile'}});
+	print "[".$url2.$msg."</a>]\n";
+	print "<hr>\n";
+
 	print $cropped;
 	print join('', @tail);
 }

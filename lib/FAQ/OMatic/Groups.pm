@@ -48,7 +48,7 @@ sub readGroups {
 	if (not open GROUPS, "$FAQ::OMatic::Config::metaDir/groups") {
 		$groupCache = {};
 	} else {
-		while (<GROUPS>) {
+		while (defined($_=<GROUPS>)) {
 			chomp;
 			my ($groupName, $member) = split('\s', $_, 2);
 			$groupCache->{$groupName}{$member} = 1;
@@ -147,8 +147,7 @@ sub displayHTML {
 				."$groupName</a>\n";
 			if ($groupName eq 'Administrators') {
 				$html.="<dd><i>"
-					.gettext("(Members of this group are allowed to "
-						."access these group definition pages.)")
+					.gettext("(Members of this group are allowed to access these group definition pages.)")
 					."</i>\n";
 			}
 			my $limit=4;

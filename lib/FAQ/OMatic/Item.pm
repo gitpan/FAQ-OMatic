@@ -86,6 +86,56 @@ sub new {
 	return $item;
 }
 
+# used for emptying trash.
+sub destroyItem {
+	my $self = shift;
+	my $deferUpdate = shift || '';
+	# only works for things in Config::itemDir
+
+	my $filename = $self->{'filename'};
+
+	# remove item from internal cache so we don't try to re-save it out.
+	my $itemCache = FAQ::OMatic::getLocal('itemCache');
+	delete $itemCache->{$filename};
+
+	# detach the item from its parent
+	my $parent = $self->getParent();
+	$parent->removeSubItem($filename, $deferUpdate);
+
+	# TODO note that we don't do anything about symlinks (faqomatic: refs)
+	# to this missing item; they'll become "missing or broken item". We
+	# should probably handle that issue during the "Move to trash" operation,
+	# since you don't really want symlinks into the trash, anyway.
+	# TODO note that the file simply disappears, so if we lose the
+	# biggestFileHint, we might accidentally reallocate this file number.
+	# That's not horrible, but perhaps worth avoiding.
+	# TODO I don't delete the RCS file, because disk space is free.
+	# I'm emptying the trash just to reduce the amount of cruft that piles
+	# up in user-visible space! If someone really cares, they could delete
+	# the RCS file, too. (On the other hand, one might worry about
+	# disk space for bag deletion.)
+	destroyItemRaw($self->{'filename'});
+}
+
+sub destroyItemRaw {
+	my $filename = shift;
+
+	# zero file on disk
+	# we leave a stub there so that new files won't be created with the
+	# same file name. That keeps links by filename from changing their
+	# destination.
+	my $dir = $FAQ::OMatic::Config::itemDir || '';
+#my $inode = `ls -i $dir/$filename`;
+	my $rc = open(FILE, ">$dir/$filename");
+	close FILE;
+	if (not $rc or ((-s "$dir/$filename") != 0)) {
+		FAQ::OMatic::gripe('problem', "Bummer: failed to zero $filename\n");
+		return 0;
+	}
+	# TODO need to commit to RCS, get & release Item lock.
+	return 1;
+}
+
 sub loadFromFile {
 	my $self = shift;
 	my $filename = shift;
@@ -118,6 +168,12 @@ sub loadFromFile {
 				."file (-f test failed).");
 		}
 		delete $self->{'Title'};
+		return;
+	}
+
+	if ((-s "$dir/$filename") == 0) {
+		delete $self->{'Title'};
+		$self->{'EmptyStub'} = 'true';
 		return;
 	}
 
@@ -174,7 +230,9 @@ sub loadFromCodeClosure {
 	my $debugFilename = shift || 'an item read from a filehandle';
 
 	# process item headers
-	while ($_ = &{$closure}) {
+	# THANKS to "John R. Jackson" <jrj@gandalf.cc.purdue.edu> for
+	# grepping for unprotected while constructs.
+	while (defined($_ = &{$closure})) {
 		chomp;
 		my ($key,$value) = FAQ::OMatic::keyValue($_);
 		if ($key eq 'Part') {
@@ -228,7 +286,7 @@ sub getPart {
 	my $self = shift;
 	my $num = shift;
 
-	return $self->{'Parts'}->[$num];
+	return $self->{'Parts'}->[FAQ::OMatic::stripInt($num)];
 }
 
 @monthMap =( 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
@@ -322,7 +380,7 @@ sub saveToFile {
 
 	if ($self->isBroken()) {
 		FAQ::OMatic::gripe('error',
-			"Tried to save a broken item to $filename.");
+			"Tried to save a broken item to ".(defined($filename)?$filename:"<undef-filename>")."<p>".FAQ::OMatic::stackTrace());
 	}
 
 	if ($dir eq $FAQ::OMatic::Config::itemDir
@@ -408,12 +466,31 @@ sub saveToFile {
 	#    of net-creeps.
 	# 2. Clear the search hint so we know to regenerate the search index
 	# 3. Rewrite the static cached HTML copy
+	# 
+	# We now ci and co in separate steps so that we can specify the '-ko'
+	# flag to co (which ci doesn't accept); the '-ko' flag keeps co
+	# from performing RCS keyword substitution on the item text. This
+	# is important in general to avoid modifying users' data,
+	# but crucial in the (dollar)Log(dollar)
+	# case, where the number of lines in an item file change, and
+	# the structure of the file is corrupted. (Oh, to use XML!)
+	#
+	# THANKS to others for pointing out the -k fix, and
+	# THANKS Somnath Mitra <somnath@cisco.com> for sending a patch
+	# upon which this fix is based.
 	if ($dir eq $FAQ::OMatic::Config::itemDir) {
 		## Tell RCS who we are
 		$ENV{"USER"} = $FAQ::OMatic::Config::RCSuser;
 	   	$ENV{"LOGNAME"} = $FAQ::OMatic::Config::RCSuser;
-		my $cmd = "$FAQ::OMatic::Config::RCSci $FAQ::OMatic::Config::RCSargs "
-				."$dir/$filename $FAQ::OMatic::Config::metaDir/RCS/$filename,v";
+		my $itemPath = "$dir/$filename";
+		my $rcsFilePath = $FAQ::OMatic::Config::metaDir
+			."/RCS/$filename,v";
+		my $cmd = "$FAQ::OMatic::Config::RCSci "
+			."$FAQ::OMatic::Config::RCSciArgs $itemPath $rcsFilePath "
+			."&& "	# && => only exit with success if both operations succeed
+			."$FAQ::OMatic::Config::RCSco "
+			."$FAQ::OMatic::Config::RCScoArgs $rcsFilePath $itemPath";
+		#FAQ::OMatic::gripe('debug', $cmd);
 		my @result = FAQ::OMatic::mySystem($cmd);
 		if (scalar(@result)) {
 			FAQ::OMatic::gripe('problem',
@@ -528,16 +605,19 @@ sub updateAllChildren {
 
 	my $filei;
 	foreach $filei ($self->getChildren()) {
+		FAQ::OMatic::gripe('debug', "Updating child $filei of ".$self->{'filename'});
 		my $itemi = new FAQ::OMatic::Item($filei);
-#		$itemi->writeCacheCopy();
-# jonh: only writing the cache copy isn't enough -- if $itemi's set of
-# siblings has changed, then its IDependOns have changed, too. Those
-# are stored in the item file itself.
-		$itemi->saveToFile('', '', 'noChange');
-			# The contents of the item itself haven't changed.
-			# The 'noChange' prevents us from updating the LastModifiedSecs
-			# property, so that this item doesn't show up in 'recent'
-			# searches even though it hasn't actually changed.
+		if (not $itemi->isBroken()) {
+	#		$itemi->writeCacheCopy();
+	# jonh: only writing the cache copy isn't enough -- if $itemi's set of
+	# siblings has changed, then its IDependOns have changed, too. Those
+	# are stored in the item file itself.
+			$itemi->saveToFile('', '', 'noChange');
+				# The contents of the item itself haven't changed.
+				# The 'noChange' prevents us from updating the LastModifiedSecs
+				# property, so that this item doesn't show up in 'recent'
+				# searches even though it hasn't actually changed.
+		}
 	}
 }
 
@@ -659,6 +739,11 @@ sub getTitle {
 sub isBroken {
 	my $self = shift;
 	return (not defined($self->{'Title'}));
+}
+
+sub isEmptyStub {
+	my $self = shift;
+	return $self->{'EmptyStub'} || '';
 }
 
 sub getParent {
@@ -858,9 +943,19 @@ sub displayCoreHTML {
 	if (FAQ::OMatic::getParam($params, 'showModerator') eq 'show') {
 		my $mod = FAQ::OMatic::Auth::getInheritedProperty($self, 'Moderator');
 		my $brt = '';
-		$brt .= gettext("Moderator").": ".FAQ::OMatic::mailtoReference($params, $mod);
-		$brt .= " <i>".gettext("(inherited from parent)")."</i>" if (not $self->{'Moderator'});
-		$brt .= "\n";
+
+		# highlight the "Moderator: ". 
+		# THANKS submitted by Akiko Takano <takano@iij.ad.jp>
+		if (FAQ::OMatic::getParam($params, 'render') ne 'text') {
+			$brt .= "<font color=$FAQ::OMatic::Config::highlightColor>";
+			$brt .= gettext("Moderator").": ".FAQ::OMatic::mailtoReference($params, $mod);
+			$brt .= " <i>"
+				.gettext("(inherited from parent)")."</i>" if (not $self->{'Moderator'});
+			$brt .= "</font>\n";
+		} else {
+			$brt .= "Moderator: ".FAQ::OMatic::mailtoReference($params, $mod);
+		}
+
 		push @rowboxes, { 'type'=>'wide', 'text'=>$brt,
 			'id'=>'showModerator' };
 	}
@@ -870,11 +965,37 @@ sub displayCoreHTML {
 
 	if (FAQ::OMatic::getParam($params, 'editCmds') ne 'hide') {
 		my $editrow = [];
+		my ($text_edit_title, $text_edit_perm, $text_move, $text_trash);
+		if ($self->isCategory())
+		{
+			$text_edit_title = gettext("Category Title and Options");
+			$text_edit_perm = gettext("Edit Category Permissions");
+			$text_move = gettext("Move Category");
+			$text_trash = gettext("Trash Category");
+		}
+		elsif ($self->isAnswer())
+		{
+			$text_edit_title = gettext("Answer Title and Options");
+			$text_edit_perm = gettext("Edit Answer Permissions");
+			$text_move = gettext("Move Answer");
+			$text_trash = gettext("Trash Answer");
+		}
+		else
+		{
+			# fixup for unexpected cases
+			my $s = gettext($whatAmI);
+			$text_edit_title = gettexta("%0 Title and Options", $s);
+			$text_edit_perm = gettexta("Edit %0 Permissions", $s);
+			$text_edit_perm = gettexta("Edit %0 Permissions", $s);
+			$text_move = gettexta("Move %0", $s);
+			$text_trash = gettexta("Trash %0", $s);
+		}
+
 		push @$editrow, {'text'=>FAQ::OMatic::button(
 			FAQ::OMatic::makeAref('-command'=>'editItem',
 					'-params'=>$params,
 					'-changedParams'=>{@fixfn}),
-			gettexta("%0 Title and Options", gettext($whatAmI)),
+			$text_edit_title,
 			"$aoc-title", $params),
 				'size'=>'edit'};
 			# TODO: just edit title. Options is only part order; need
@@ -884,7 +1005,7 @@ sub displayCoreHTML {
 			FAQ::OMatic::makeAref('-command'=>'editModOptions',
 					'-params'=>$params,
 					'-changedParams'=>{@fixfn}),
-			gettexta("Edit %0 Permissions", gettext($whatAmI)),
+			$text_edit_perm,
 			"$aoc-opts", $params),
 				'size'=>'edit'};
 
@@ -924,7 +1045,7 @@ sub displayCoreHTML {
 						FAQ::OMatic::makeAref('-command'=>'moveItem',
 							'-params'=>$params,
 							'-changedParams'=>{@fixfn}),
-						gettexta("Move %0", gettext($whatAmI))),
+						$text_move),
 							'size'=>'edit'};
 	
 				# Trash it (same rules as for moving)
@@ -933,7 +1054,7 @@ sub displayCoreHTML {
 							'-params'=>$params,
 							'-changedParams'=>{@fixfn,
 								'_newParent'=>'trash'}),
-						gettexta("Trash %0", gettext($whatAmI))),
+						$text_trash),
 							'size'=>'edit'};
 			}
 	
@@ -1135,6 +1256,8 @@ sub displayHTML {
 	# possible. (only signal this when recursing to save effort otherwise)
 	if ($params->{'recurse'} or $params->{'_recurse'}) {
 		$params->{'_recurseRoot'} = $self->{'filename'};
+		# A limit jonh puts on his machines:
+		# FAQ::OMatic::checkLoadAverage();
 	}
 
 	my $itemboxes = $self->displayCoreHTML($params);
@@ -1233,13 +1356,13 @@ sub nameForPerm {
 	my $perm = shift;
 
 	if ($perm =~ m/^6 (.*)$/) {
-		return gettexta('Group %0', "$1");
+		return gettexta("Group %0", "$1");
 	}
 
 	my %map = (
-		'3' => gettext('Users giving their names'),
-		'5' => gettext('Authenticated users'),
-		'7' => gettext('Moderator'),
+		'3' => gettext("Users giving their names"),
+		'5' => gettext("Authenticated users"),
+		'7' => gettext("Moderator"),
 	);
 
 	return $map{$perm};
@@ -1257,9 +1380,22 @@ sub displayItemEditor {
 	} elsif ($insertHint eq "answer") {
 		$rt .= gettext("New Answer")."\n";
 	} else {
-		$rt .= gettexta("Editing %0 <b>%1</b>",
-				gettext($self->whatAmI()), $self->getTitle())
-		    ."\n";
+		if ($self->isCategory())
+		{
+			$rt .= gettexta("Editing Category <b>%0</b>", $self->getTitle());
+		}
+		elsif ($self->isAnswer())
+		{
+			$rt = gettexta("Editing Answer <b>%0</b>", $self->getTitle());
+		}
+		else
+		{
+			# fixup for unexpected cases.
+			$rt .= gettexta("Editing %0 <b>%1</b>",
+							gettext($self->whatAmI()),
+							$self->getTitle());
+		}
+		$rt .= "\n";
 	}
 	$rt .= FAQ::OMatic::makeAref('-command'=>'submitItem',
 			'-params'=>$params,
@@ -1342,13 +1478,11 @@ sub permissionsInfo {
 	'03' => { 'name'=>'PermEditPart', 'desc'=>
 			gettext("Who can edit or remove existing text parts from this item:") },
 	'04' => { 'name'=>'PermEditDirectory', 'desc'=>
-			gettext("Who can move answers or subcategories from this category; "
-				."or turn this category into an answer or vice versa:") },
+			gettext("Who can move answers or subcategories from this category; or turn this category into an answer or vice versa:") },
 	'05' => { 'name'=>'PermEditTitle', 'desc'=>
 			gettext("Who can edit the title and options of this answer or category:") },
 	'06' => { 'name'=>'PermUseHTML', 'desc'=>
-			gettext("Who can use untranslated HTML when editing the text of "
-				."this answer or category:") },
+			gettext("Who can use untranslated HTML when editing the text of this answer or category:") },
 	'07' => { 'name'=>'PermModOptions', 'desc'=>
 			gettext("Who can change these moderator options and permissions:") },
 	'09' => { 'name'=>'PermNewBag', 'global'=>1, 'desc'=>
@@ -1373,9 +1507,21 @@ sub displayModOptionsEditor {
 	my $cgi = shift;
 	my $rt = ""; 	# return text
 
-	$rt .= gettext("Moderator options for")." "
-			.gettext($self->whatAmI())
-			." <b>".$self->getTitle()."</b>:\n"
+	if ($self->isCategory())
+	{
+		$rt .= gettext("Moderator options for category");
+	}
+	elsif ($self->isAnswer())
+	{
+		$rt .= gettext("Moderator options for answer");
+	}
+	else
+	{
+		# fixup for unexpected cases.
+		$rt .= gettext("Moderator options for")." "
+				.gettext($self->whatAmI());
+	}
+	$rt .= " <b>".$self->getTitle()."</b>:\n"
 			."<p>\n";
 
 	$rt .= FAQ::OMatic::makeAref('-command'=>'submitModOptions',
@@ -1417,7 +1563,7 @@ sub displayModOptionsEditor {
 			$self->{'MailModerator'});
 	$inherited =
 		$self->getInheritance($params, 'MailModerator', '<br>',
-			sub {(gettext('No'), gettext('Yes'))[shift()] || gettext('undefined')});
+			sub {(gettext("No"), gettext("Yes"))[shift()] || gettext("undefined")});
 	$rt .= "<td>$inherited</td>\n";
 	$rt .= "</tr>\n";
 
@@ -1444,16 +1590,21 @@ sub displayModOptionsEditor {
 	# RelaxChildPerms
 	$rt .= "<tr>"
 			."<td><b>"."RelaxChildPerms"."</b>"
-			."<br>".gettext("Blah blah")."</td>\n";
+			."<br>".gettext("Relax: New answers and subcategories will be moderated "
+				."by the creator of the item, allowing that person full "
+				."freedom to edit that new item.")
+			."<br>".gettext("Don't Relax: new items will be moderated by "
+			."the moderator of this item.")
+			."</td>\n";
 	$rt .= "<td>\n";
 	$rt .= popup('RelaxChildPerms',
 			['relax', 'norelax', ''],
-			[gettext('Relax'), gettext('Don\'t Relax'), gettext('Inherit')],
+			[gettext("Relax"), gettext("Don\'t Relax"), gettext("Inherit")],
 			$self->{'RelaxChildPerms'});
 	$inherited =
 		$self->getInheritance($params, 'RelaxChildPerms', '<br>',
-			sub {{'relax'=>gettext('Relax'), 'norelax'=>gettext('Don\'t Relax')}->{shift()}
-				|| gettext('undefined')});
+			sub {{'relax'=>gettext("Relax"), 'norelax'=>gettext("Don\'t Relax")}->{shift()}
+				|| gettext("undefined")});
 	$rt .= "<td>$inherited</td>\n";
 	$rt .= "</tr>\n";
 
@@ -1561,6 +1712,8 @@ sub makeDirectory {
 sub addSubItem {
 	my $self = shift;
 	my $subfilename = shift;
+	my $deferUpdate = shift || '';
+
 	my $dirPart;
 
 	my $subitem = new FAQ::OMatic::Item($subfilename);
@@ -1573,7 +1726,9 @@ sub addSubItem {
 	# all the children in the list may now have different siblings,
 	# which means we need to recompute their dependencies and
 	# regenerate their cached html.
-	$self->updateAllChildren();
+	if (!$deferUpdate) {
+		$self->updateAllChildren();
+	}
 
 	$self->incrementSequence();
 }
@@ -1582,6 +1737,7 @@ sub removeSubItem {
 	my $self = shift;
 	my $subfilename = shift; # if omitted, this just removes an empty
 							 # directory part.
+	my $deferUpdate = shift || '';
 
 	my $dirPart = $self->getDirPart();
 	if (not defined $dirPart) {
@@ -1595,7 +1751,9 @@ sub removeSubItem {
 		# all the children in the list may now have different siblings,
 		# which means we need to recompute their dependencies and
 		# regenerate their cached html.
-		$self->updateAllChildren();
+		if (!$deferUpdate) {
+			$self->updateAllChildren();
+		}
 	}
 
 # I'm not sure why I thought automatically converting categories to answers
@@ -1699,7 +1857,11 @@ sub displaySearchContext {
 
 	$text = ' '.$text;	# ensure we match at beginning of text (because of \s)
 
-	@pieces = split(/$wordmatch/gis, $text);	# break into pieces
+	@pieces = split(/$wordmatch/is, $text);	# break into pieces
+		# THANKS to John Goerzen <jgoerzen@complete.org>
+		# and THANKS to Colin Watson <cjwatson@debian.org>
+		# for reporting the fix on the previous line for a Perl 5.8 warning
+		# that turns into an error.
 	# save only the defined parts, so it alternates between match and nonmatch
 	foreach $i (@pieces) {
 		if (defined $i) {
@@ -1790,7 +1952,11 @@ sub notifyModerator {
 	$moderator = FAQ::OMatic::validEmail($moderator);
 	if (defined($moderator)) {
 		# send the mail to the moderator
-		FAQ::OMatic::sendEmail($moderator, "Faq-O-Matic Moderator Mail", $msg);
+		# pageHeader is added to tell which FAQ has sent the mail.  
+		# THANKS suggested by Akiko Takano <takano@iij.ad.jp>
+		FAQ::OMatic::sendEmail($moderator, 
+			"[" . FAQ::OMatic::fomTitle() . "] Faq-O-Matic Moderator Mail",
+			$msg);
 	} else {
 		FAQ::OMatic::gripe('problem',
 			"Moderator address is suspect ($moderator)");
@@ -1822,15 +1988,26 @@ sub isCategory {
 	return (defined $self->{'directoryHint'}) ? 1 : 0;
 }
 
+# added for convenient reasons
+sub isAnswer {
+	my $self = shift;
+	return !($self->isCategory());
+}
+
 sub whatAmI {
 	# do not translate here; translate just before output.
 	# (There is code that tests for string equality based on the
 	# output of this function. Maybe that's stupid.)
 	my $self = shift;
 
-	return ($self->isCategory())
-			? "Category"
-			: "Answer";
+	return gettext_noop("Category")	if ($self->isCategory());
+	return gettext_noop("Answer")	if ($self->isAnswer());
+
+	# unreachable
+	gripe('problem',
+		  'Internal error #20010805-1843: unreachable code is reached',
+		  1);
+	return "(Unexpected item type)";
 }
 
 sub updateDirectoryHint {
@@ -1894,16 +2071,14 @@ sub checkSequence {
 			),
 			gettext("Return to the FAQ"));
 		FAQ::OMatic::gripe('error',
-			gettext("Either someone has changed the answer or category you were "
-			       ."editing since you received the editing form, or you submitted "
-			       ."the same form twice")
+			gettext("Either someone has changed the answer or category you were editing since you received the editing form, or you submitted the same form twice.")
 			."\n<p>"
-			.gettexta("Please %0 and start again "
-				 ."to make sure no changes are lost. "
-				 ."Sorry for the inconvenience.", $button)
+			.gettexta("Please %0 and start again to make sure no changes are lost. Sorry for the inconvenience.",
+					  $button)
 			."<p>"
 			.gettexta("(Sequence number in form: %0; in item: %1)",
-				  $checkSequenceNumber, $self->{'SequenceNumber'})
+				  $checkSequenceNumber, $self->{'SequenceNumber'}),
+				{'noentify'=>1}
 			);
 	}
 }

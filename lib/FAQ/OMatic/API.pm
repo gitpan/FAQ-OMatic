@@ -26,6 +26,7 @@
 ##############################################################################
 
 use strict;
+use locale;
 
 ###
 ### The FAQ::OMatic::API provides ways to programmatically modify
@@ -77,13 +78,14 @@ sub new {
 
 	my $api = {};
 	$api->{'auth'} = [];
+	$api->{'cacheTimeout'} = 24*60*60;
 	bless $api;
 
-	if (scalar($@)>=1) {
+	if (scalar(@_)>=1) {
 		$api->setURL(shift(@_));
 	}
 
-	if (scalar($@)>=2) {
+	if (scalar(@_)>=2) {
 		$api->setAuth(shift(@_), shift(@_));
 	}
 
@@ -127,6 +129,18 @@ sub setAuth {
 	}
 }
 
+# THANKS to Dirk Husemann <hud@zurich.ibm.com> for this feature diff.
+sub setCachePath {
+    my $self = shift;
+    my $cachePath = shift;
+
+    $self->{'cachePath'} = $cachePath;
+}
+
+sub setCacheTimeout {
+    my $self = shift;
+    $self->{'cacheTimeout'} = shift || 24*60*60;
+}
 =back
 
 =head1 Queries
@@ -237,21 +251,21 @@ sub fuzzyMatch {
 	for (my $depth = 0; $depth<@rpath; $depth++) {
 		# look for match at leaf node; disambiguate by rising up tree
 		my $matchname = $rpath[$depth];
-		$matchname =~ tr/A-Z/a-z/;			# lowercase
-		$matchname =~ s/[^A-Za-z0-9]//g;	# only alphanumerics
+		$matchname = lc($matchname);		# lowercase
+		$matchname =~ s/\W//g;				# only alphanumerics + '_'
 		# try for an exact match
 		my @matchcats = grep {
 				my $catname = $_->[2];
-				$catname =~ tr/A-Z/a-z/;		# lowercase
-				$catname =~ s/[^A-Za-z0-9]//g;	# only alphanumerics
+				$catname = lc($catname);	# lowercase
+				$catname =~ s/\W//g;		# only alphanumerics + '_'
 				$catname =~ m/^$matchname$/;	# check for exact match
 			} @{$cats};
 		if (@matchcats == 0) {
 			# fall back to fuzzier match (allow any prefix, suffix)
 			@matchcats = grep {
 					my $catname = $_->[2];
-					$catname =~ tr/A-Z/a-z/;		# lowercase
-					$catname =~ s/[^A-Za-z0-9]//g;	# only alphanumerics
+					$catname = lc($catname);	# lowercase
+					$catname =~ s/\W//g;		# only alphanumerics + '_'
 					$catname =~ m/$matchname/;		# check for inclusion
 				} @{$cats};
 		}
@@ -385,10 +399,10 @@ sub getMirrorList {
 	}
 	
 	# attempt to get a local copy from disk
-	my $mirrorFilename = ".fomapi-mirrorCached";
+	my $mirrorFilename = $self->{'cachePath'} . "/.fomapi-mirrorCached";
 	my $cachetime = -M $mirrorFilename;
 	if (not defined $cachetime
-		or $cachetime > 24*60*60) {
+		or $cachetime > $self->{'cacheTimeout'}) {
 		# cache not there or too old to be useful. Go to server to get info.
 		my ($rc, $msg) = $self->transaction(['cmd'=>'mirrorServer'], 'raw');
 		return ($rc, $msg) if (not $rc);
@@ -449,10 +463,10 @@ sub catnames {
 	if ($self->{'force'}
 		or not defined $self->{'catsCached'}) {
 
-		my $catFilename = ".fomapi-catCached";
+		my $catFilename = $self->{'cachePath'} . "/.fomapi-catCached";
 		my $cachetime = -M $catFilename;
 		if (not defined $cachetime
-			or $cachetime > 24*60*60) {
+			or $cachetime > $self->{'cacheTimeout'}) {
 			my @catlist = ();
 			$self->getMirrorList();
 			foreach my $cat ($self->getCategories()) {

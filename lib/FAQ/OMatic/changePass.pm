@@ -55,12 +55,19 @@ sub main {
 			{'badPass'=>'',		# the gedID() call above may (will) set this
 			'_fromChangePass'=>1}, 'POST', 'saveTransients');
 
-	my $idDefault = '';
 	if ($params->{'_admin'}) {
-		$idDefault = $FAQ::OMatic::Config::adminAuth;
+		# don't let admin change his/her username at this point,
+		# since it's welded into the config file. If they do, they'll
+		# get confused as to why they can't continue the installation.
+		# (I think I had this happen once to an admin, but I didn't
+		# recognize the problem at the time.)
+		my $idDefault = $FAQ::OMatic::Config::adminAuth;
+		$rt.="Email: <tt>$idDefault</tt>\n"
+			."<input type=hidden name=\"_id\" value=\"$idDefault\">\n";
+	} else {
+		$rt.="Email: "
+			."<input type=text name=\"_id\" size=60>\n";
 	}
-	$rt.="Email: "
-		."<input type=text name=\"_id\" value=\"$idDefault\" size=60>\n";
 	$rt.= "<br>".gettext("Password:")." "
 		."<input type=password name=\"_pass\" value=\"\" size=10>\n";
 	$rt.= "<p><input type=submit name=\"_submit\" value=\"".gettext("Set Password")."\">\n";

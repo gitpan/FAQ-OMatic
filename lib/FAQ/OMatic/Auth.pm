@@ -268,9 +268,13 @@ sub newCookie {
 
 	$cookie = "ck".getRandomHex();
 
-	open COOKIEFILE, ">>$FAQ::OMatic::Config::metaDir/cookies";
+	my $cookiesFile = "$FAQ::OMatic::Config::metaDir/cookies";
+	open COOKIEFILE, ">>$cookiesFile";
 	print COOKIEFILE "$cookie $id ".time()."\n";
 	close COOKIEFILE;
+	if (not chmod(0600, "$cookiesFile")) {
+		FAQ::OMatic::gripe('problem', "chmod failed on $cookiesFile");
+	}
 
 	return $cookie;
 }
@@ -288,7 +292,7 @@ sub findCookie {
 	if (not open COOKIEFILE, "<$FAQ::OMatic::Config::metaDir/cookies") {
 		return undef;
 	}
-	while (<COOKIEFILE>) {
+	while (defined($_=<COOKIEFILE>)) {
 		chomp;
 		($cookie,$cid,$ctime) = split(' ');
 
@@ -333,7 +337,7 @@ sub writeIDfile {
 	# read id mappings in
 	my %idmap;
 	my ($idf,$passf,@restf);
-	while (<IDFILE>) {
+	while (defined($_=<IDFILE>)) {
 		chomp;
 		($idf,$passf,@restf) = split(' ');
 		$idmap{$idf} = $_;
@@ -389,7 +393,7 @@ sub readIDfile {
 	}
 
 	my ($idf,$passf,@restf);
-	while (<IDFILE>) {
+	while (defined($_=<IDFILE>)) {
 		chomp;
 		($idf,$passf,@restf) = split(' ');
 		last if ($idf eq $id);
@@ -450,6 +454,12 @@ sub authenticate {
 		} else {
 			# let authenticate know to report the bad password
 			$params->{'badPass'} = 1;
+			# remove the password from the parameters, since
+			# we don't want it ending up in a later GET request
+			# (and then in server logs). (It got here by a POST
+			# from the password form.)
+			$params->{'_pass_id'} = '';
+			$params->{'_pass_pass'} = '';
 			# fall through to inherit some crummier Authentication Quality
 		}
 	}

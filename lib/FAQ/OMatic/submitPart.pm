@@ -31,6 +31,7 @@ package FAQ::OMatic::submitPart;
 
 use CGI;
 use FAQ::OMatic::Item;
+use FAQ::OMatic::I18N;
 use FAQ::OMatic;
 use FAQ::OMatic::Auth;
 
@@ -85,14 +86,14 @@ sub main {
 	}
 
 	# verify that an evil cache hasn't truncated a POST
-	if (($params->{'_zzverify'} ne 'zz')
+	if ((($params->{'_zzverify'}||'') ne 'zz')
 		and (not $params->{'s_textInFile'})) {
 		FAQ::OMatic::gripe('error',
 			"Your browser or WWW cache has truncated your POST.");
 	}
 
 	# select source of data: file or textarea
-	if ($params->{'_inputType'} eq 'file') {
+	if (($params->{'_inputType'}||'') eq 'file') {
 		# THANKS: John Nolan's fix applies here, too.
 		my $formFileHandle = $cgi->param('_newTextFile');
 		$params->{'_newText'} = '';		# scrap <textarea> text and load file

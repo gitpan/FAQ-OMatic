@@ -33,6 +33,7 @@ use CGI;
 use FAQ::OMatic::Item;
 use FAQ::OMatic;
 use FAQ::OMatic::SearchMod;
+use FAQ::OMatic::I18N;
 
 sub main {
 	my $cgi = FAQ::OMatic::dispatch::cgi();
@@ -54,21 +55,15 @@ sub main {
 	}
 
 	# reasonable text for 'n' days
-	my %dayMap = (
-		0 => 'zero days',
-		1 => 'day',
-		2 => 'two days',
-		7 => 'week',
-		14 => 'fortnight',
-		31 => 'month' ); # (31? a month, give or take. :v)
-	my $englishDays = $dayMap{$params->{'_duration'}} ||
-			$params->{'_duration'}." days";
+	my $textDays = FAQ::OMatic::SearchMod::textDays($params->{'_duration'});
 	
 	my $rt = FAQ::OMatic::pageHeader($params);
 	if (scalar(@{$matchset})==0) {
-		$rt.="No items were modified in the last $englishDays.\n<br>\n";
+		$rt.=gettexta("No items were modified in the last %0.", $textDays)
+			."\n<br>\n";
 	} else {
-		$rt.="Items modified in the last $englishDays:\n<p>\n";
+		$rt.=gettexta("Items modified in the last %0:", $textDays)
+			."\n<p>\n";
 
 		my $item;
 		my $itemboxes = [];

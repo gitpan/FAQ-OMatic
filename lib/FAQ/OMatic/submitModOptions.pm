@@ -31,6 +31,7 @@ package FAQ::OMatic::submitModOptions;
 
 use CGI;
 use FAQ::OMatic::Item;
+use FAQ::OMatic::I18N;
 use FAQ::OMatic;
 use FAQ::OMatic::Auth;
 

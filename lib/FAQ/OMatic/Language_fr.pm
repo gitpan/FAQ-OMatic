@@ -158,7 +158,7 @@ msgstr "Cliquez ici</a> pour créer %0."
 msgid "If you want to change the CGI stub to point to another directory, edit the script and then"
 msgstr "Si vous souhaitez transformer le CGI d'une section pour qu'il pointe vers un autre répertoire, éditez le script et ensuite"
 
-msgud "click here to use the new location"
+msgid "click here to use the new location"
 msgstr "Cliquez ici, pour utiliser la nouvelle localisation"
 
 msgid "FAQ-O-Matic stores files in two main directories.<p>The <b>meta/</b> directory path is encoded in your CGI stub ($0). It contains:"
@@ -285,7 +285,7 @@ msgid "Examine all bags"
 msgstr "Examiner tous les fichiers objets"
 
 msgid "Check for unreferenced bags (not linked by any FAQ item)"
-msgstr "Vérification des fichiers objets non référencés (qui ne sont liés à aucun élément de FAQ)" 
+msgstr "Vérification des fichiers objets non référencés (qui ne sont liés à aucun élément de FAQ)"
 
 msgid "Rebuild the cache and dependency files"
 msgstr "Reconstruire le cache et les fichiers de dépendance"
@@ -330,7 +330,7 @@ msgid "Identity of local FAQ-O-Matic administrator (an email address)"
 msgstr "Identité de l'administrateur de la FAQ-O-Matic (adresse mèl)"
 
 msgid "A command FAQ-O-Matic can use to send mail. It must either be sendmail, or it must understand the -s (Subject) switch."
-msgstr "Une commande que FAQ-O-Matic peut utiliser pour envoyer du mèl. Il doit être sendmail ou soutenir l'option -s (Sujet)." 
+msgstr "Une commande que FAQ-O-Matic peut utiliser pour envoyer du mèl. Il doit être sendmail ou soutenir l'option -s (Sujet)."
 
 msgid "The command FAQ-O-Matic can use to install a cron job."
 msgstr "La commande que FAQ-O-Matic peut iutiliser pour installer un cron job."
@@ -347,8 +347,8 @@ msgstr "Protocol, ordinateur et port de l'URL de votre site. Cela est utilitsé p
 msgid "The path part of the URL used to access this CGI script, beginning with '/' and omitting any parameters after the '?'. For example: <tt>/cgi-bin/cgiwrap/jonh/faq.pl</tt>"
 msgstr "Le part des répertoires de l'URL pour atteindre à votre script CGI, commençant avec '/', mais sans '?' et des arguments derrières. Exemple: <tt>/cgi-bin/cgiwrap/jonh/faq.pl</tt>"
 
-msgid "Filesystem directory where FAQ-O-Matic will keep item files, image and other bit-bag files, and a cache of generated HTML files. This directory must be accesible directly via the http server. It might be something like /home/faqomatic/public_html/fom-serve/"
-msgstr "Répertoire du fichier système dans lequel FAQ-O-Matic garde les éléments, images et fichiers objets, ainsi que le cache des fichiers HTML générés. Ce répertoire doit être accessible par le serveur http. Cela peut être quelque chose comme : /home/faqomatic/public_html/fom-serve/" 
+msgid "Filesystem directory where FAQ-O-Matic will keep item files, image and other bit-bag files, and a cache of generated HTML files. This directory must be accessible directly via the http server. It might be something like /home/faqomatic/public_html/fom-serve/"
+msgstr "Répertoire du fichier système dans lequel FAQ-O-Matic garde les éléments, images et fichiers objets, ainsi que le cache des fichiers HTML générés. Ce répertoire doit être accessible par le serveur http. Cela peut être quelque chose comme : /home/faqomatic/public_html/fom-serve/"
 
 msgid "The path prefix of the URL needed to access files in <b>$serveDir</b>. It should be relative to the root of the server (omit http://hostname:port, but include a leading '/'). It should also end with a '/'."
 msgstr "Le préfixe de l'URL necessaire pour accéder des fichiers dans <b>$serveDir</b>. Il doit être relatif a la racine principale du serveur (sans http://hostname:port, mais avec '/' au début et a la fin)."
@@ -372,7 +372,7 @@ msgid "A search hit"
 msgstr "Un résultat de recherche"
 
 msgid "A directory part should stand out"
-msgstr "Une section de répertoire doit apparaître" 
+msgstr "Une section de répertoire doit apparaître"
 
 msgid "Regular text"
 msgstr "Texte normal"
@@ -408,7 +408,7 @@ msgid "If this field begins with <tt>file=</tt>, the text will come from the nam
 msgstr "Si ce paramètre commence avec <tt>file=</tt>, le texte est lit du fichier nommé dans le repértoire meta; en d'autres temps, le texte es pris verbatim."
 
 msgid "The <tt>width=</tt> tag in a table. If your <b>$pageHeader</b> has <tt>align=left</tt>, you will want to make this empty."
-msgstr "Le <tt>width=</tt> tag dans un tableau. Si votre <b>$pageHeader</b> contient <tt>align=left</tt>, ce champs doit être vide." 
+msgstr "Le <tt>width=</tt> tag dans un tableau. Si votre <b>$pageHeader</b> contient <tt>align=left</tt>, ce champs doit être vide."
 
 msgid "An HTML fragment appended to the bottom of each page. You might use this to identify the webmaster for this site."
 msgstr "Un fragment d'HTML inséré en bas de chaque page. Vous pouvez utilisez celui-ci pour présenter le webmestre du site."
@@ -420,7 +420,7 @@ msgid "If true, FAQ-O-Matic will mail the log file to the administrator whenever
 msgstr "Si mis, FAQ-O-Matic envoie le fichier log par mèl à l'administrateur."
 
 msgid "User to use for RCS ci command (default is process UID)"
-msgstr "Utilisateur qui exécute la commande ci (par défaut l'UID du process)" 
+msgstr "Utilisateur qui exécute la commande ci (par défaut l'UID du process)"
 
 msgid "Links from cache to CGI are relative to the server root, rather than absolute URLs including hostname:"
 msgstr "Des liens du cache vers le CGI sont relatif à la racine principale du serveur, au lieu d'être des URLs absolues utilisant le nom de la machine (hostname):"
@@ -450,10 +450,10 @@ msgid "attributions"
 msgstr "Montrer les auteurs"
 
 msgid "commands for generating text output"
-msgstr "commandes pour créer le texte en sortie" 
+msgstr "commandes pour créer le texte en sortie"
 
 msgid "<i>Optional:</i> These options fine-tune the appearance of editing features."
-msgstr "<i>Optionnel:</i> Ces options définissent l'apparence des outils d'édition." 
+msgstr "<i>Optionnel:</i> Ces options définissent l'apparence des outils d'édition."
 
 msgid "The old [Show Edit Commands] button appears in the navigation bar."
 msgstr "L'ancien bouton [Montrer les commandes d'édition] apparaîtra dans la barre de navigation."
@@ -462,7 +462,7 @@ msgid "Navigation links appear at top of page as well as at the bottom."
 msgstr "Les liens de navigation apparaîtront en haut et en bas de la page."
 
 msgid "Hide [Append to This Answer] and [New Answer in ...] buttons."
-msgstr "Cacher les boutons [Contribuer à cette Entrée] et [Nouvelle Entrée dans ...]." 
+msgstr "Cacher les boutons [Contribuer à cette Entrée] et [Nouvelle Entrée dans ...]."
 
 msgid "icons-and-label"
 msgstr "Icônes et titres"
@@ -480,13 +480,13 @@ msgid "Hide sibling (Previous, Next) links"
 msgstr "Cacher les liens de navigation (Précédent, Suivant)"
 
 msgid "Arguments to make ci quietly log changes (default is probably fine)"
-msgstr "Arguments pour réliser avec ci les modifications de log (le choix par défaut est le mieux)" 
+msgstr "Arguments pour réliser avec ci les modifications de log (le choix par défaut est le mieux)"
 
 msgid "off"
 msgstr "désactivié"
 
 msgid "true"
-msgstr "activé" 
+msgstr "activé"
 
 msgid "cheesy"
 msgstr "chessy"
@@ -513,10 +513,10 @@ msgid "Attempting to install cron job:"
 msgstr "Essayant d' installer le cron job:"
 
 msgid "Cron job installed. The maintenance script should run hourly."
-msgstr "Le cron job est installé. La maintenance s'effectue automatiquement toutes les heures." 
+msgstr "Le cron job est installé. La maintenance s'effectue automatiquement toutes les heures."
 
 msgid "I thought I installed a new cron job, but it didn't appear to take."
-msgstr "Le nouveau cron job sera installé, mais ne sera pas apparaît prendre." 
+msgstr "Le nouveau cron job sera installé, mais ne sera pas apparaît prendre."
 
 msgid "You better add %0 to some crontab yourself with <b><tt>crontab -e</tt></b>."
 msgstr "Vous devriez ajouter %0 pour une crontab avec <b><tt>crontab -e</tt></b>."
@@ -544,7 +544,7 @@ msgid "Bag name:"
 msgstr "Nom de l'objet"
 
 msgid "The bag name is used as a filename, so it is restricted to only contain letters, numbers, underscores (_), hyphens (-), and periods (.). It should also carry a meaningful extension (such as .gif) so that web browsers will know what to do with the data."
-msgstr "Le nom de l'objet est utilisé comme un nom de fichier, ainsi il ne doit contenir que des lettres, des nombres, des underscores (_), des moins (-), et des points (.). Il faut aussi utiliser avec attention les extensions (comme .gif) pour que les navigateurs web puissent savoir que faire des données." 
+msgstr "Le nom de l'objet est utilisé comme un nom de fichier, ainsi il ne doit contenir que des lettres, des nombres, des underscores (_), des moins (-), et des points (.). Il faut aussi utiliser avec attention les extensions (comme .gif) pour que les navigateurs web puissent savoir que faire des données."
 
 msgid "Bag data:"
 msgstr "Objet donné : "
@@ -1003,7 +1003,7 @@ msgid "Who can change these moderator options and permissions:"
 msgstr "Qui peut modifier les options et permissions du modérateurs:"
 
 msgid "Who can use the group membership pages:"
-msgstr "Qui peut utiliser les pages d'appartenance des groupes:" 
+msgstr "Qui peut utiliser les pages d'appartenance des groupes:"
 
 msgid "Who can create new bags:"
 msgstr "Qui peut créer de nouveaux fichiers objets:"
@@ -1143,7 +1143,7 @@ msgid "Help"
 msgstr "Aide"
 
 msgid "Log In"
-msgstr "Se loguer" 
+msgstr "Se loguer"
 
 msgid "Change Password"
 msgstr "Changer de mot de passe"
@@ -1232,7 +1232,7 @@ __EOF__
 		$txs[$i+1] =~ m/msgstr \"(.*)\"$/;
 		my $to = $1;
 		if (not defined $from or not defined $to) {
-			die "bad translation at pair $i";
+			die "bad translation for ".$txs[$i]." at pair $i";
 		}
 		$tx->{$from} = $to;
 	}

@@ -33,6 +33,7 @@ use CGI;
 use FAQ::OMatic::Item;
 use FAQ::OMatic;
 use FAQ::OMatic::Log;
+use FAQ::OMatic::I18N;
 
 sub main {
 	my $cgi = FAQ::OMatic::dispatch::cgi();
@@ -65,22 +66,25 @@ sub main {
 
 	# The list of properties and corresponding titles
 	my @props = ('Hits', 'CumHits');
-	my @titles = ('Hits Per Day', 'Cumulative Hits');
+	my @titles = (gettext("Hits Per Day"),
+				  gettext("Cumulative Hits"));
 
 	if ($FAQ::OMatic::Config::statUniqueHosts) {
 		push @props, ('UniqueHosts', 'CumUniqueHosts');
-		push @titles, ('New Hosts Per Day', 'Total Hosts');
+		push @titles, (gettext("New Hosts Per Day"),
+					   gettext("Total Hosts"));
 	}
 
 	push @props, ('HitsPerHost', 'CumOperation-search');
-	push @titles, ('Hits Per Host', 'Cumulative Searches');
+	push @titles, (gettext("Hits Per Host"),
+				   gettext("Cumulative Searches"));
 
 	push @props, ('Operation-submitPart',	'CumOperation-submitPart');
-	push @titles, ('Submissions Per Day', 'Cumulative Submissions');
+	push @titles, (gettext("Submissions Per Day"),
+				   gettext("Cumulative Submissions"));
 
 	$rt.= FAQ::OMatic::pageHeader($params);
-	$rt.= "Please be patient ... the image files are generated dynamically, "
-		."and can take from 20 to 50 seconds to create.\n";
+	$rt.= gettext("Please be patient ... the image files are generated dynamically, and can take from 20 to 50 seconds to create.\n");
 	$rt.="<table>" if (!$simpleHTML);
 	
 	my $i;
@@ -125,18 +129,21 @@ sub main {
 	$rt.="</table>" if (!$simpleHTML);
 
 	$rt.=FAQ::OMatic::button(FAQ::OMatic::makeAref('faq',
-		{'duration'=>'','resolution'=>'','today'=>''}), "Return to the FAQ");
+		{'duration'=>'','resolution'=>'','today'=>''}),
+							 gettext("Return to the FAQ"));
 
 	# let the user change the view
-	$rt.="  Change View Duration: ";
+	$rt.=" "
+		. gettext("Change View Duration")
+		. ": ";
 	$rt.=FAQ::OMatic::button(FAQ::OMatic::makeAref('stats',
-		{'duration'=>'30'}), "One Month");
+		{'duration'=>'30'}), gettext("One Month"));
 	$rt.=FAQ::OMatic::button(FAQ::OMatic::makeAref('stats',
-		{'duration'=>'60'}), "Two Months");
+		{'duration'=>'60'}), gettext("Two Months"));
 	$rt.=FAQ::OMatic::button(FAQ::OMatic::makeAref('stats',
-		{'duration'=>'90'}), "Three Months");
+		{'duration'=>'90'}), gettext("Three Months"));
 	$rt.=FAQ::OMatic::button(FAQ::OMatic::makeAref('stats',
-		{'duration'=>'history'}), "History");
+		{'duration'=>'history'}), gettext("History"));
 
 	$rt .= FAQ::OMatic::pageFooter($params);
 	print $rt;

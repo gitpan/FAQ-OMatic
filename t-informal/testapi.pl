@@ -8,7 +8,7 @@ use FAQ::OMatic::API;
 
 my $fom = new FAQ::OMatic::API();
 #$fom->{'debug'} = 1;
-$fom->setURL('http://sitka/cgi-perl/fom.pl');
+$fom->setURL('http://localhost/~jonh/cgi-bin/fom-test.cgi');
 #$fom->setAuth('test-login@test.dartmouth.edu', 'testpass');
 $fom->setAuth('query');
 

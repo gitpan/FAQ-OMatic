@@ -40,7 +40,7 @@ sub MY::top_targets {
    $string .= <<'EOF';
 
 update_readme:
-	lwp-request 'http://faqomatic.sourceforge.net/cgi-bin/fom?file=1026&render=text' > README
+	lwp-request 'http://www.jonh.net/cgi-bin/faqomatic/fom?file=1026&render=text' > README
 
 EOF
 

@@ -73,10 +73,27 @@ sub main {
 			$item->{'AttributionsTogether'});
 	}
 	$newitem->setProperty("Parent", $item->{'filename'});
-		# tell the new kid who his parent is.
+			# tell the new kid who his parent is.
 	$newitem->setProperty('Moderator', '');
 		# regardless of what the parent did, we inherit moderator
 		# from parent rather than setting it explicitly.
+			
+		# THANKS to <dgatwood@mklinux.org> for the following patch:
+		# BZZT.  That sucks.  Set it explicitly if relax is set.     
+	if ($item->getProperty('RelaxChildPerms') eq 'relax') {
+		my ($id,$aq) = FAQ::OMatic::Auth::getID();
+		if ($id) { 
+			$newitem->setProperty('Moderator', $id);
+		} else {
+			print FAQ::OMatic::header($cgi, '-type'=>'text/plain');
+			FAQ::OMatic::gripe('error',
+				"You must be logged in to add to a category if "
+				."RelaxChildPerms is set to relax.\n"
+				."You should not ever see this message.  "
+				."Contact your site administrator.\n");
+			FAQ::OMatic::myExit(0);
+		}
+	}
 
 	# if user was asking for a category, add a directory just to
 	# make him feel better

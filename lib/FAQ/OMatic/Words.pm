@@ -26,6 +26,7 @@
 ##############################################################################
 
 use strict;
+use locale;
 
 ### Words.pm
 ###
@@ -63,13 +64,7 @@ sub cannonical {
     #   timer's to timers
     #   e-mail  to email
     $string =~ s/[()'-]//g;
-    $string =~ tr/A-Z/a-z/;  # 7-bit ASCII
-
-#    # for ISO-8859-1 char set, add
-#    $string =~ tr/\300-\326/\340-\366/; # from &Agrave; through &Ouml;
-#					# into &agrave; through &ouml;
-#    $string =~ tr/\330-\336/\370-\376/; # from &Oslash; through &THORN;
-#					# into &oslash; through &thorn;
+    $string  = lc($string);		# convert to lower case
 
     $string;
 }
@@ -82,9 +77,7 @@ sub getWords {
 	
 	$string = cannonical( $string );
 
-	my $wordPattern = '[A-Za-z0-9\-]';
-	# for ISO-8859-1 char set, try
-	#my $wordPattern = '[A-Za-z0-9\-\300-\326\330-\366\370-\377]';
+	my $wordPattern = '[\w-]';	# alphanumeric + '_' + '-'
 
 	#my @words = ($string =~ m/($wordPattern+)/gso);
 	# /gso seems to break in some circumstances. :v(

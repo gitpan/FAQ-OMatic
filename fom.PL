@@ -25,6 +25,18 @@ open THECGI, ">fom" or die "Writing \"fom\": $!";
 print THECGI "#!$perl -wT\n";
 print THECGI "use lib '.';			# for suid installations\n";
 print THECGI "use lib '$inc';\n";
+
+print THECGI <<'EOF';
+
+## Uncomment following two lines (and replace second argument for
+## setlocale()) if you want to use some locale, different from default.
+
+# use POSIX qw(locale_h);
+# POSIX::setlocale(LC_ALL, 'uk_UA.KOI8-U');
+
+use locale;
+EOF
+
 print THECGI "\$ENV{'PATH'} = '';	# for suid installations\n";
 print THECGI "\$temporaryCryptedPassword = 7;  # avoid bogus warning\n";
 print THECGI "\$temporaryCryptedPassword = '$cryptpass';\n";

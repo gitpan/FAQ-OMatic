@@ -35,6 +35,7 @@ use strict;
 package FAQ::OMatic::SearchMod;
 
 use FAQ::OMatic::Item;
+use FAQ::OMatic::I18N;
 use FAQ::OMatic::Words;
 use FAQ::OMatic;
 
@@ -85,7 +86,10 @@ sub scanOffsets {
 	my $word = shift;
 	seek (OFFSETFILE, 0, 0);
 	my $line;
-	while ($line = <OFFSETFILE>) {
+	# THANKS to Gary.Frost@ubsw.com for reporting the "Value of
+	# <HANDLE> construct can be "0"" error that occurs on his version
+	# of perl; fixed here and elsewhere.
+	while (defined($line = <OFFSETFILE>)) {
 		chomp $line;
 		my ($fileWord, $pair) = split(' ', $line, 2);
 		if ($fileWord eq $word) {
@@ -126,7 +130,7 @@ sub getWordClass {
 	if (defined $indexseek) {
 		#grab all words in wordsfile with $word as a prefix
 		seek WORDSFILE, $wordseek, 0;
-		while (<WORDSFILE>) {
+		while (defined($_ = <WORDSFILE>)) {
 			chomp;
 			if (m/^$word/) {
 				push @wordclass, $_;
@@ -148,7 +152,7 @@ sub getMatchesForClass {
 		my ($indexseek,$wordseek) = getIndices($word);
 		next if (not defined $indexseek);
 		seek INDEXFILE, $indexseek, 0;
-		while (<INDEXFILE>) {
+		while (defined($_ = <INDEXFILE>)) {
 			chomp;
 			last if (m/^END$/);
 			$files{$_}=1;
@@ -270,13 +274,40 @@ sub getRecentSet {
 		next if (-M "$FAQ::OMatic::Config::itemDir/$filei" >= $durationdays);
 		# ...but only trust LastModifiedSecs field for final say on mod time.
 		my $item = new FAQ::OMatic::Item($filei);
-		my $lm = $item->{'LastModifiedSecs'};
+		my $lm = $item->{'LastModifiedSecs'} || 0;
 		if ($lm > $then) {
 			push @{$recentList}, $filei;
 		}
 	}
 
 	return $recentList;
+}
+
+# reasonable text for 'n' days
+my %dayMap = (
+	0 => 'zero days',
+	1 => 'day',
+	2 => 'two days',
+	7 => 'week',
+	14 => 'fortnight',
+	31 => 'month', # (31? a month, give or take. :v)
+	92 => 'three months',
+	184 => 'six months',
+	366 => 'year'
+);
+
+sub getRecentMap {
+	# get a copy of the day map (except for 0)
+	# for use in creating the recent form
+	my %recentMap = %dayMap;
+	delete $recentMap{0};
+	return \%recentMap;
+}
+
+sub textDays {
+	my $duration = shift || 0;
+	my $textDayStr = $dayMap{$duration} || $duration." ".gettext("days");
+	return $textDayStr;
 }
 
 1;

@@ -48,13 +48,13 @@ sub main {
 	my $movingItem = new FAQ::OMatic::Item($movingFilename);
 	if ($movingItem->isBroken()) {
 		FAQ::OMatic::gripe('error',
-			gettext("The moving file (%0) is broken or missing.",
+			gettexta("The moving file (%0) is broken or missing.",
 				$movingFilename));
 	}
 	my $newParentItem = new FAQ::OMatic::Item($newParentFilename);
 	if ($newParentItem->isBroken()) {
 		FAQ::OMatic::gripe('error',
-			gettext("The newParent file (%0) is broken or missing.",
+			gettexta("The newParent file (%0) is broken or missing.",
 				$newParentFilename));
 	}
 
@@ -63,7 +63,7 @@ sub main {
 	my $oldParentItem = new FAQ::OMatic::Item($oldParentFilename);
 	if ($oldParentItem->isBroken()) {
 		FAQ::OMatic::gripe('error',
-			gettext("The oldParent file (%0) is broken or missing.",
+			gettexta("The oldParent file (%0) is broken or missing.",
 				$oldParentFilename));
 	}
 
@@ -76,14 +76,14 @@ sub main {
 	}
 	if ($newParentFilename eq $movingFilename) {
 		FAQ::OMatic::gripe('error',
-			gettext("The new parent (%0) is the same as the item you want to move.",
+			gettexta("The new parent (%0) is the same as the item you want to move.",
 				$newParentItem->getTitle()));
 	}
 	
 	# make sure the new parent isn't a child of movingItem
 	if ($newParentItem->hasParent($movingFilename)) {
 		FAQ::OMatic::gripe('error',
-			gettext("The new parent (%0) is a child of the item being moved (%1).",
+			gettexta("The new parent (%0) is a child of the item being moved (%1).",
 				$newParentItem->getTitle(), $movingItem->getTitle()));
 	}
 

@@ -168,7 +168,9 @@ sub bagAllImages {
 	# writes every image in ImageData to the bags dir
 	my $imgname;
 	foreach $imgname (sort keys %img_type) {
-		print "<br>bagging ".getBagForImage($imgname)."\n";
+		FAQ::OMatic::maintenance::hprint(
+				"<br>bagging ".getBagForImage($imgname)."\n");
+		FAQ::OMatic::maintenance::hflush();
 		getImageUrl($imgname, {}, 'forceBagWrite');
 	}
 }

@@ -35,6 +35,11 @@ use strict;
 ## FAQ::OMatic:: namespace.
 ##
 
+# THANKS to Andrew W. Nosenko <awn@bcs.zp.ua> for several patches
+# for locale, russian translation, and bug fixes. Thanks also to
+# Andrew for patiently waiting, what, EIGHT MONTHS until I finally
+# got them plugged into the CVS tree. :v)
+
 package FAQ::OMatic;
 
 use Fcntl;	# for lockFile. Not portable, but then neither is lockFile().
@@ -47,11 +52,11 @@ use FAQ::OMatic::I18N;
 
 use vars	# these are mod_perl-safe
 	# effectively constants
-	qw($VERSION $authorAddress $USE_MOD_PERL),
+	qw($VERSION $USE_MOD_PERL),
 	# variables that get reset on every invocation
 	qw($theParams $theLocals);
 
-$VERSION = '2.712';
+$VERSION = '2.715';
 
 # can't figure out how to get file-scoped variables in mod_perl, so
 # we ensure that they're all file scoped by reseting them in dispatch.
@@ -70,10 +75,6 @@ sub setLocal {
 	my $localvalue = shift;
 	$theLocals->{$localname} = $localvalue;
 }
-
-$authorAddress = 'jonh@cs.dartmouth.edu';
-	# This is never used to automatically send mail to (that's authorEmail),
-	# but when we need to report the author's address, we use this constant:
 
 sub pageHeader {
 	my $params = shift || $theParams;
@@ -132,18 +133,18 @@ sub pageDesc {
 	my $whatAmI = gettext($item->whatAmI());
 
 	my $pageDescs = {
-		'authenticate' => 'Log In',
-		'changePass' => 'Change Password',
-		'editItem' => 'Edit Title of %0 %1',
-		'insertItem' => 'New %0',	# special case -- varies editItem
-		'editPart' => 'Edit Part in %0 %1',
-		'insertPart' => 'Insert Part in %0 %1',
-		'moveItem' => 'Move %0 %1',
-		'search' => 'Search',
-		'stats' => 'Access Statistics',
-		'submitPass' => 'Validate',
-		'editModOptions' => '%0 Permissions for %1',
-		'editBag' => 'Upload bag for %0 %1'
+		'authenticate' => gettext_noop("Log In"),
+		'changePass' => gettext_noop("Change Password"),
+		'editItem' => gettext_noop("Edit Title of %0 %1"),
+		'insertItem' => gettext_noop("New %0"),	# special case -- varies editItem
+		'editPart' => gettext_noop("Edit Part in %0 %1"),
+		'insertPart' => gettext_noop("Insert Part in %0 %1"),
+		'moveItem' => gettext_noop("Move %0 %1"),
+		'search' => gettext_noop("Search"),
+		'stats' => gettext_noop("Access Statistics"),
+		'submitPass' => gettext_noop("Validate"),
+		'editModOptions' => gettext_noop("%0 Permissions for %1"),
+		'editBag' => gettext_noop("Upload bag for %0 %1")
 	};
 
 	my $pd = $pageDescs->{$cmd} || '';
@@ -176,17 +177,61 @@ sub shortdate {
 		$date[5], $date[4], $date[3], $date[2], $date[1], $date[0]);
 }
 
+# TODO we now have two stacktrace-collectors. Clean this up.
+sub collectStackBacktrace {
+	my @stack_backtrace;
+	my $i = 0;
+	my ($package, $filename, $line, $subroutine);
+	my @a;
+	for ($i=0; ; ++$i)
+	{
+		@a = caller($i);
+		last if (!@a);
+		($package, $filename, $line)= @a;
+		(undef, undef, undef, $subroutine) = caller($i+1);
+		if (!defined($subroutine))
+		{
+			$subroutine = '';
+		}
+		push(@stack_backtrace,
+			 { 'package' => $package,
+			   'filename' => $filename,
+			   'line' => $line,
+			   'subroutine' => $subroutine });
+	}
+	return @stack_backtrace;
+}
+
+#
+#	sub gripe($severity, $msg, $is_show_stack_backtrace)
+#
+#	Parameters:
+#	$severity	Severity of message
+#		interesting severity values:
+#		'note'     appends msg to log
+#		'debug'    appends to log, tells user
+#		'error'    appends to log, tells user, aborts CGI
+#		'problem'  mails msg to $faqAdmin, appends to log, tells user
+#		'abort'    mails msg to $faqAdmin, appends to log, tells
+#		           user, aborts CGI
+#		'panic'    mails trouble to $faqAdmin, $faqAuthor, appends to
+#		           log, tells user, and aborts the CGI
+#	$msg		Message itself
+#	$options->{'stack'}
+#				Is showing of stack backtrace needed? Boolean.
+#	$options->{'noentify'}
+#				Boolean. Gripe contains no user text, so it's not vulnerable
+#				to CSS, and we want the user to see some real HTML tags.
+#
 sub gripe {
-	# interesting severity values:
-	# 'note': appends msg to log
-	# 'debug': appends to log, tells user
-	# 'error': appends to log, tells user, aborts CGI
-	# 'problem': mails msg to $faqAdmin, appends to log, tells user
-	# 'abort': mails msg to $faqAdmin, appends to log, tells user, aborts CGI
-	# 'panic': mails trouble to $faqAdmin, $faqAuthor, appends to log,
-	# 	tells user, and aborts the CGI
 	my $severity = shift || 'problem';
 	my $msg = shift || '[gripe with no msg: '.join(':',caller()).']';
+	my $options = shift || {};
+
+	my $is_show_stack_backtrace = $options->{'stack'} || '';
+	my $noentify = $options->{'noentify'} || '';
+
+	my @stack_backtrace;
 	my $mailguys = '';
 	my $id = $FAQ::OMatic::Auth::trustedID || $theParams->{'id'} || '(noID)';
 
@@ -199,12 +244,40 @@ sub gripe {
 		$mailguys = $FAQ::OMatic::Config::adminEmail;
 	}
 
+	if ($is_show_stack_backtrace) {
+		@stack_backtrace = collectStackBacktrace();
+	}
+
 	if ($mailguys ne '') {
 		my $message = "The \"".fomTitle()."\" Faq-O-Matic (v. $VERSION)\n";
 		$message.="maintained by $FAQ::OMatic::Config::adminEmail\n";
 		$message.="had a $severity situation.\n\n";
 		$message.="The command was: \"".commandName()."\"\n";
 		$message.="The message is: \"$msg\".\n";
+
+		# TODO there are three backtrace-formatters in this function.
+		# factor them out into one named, parameterized function.
+		if ($is_show_stack_backtrace)
+		{
+			$message.="The stack backtrace:\n";
+			if (@stack_backtrace)
+			{
+				my $i;
+				for ($i=0; $i < @stack_backtrace; ++$i)
+				{
+					$message .= sprintf("\t%u: %s at %s line %u\n",
+										$i+1,
+										$stack_backtrace[$i]->{'subroutine'},
+										$stack_backtrace[$i]->{'filename'},
+										$stack_backtrace[$i]->{'line'});
+				}
+			}
+			else
+			{
+				$message .= "\t(unavailable)\n";
+			}
+		}
+
 		$message.="The process number is: $$\n";
 		$message.="The user had given this ID: <$id>\n";
 		$message.="The browser was: <".($ENV{'HTTP_USER_AGENT'}||'undefined')
@@ -217,7 +290,37 @@ sub gripe {
 	# tell user
 	if ($severity ne 'note') {
 		my $userGripes = getLocal('userGripes');
-		$userGripes .= "<li>$msg\n";
+		# since we're submitting the msg to a web browser,
+		# and the messages often include things like
+		# "this input was weird: <user-input-here>", we
+		# need to sanitize the text (with entify) to avoid
+		# a cross-site scripting attack.
+		my $safeMsg = $noentify ? $msg : entify($msg);
+		$userGripes .= "<li>$safeMsg\n";
+ 
+ 		if ($is_show_stack_backtrace)
+ 		{
+ 			$userGripes .= "<p>The stack backtrace:\n";
+ 			if (@stack_backtrace)
+ 			{
+ 				my $i;
+ 				$userGripes .= "<ol>\n";
+ 				for ($i = 0; $i < @stack_backtrace; ++$i)
+ 				{
+ 					$userGripes .=
+ 						sprintf("\t<li>%s at %s line %u</li>\n",
+ 								$stack_backtrace[$i]->{'subroutine'},
+ 								$stack_backtrace[$i]->{'filename'},
+ 								$stack_backtrace[$i]->{'line'});
+ 				}
+ 				$userGripes .= "</ol>\n"
+ 			}
+ 			else
+ 			{
+ 				$userGripes .= "\t(unavailable)\n";
+ 			}
+ 		}
+ 
 		setLocal('userGripes', $userGripes);
 	}
 
@@ -226,7 +329,36 @@ sub gripe {
 	print ERRORFILE FAQ::OMatic::Log::numericDate()
 		." $FAQ::OMatic::VERSION $severity "
 		.commandName()
-		." $$ <$id> $msg\n";
+		." $$ <$id> $msg";
+
+	if ($is_show_stack_backtrace)
+	{
+		print(ERRORFILE '[Stack backtrace: ');
+		if (@stack_backtrace)
+		{
+			my $i;
+			for ($i=0; $i < @stack_backtrace; ++$i)
+			{
+				if ($i != 0)
+				{
+					print(ERRORFILE '; ');
+				}
+				printf(ERRORFILE
+					   "[%u] %s at %s line %u",
+					   $i+1,
+					   $stack_backtrace[$i]->{'subroutine'},
+					   $stack_backtrace[$i]->{'filename'},
+					   $stack_backtrace[$i]->{'line'});
+			}
+		}
+		else
+		{
+			print("(unavailable)");
+		}
+		print(ERRORFILE ']');
+	}
+	print(ERRORFILE "\n");
+
 	close ERRORFILE;
 
 	# abort
@@ -617,11 +749,23 @@ sub urlReference {
 	# some browsers pass back verbatim to the webserver and everything
 	# breaks. (jon@clearink.com reported an instance of this, but I didn't
 	# track it down until now.)
+	# hthielen@users.sourceforge.net sent the following patch to prevent
+	# us from linkifying anything without a ':'. This heuristic allows
+	# usage examples: cat <infile> > <outfile>, which would otherwise
+	# become link because the contents have no whitespace.
+	# Arrgh. Vile escaping. :v)
 	my $result;
-	if ($target ne '') {
-		$result = "<a href=\"$target\">$label</a>";
+	if (defined $prefix) {
+	    if ($target ne '') {
+			$result = "<a href=\"$target\">$label</a>";
+	    } else {
+			# this is for e.g. "baginline:" references
+			$result = $label;
+	    }
 	} else {
-		$result = $label;
+		# just return the original text including the already
+		# removed "<" and ">" signs
+		$result = "&lt;" . $label . "&gt;";
 	}
 	return $result;
 }
@@ -893,7 +1037,7 @@ sub makeAref {
 			# value into the config file. Ouch!
 		} else {
 			# regular GET, not <form> GET. URL-style key=val&key=val
-			$rt.="&".CGI::escape($i)."=".CGI::escape($newParams{$i});
+			$rt.="&".CGI::escape($i)."=".CGI::escape(($newParams{$i}||''));
 		}
 	}
 	if (($refType eq 'POST') or ($refType eq 'GET')) {
@@ -972,13 +1116,26 @@ sub getCacheUrl {
 		} else {
 			# pointer into the cache from elsewhere (the CGI) -- use a full URL
 			# to get them to our cache.
+
+			# clean up the 'file' input so CSS attack can't play games with the
+			# resulting URL by faking the file value.
 			return FAQ::OMatic::serverBase()
 				.$FAQ::OMatic::Config::cacheURL
-				.($paramsForUrl->{'file'}||'1')
+				.cleanFile($paramsForUrl->{'file'})
 				.".html";
 		}
 	}
 	return '';
+}
+
+# ensure that a file spec is "clean". Let's say the items
+# can only be named things alphanumerics and .-_.
+sub cleanFile {
+	my $file = shift || '';
+	if ($file =~ m/[^a-zA-Z0-9\.\-\_]/s) {
+		return '1';
+	}
+	return $file;
 }
 
 sub makeBagRef {
@@ -1054,6 +1211,13 @@ sub lotsOfApostrophes {
 	return $word;
 }
 
+
+# Using of locale pragma for entire file can have taint-check fails as
+# result.  But search-hits highlighting should be locale dependent.
+# Because of this, locale pragma is used for highlightWords() function
+# only.
+use locale;
+
 sub highlightWords {
 	my $text = shift;
 	my $params = shift;
@@ -1097,8 +1261,21 @@ sub highlightWords {
 	return $text;
 }
 
+# Turn off locale pragma.  See comment about `use locale' near to begin
+# of highlightWords() function for reason of this.
+no locale;
+
 sub unallocatedItemName {
 	my $filename= shift || 1;
+
+	# Things under 'trash' should get allocated in the numerical space.
+	# I'm not sure when an item would get created under the trash,
+	# but I've seen it happen, and they got called 'trasi'
+	# and 'trasj' ... :v)
+	# (I've done it deliberately with API.pm to test emptyTrash, though.)
+	if ($filename eq 'trash') {
+		$filename = 1;
+	}
 
 	# If the user is looking for a numeric filename (i.e. supplied no
 	# argument), use hint to skip forward to biggest existing file number.
@@ -1169,6 +1346,17 @@ sub sendEmail {
 	# need $PATH to be untainted.
 	my $pathSave = $ENV{'PATH'};
 	$ENV{'PATH'} = '/bin';
+
+	# X-URL is used to help user to know which FAQ has sent this mail. 
+	# THANKS suggested by Akiko Takano <takano@iij.ad.jp>
+	# TODO in the case of moderator mail, we probably want this
+	# URL to indicate the correct file name, rather than the top of the
+	# FAQ. Make it an optional argument to this sub?
+	my $xurl = FAQ::OMatic::makeAref('-command'=>'faq',
+				'-params'=>{},
+				'-thisDocIs'=>1,
+				'-refType'=>'url');
+
 	if ($FAQ::OMatic::Config::mailCommand =~ m/sendmail/) {
 		my $to2 = $to;
 		$to2 =~ s/ /, /g;
@@ -1176,8 +1364,13 @@ sub sendEmail {
 							.">>$FAQ::OMatic::Config::metaDir/errors")) {
 			return 'problem';
 		}
+
+
+		print MAILX "X-URL: $xurl\n";
+
 		print MAILX "To: $to2\n";
 		print MAILX "Subject: $subj\n";
+		print MAILX "From: $FAQ::OMatic::Config::adminEmail\n";
 		print MAILX "\n";
 		print MAILX $mesg;
 		close MAILX;
@@ -1185,6 +1378,8 @@ sub sendEmail {
 		if (not open (MAILX, "|$FAQ::OMatic::Config::mailCommand -s '$subj' $to")) {
 			return 'problem';
 		}
+		# TODO non-sendmail mailers won't get X-URL in the header.
+		print MAILX "X-URL: $xurl\n\n";
 		print MAILX $mesg;
 		close MAILX;
 	}
@@ -1334,10 +1529,20 @@ sub mySystem {
 
 	my @stdout = <READPIPE>;	# read child output in its entirety
 	close READPIPE;
+	# THANKS nobody/anonymous (at sourceforge) submitted this bug fix
+	# (#508199); s/he said:
+	#     "The current code generates a failure code if waitpid
+	#     finds no child process to wait
+	#     for ($? == -1) but this is reported as a failure of the
+	#     mySystem call. The following
+	#     patch changes the pickup of the $statusword value to
+	#     look at the pipe close event
+	#     instead."
+	my $statusword = $?;
+
 	my $stdout = join('', @stdout);
 	my $wrc = waitpid($pid, 0);		# just in case
 
-	my $statusword = $?;
 	my $signal = $statusword & 0x0ff;
 	my $exitstatus = ($statusword >> 8) & 0x0ff;
 	if ($exitstatus == 0 and not $alwaysWantReply) {
@@ -1347,6 +1552,7 @@ sub mySystem {
 	}
 }
 
+# TODO we now have two stacktrace-collectors. Clean this up.
 sub stackTrace {
 	my $html = shift;
 	my $linesep = ($html)
@@ -1550,6 +1756,30 @@ sub cat {
 # (in false mode, search is linear scans of files. Slow, but robust.)
 sub usedbm {
 	return $FAQ::OMatic::Config::useDBMSearch || '';
+}
+
+sub checkLoadAverage {
+	if (1) {
+		# this cobbled feature has no install-page hook; turn it off for now.
+		return;
+	}
+	my $uptime = `uptime`;
+	$uptime =~ m/load average: ([\d\.]+)/;
+	my $load = $1;
+	if ($load > 4) {
+		FAQ::OMatic::gripe('abort',
+			"I'm too busy for that now. (I'm kind of a crummy PC.)");
+	}
+}
+
+# Return the integer prefix to this string, or 0.
+# Used to fix "argument isn't numeric" warnings.
+sub stripInt {
+	my $str = shift;
+	if (not $str =~ m/^([\d\-]+)/) {
+		return 0;
+	}
+	return $1;
 }
 
 'true';

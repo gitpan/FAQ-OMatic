@@ -336,7 +336,7 @@ msgstr "Protokoll-, Host- und Port-Teil der URL Ihrer Site. Dies wird benutzt, u
 msgid "The path part of the URL used to access this CGI script, beginning with '/' and omitting any parameters after the '?'. For example: <tt>/cgi-bin/cgiwrap/jonh/faq.pl</tt>"
 msgstr "Lokaler Pfad-Teil der URL, um das FOM CGI-Script anzusprechen (beginnend mit dem führenden '/', aber ohne '?' und die folgenden Parameter). Beispiel: <tt>/cgi-bin/cgiwarp/faq.pl</tt>"
 
-msgid "Filesystem directory where FAQ-O-Matic will keep item files, image and other bit-bag files, and a cache of generated HTML files. This directory must be accesible directly via the http server. It might be something like /home/faqomatic/public_html/fom-serve/"
+msgid "Filesystem directory where FAQ-O-Matic will keep item files, image and other bit-bag files, and a cache of generated HTML files. This directory must be accessible directly via the http server. It might be something like /home/faqomatic/public_html/fom-serve/"
 msgstr "Dateisystem-Verzeichnis, in dem FAQ-O-Matic die item-Files, andere Datei-Objekte und den Cache von erzeugten HTML-Files ablegt. Das Verzeichnis muss für den HTTP-Server schreibbar sein. Beispiel : <tt>/home/faqomatic/public_html/fom-serve/<tt>"
 
 msgid "The path prefix of the URL needed to access files in <b>$serveDir</b>. It should be relative to the root of the server (omit http://hostname:port, but include a leading '/'). It should also end with a '/'."
@@ -1203,6 +1203,11 @@ msgstr "Neues Mitglied"
 msgid "Remove Member"
 msgstr "Mitglied löschen"
 
+msgid "search for keywords"
+msgstr "Suche nach Begriffen"
+
+msgid "search for recent changes"
+msgstr "Suche nach kürzlichen Änderungen" 
 
 ###
 ### END

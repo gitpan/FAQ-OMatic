@@ -49,7 +49,9 @@ sub build {
 	foreach $filename (@allItems) {
 		localhprint("scanning $filename");
 		$item = new FAQ::OMatic::Item($filename);
-		if ($item->isBroken()) {
+		if ($item->isEmptyStub()) {
+			# pass over it.
+		} elsif ($item->isBroken()) {
 			FAQ::OMatic::gripe('debug', 'item/'.$filename.' is broken.');
 		} else {
 			$item->extractWords($words);

@@ -44,7 +44,8 @@ BEGIN {
     use Exporter   ();
     use vars       qw(@ISA @EXPORT);
     @ISA         = qw(Exporter);
-    @EXPORT      = qw(&gettext &gettexta);
+
+    @EXPORT      = qw(&gettext &gettexta &gettext_noop);
 }
 
 sub new {
@@ -98,11 +99,20 @@ sub gettexta {
 	# (if perl were partially evaluated, we'd only have this
 	# sub, and gettext would be the curried version. :v)
 
-	my $translated = gettext(shift);
+	my $text = shift;
+	if (not defined($text)) {$text = ''};
+	my $translated = gettext($text);
+	if (not defined($translated)) {$translated = ''};
+
 	my $arg;
 	my $i=0;
-	$translated =~ s/\%(\d+)/$_[$1]/sge;
+	$translated =~ s/\%(\d+)/defined($_[$1])?$_[$1]:('%'.$1)/sge;
 	return $translated;
+}
+
+sub gettext_noop
+{
+	return $_[0];
 }
 
 1;

@@ -130,8 +130,8 @@ sub main {
 				'_none_id'=>'' },
 			'POST', 'saveTransients');
 
-	$params->{'_reason'} =~ m/^(\d+)/;
-	if ($1 <= 3) {
+	my $reason = FAQ::OMatic::stripInt($params->{'_reason'});
+	if ($reason <= 3) {
 		$rt .= "<p>"
 			.gettext("Please offer one of the following forms of identification:")."\n";
 	
@@ -142,7 +142,7 @@ sub main {
 	}
 
 	$rt .= "<p><input type=radio name=\"auth\" value=\"pass\"";
-	$rt .= " checked" if ($params->{'_reason'} > 3);
+	$rt .= " checked" if ($reason > 3);
 	$rt .= ">\n";
 	$rt .= " ".gettext("Authenticated login:")."\n";
 	$rt .= "<br>Email: <input type=text name=\"_pass_id\" value=\"\" size=60>\n";

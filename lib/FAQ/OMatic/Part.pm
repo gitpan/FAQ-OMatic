@@ -66,7 +66,9 @@ sub loadFromCodeClosure {
 	my ($lines) = 0;
 	my ($text) = "";
 
-	while ($_ = &{$closure}) {
+	# THANKS to "John R. Jackson" <jrj@gandalf.cc.purdue.edu> for
+	# grepping for unprotected while constructs.
+	while (defined($_ = &{$closure})) {
 		chomp;
 		my ($key,$value) = FAQ::OMatic::keyValue($_);
 		if ($key eq 'Author') {
@@ -105,7 +107,9 @@ sub loadFromCodeClosure {
 			"FAQ::OMatic::Part::loadFromCodeClosure was confused by this header in file $filename: \"$_\"");
 		}
 	}
-	while (($lines>0) and ($_ = &{$closure})) {
+	# THANKS to "John R. Jackson" <jrj@gandalf.cc.purdue.edu> for
+	# grepping for unprotected while constructs.
+	while (($lines>0) and defined($_ = &{$closure})) {
 		$text .= $_;
 		$lines--;
 	}
@@ -496,7 +500,7 @@ sub displayPartEditor {
 		if ($self->{'Text'} ne '') {
 			my @count = ($self->{'Text'} =~ m/\n/gs);
 			my $count = scalar(@count);
-			$rt .= gettext("Warning: file contents will <b>replace</b> previous text")                                                ." ($count lines).\n";
+			$rt .= gettext("Warning: file contents will <b>replace</b> previous text")." ($count lines).\n";
 		}
 	}
 
@@ -659,7 +663,7 @@ sub getBags() {
 
 	my $text = $self->{'Text'};
 	my @regexlist = ($text =~
-		m/(baginline:(\S*[^\s.,)\?!]))|(baglink:(\S*[^\s.,)\?!]))/gs);
+		m/(baginline:(\S*[^\s.,>)\?!]))|(baglink:(\S*[^\s.,>)\?!]))/gs);
 	# the above regexp will return 4*number of matches, one entry for
 	# each left parethesis.
 	# We actually want either the second or fourth item from each 4-tuple.
@@ -792,7 +796,8 @@ sub wrapLeftLines {
 	my @lines = split(/\n/, $text);
 	my @buffer = ();
 	my $rt = '';
-	while (my $line = shift @lines) {
+	my $line;
+	while (defined($line = shift @lines)) {
 		if ($line =~ m/^\s/) {
 			# a concrete line -- wrap prior buffer, pass concrete line
 			if (@buffer) {

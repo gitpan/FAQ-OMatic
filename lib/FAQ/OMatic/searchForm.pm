@@ -33,6 +33,7 @@ use CGI;
 use FAQ::OMatic;
 use FAQ::OMatic::I18N;
 use FAQ::OMatic::HelpMod;
+use FAQ::OMatic::SearchMod;
 
 sub main {
 	my $cgi = FAQ::OMatic::dispatch::cgi();
@@ -81,12 +82,13 @@ sub main {
 		."value=\"".gettext("Show documents")."\">\n";
 	$page .= " ".gettext("modified in the last")." \n";
 	$page .= "<select name=\"_duration\">\n";
-	$page .= "<option value=\"1\">".gettext("day").".\n";
-	$page .= "<option value=\"2\">".gettext("two days").".\n";
-	$page .= "<option value=\"3\">".gettext("three days").".\n";
-	$page .= "<option value=\"7\" SELECTED>".gettext("week").".\n";
-	$page .= "<option value=\"14\">".gettext("fortnight").".\n";
-	$page .= "<option value=\"31\">".gettext("month").".\n";
+	my $recentMap = FAQ::OMatic::SearchMod::getRecentMap();
+	foreach my $numDays (sort {$a <=> $b} keys %$recentMap) {
+		# default to "week"
+		my $selected = ($numDays == 7) ? " SELECTED" : "";
+		$page .= "<option value=\"${numDays}\"${selected}>"
+			.gettext($recentMap->{$numDays}).".\n";
+	}
 	$page .= "</select>\n";
 	$page .= "</form>\n";
 	$page.="</td></tr></table>\n" if $useTable;

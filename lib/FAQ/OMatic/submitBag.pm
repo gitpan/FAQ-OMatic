@@ -44,7 +44,31 @@ sub main {
 
 	FAQ::OMatic::mirrorsCantEdit($cgi, $params);
 	
-	my $bagName = FAQ::OMatic::Bags::untaintBagName($params->{'_bagName'});
+	#
+	# jpell - Default filename if not specified.
+	# THANKS to Jason Pell <jason.pell@callista.com.au> for submitting
+	# these patches that improve bag handling.
+	#
+	my $clientFname = $params->{'_bagName'};
+	# If _bagName not defined, use the filename instead.
+	if($clientFname eq ''){
+		my $bagData = $cgi->param('_bagData');
+		if ($bagData){
+			# Get the client clientFname here.
+			$clientFname = $cgi->uploadInfo($bagData)->{'Content-Disposition'};
+			if( $clientFname=~/ filename="?([^\";]*)"?/ ){
+				$clientFname = $1;
+
+				# Replace dos separators, so we can search for / only.
+				$clientFname =~ tr/\\/\//;
+				if($clientFname =~ m#^(.*/)?(.*)#s ){
+					$clientFname = $2;
+				}
+			}
+		}
+	}
+
+	my $bagName = FAQ::OMatic::Bags::untaintBagName($clientFname);
 
 	if ($bagName eq '') {
 		FAQ::OMatic::gripe('error', gettext("Bag names may only contain letters, numbers, underscores (_), hyphens (-), and periods (.), and may not end in '.desc'. Yours was")." \"$bagName\".");
@@ -131,7 +155,14 @@ sub main {
 		my $itemName = $params->{'file'} || '';
 		my $item = new FAQ::OMatic::Item($itemName);
 		my $part = $item->getPart($partnum);
-		$part->{'Text'}.="\nbaglink:$bagName\n";
+
+		# TODO: Check that legal image extension!
+		my $bagInline = $cgi->param('_bagInline');
+		if("$bagInline" eq "y"){
+			$part->{'Text'}.="\n<baginline:$bagName>\n";
+		}else{
+			$part->{'Text'}.="\n<baglink:$bagName>\n";
+		}
 		$item->saveToFile();
 	}
 

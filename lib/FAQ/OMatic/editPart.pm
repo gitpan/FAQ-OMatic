@@ -71,6 +71,7 @@ sub main {
 		$partnum = scalar(@{$item->{'Parts'}}) - 1;
 	}
 	my $part = undef;
+	$partnum = FAQ::OMatic::stripInt($partnum);
 	if ($partnum >= 0) {
 		$part = $item->getPart($partnum);
 		if (not $part) {

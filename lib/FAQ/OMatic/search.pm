@@ -67,15 +67,29 @@ sub main {
 
 	my $rt = FAQ::OMatic::pageHeader($params, ['search', 'faq']);
 	if (scalar(@{$matchset})==0) {
-		$rt.= gettext("No items matched")." "
-			.gettext($params->{'_minMatches'})." ".gettext("of these words") . ": <i>"
+		if ($params->{'_minMatches'} eq 'all')
+		{
+			$rt .= gettext("No items matched all of these words");
+		}
+		else
+		{
+			$rt .= gettexta("No items matched at least %0 of these words",
+							$params->{'_minMatches'});
+		}
+		$rt.= ": <i>"
 			.join(", ", @{$params->{'_searchArray'}})
 			."</i>.\n<br>\n";
 	} else {
-		$rt.= gettext("Search results for")." "
-			.($params->{'_minMatches'} eq 'all' ?
-				gettext('all') : gettext("at least")." ".$params->{'_minMatches'})
-			." ".gettext("of these words").": <i>"
+		if ($params->{'_minMatches'} eq 'all')
+		{
+			$rt .= gettext("Search results for all of these words");
+		}
+		else
+		{
+			$rt .= gettexta("Search results for at least %0 of these words",
+							$params->{'_minMatches'});
+		}
+		$rt .= ": <i>"
 			.join(", ", @{$params->{'_searchArray'}})
 			."</i>:<p>\n";
 
