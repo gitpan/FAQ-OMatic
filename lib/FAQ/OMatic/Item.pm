@@ -40,7 +40,7 @@ use FAQ::OMatic::Auth;
 use FAQ::OMatic::Appearance;
 use FAQ::OMatic::Groups;
 use FAQ::OMatic::Words;
-use FAQ::OMatic::Help;
+use FAQ::OMatic::HelpMod;
 use FAQ::OMatic::Versions;
 use FAQ::OMatic::Set;
 use FAQ::OMatic::I18N;
@@ -310,10 +310,6 @@ sub saveToFile {
 
 	$dir = $FAQ::OMatic::Config::itemDir if (not $dir);
 
-	if ($self->isBroken()) {
-		FAQ::OMatic::gripe('error', "Tried to save a broken item to $filename.");
-	}
-
 	$filename =~ m/([\w-.]*)/;	# Untaint filename
 	$filename = $1;
 
@@ -322,6 +318,11 @@ sub saveToFile {
 	} else {
 		# change of filename (from a new, anonymous item)
 		$self->{'filename'} = $filename;
+	}
+
+	if ($self->isBroken()) {
+		FAQ::OMatic::gripe('error',
+			"Tried to save a broken item to $filename.");
 	}
 
 	if ($dir eq $FAQ::OMatic::Config::itemDir
@@ -810,7 +811,7 @@ sub displayCoreHTML {
 		my $titlebox = '';
 		if ($render ne 'text') {
 			$titlebox .= "<a name=\"file_"
-				.$self->{'filename'}."\">\n";	# link for internal refs
+				.$self->{'filename'}."\"> </a>\n";	# link for internal refs
 		}
 	
 		# prefix item title with a path back to the root, so that user
@@ -822,8 +823,11 @@ sub displayCoreHTML {
 		my (@parentFilenames) = reverse @{$filenames};
 		$titlebox.=
 			join(" : ",
-				map { FAQ::OMatic::faqomaticReference($params, "$_") }
-					@parentFilenames
+				map {
+					my ($target,$label) =
+						FAQ::OMatic::faqomaticReference($params, "$_");
+					"<a href=\"$target\">$label</a>";
+				} @parentFilenames
 			);
 		if (@parentFilenames) {
 			$titlebox.=" :\n";
@@ -843,8 +847,9 @@ sub displayCoreHTML {
 					'border=0', $self->isCategory(), $params);
 				$titlebox.="<b>$thisTitle</b>";
 			} else {
-				$titlebox.="<font size=+1><b>$thisTitle</b></font>";
+				$titlebox.="<font size=\"+1\"><b>$thisTitle</b></font>";
 			}
+			$titlebox.="</a>"; # close <a name=...
 		}
 		push @rowboxes, { 'type'=>'wide', 'text'=>$titlebox,
 			'id'=>'title' };
@@ -1152,7 +1157,7 @@ sub displayHTML {
 		$rt.="<p>\n" if not $useTable;
 	}
 
-	$rt.=FAQ::OMatic::Help::helpFor($params,
+	$rt.=FAQ::OMatic::HelpMod::helpFor($params,
 		'How can I contribute to this FAQ?', "<br>");
 
 	return $rt;
@@ -1321,7 +1326,7 @@ sub displayItemEditor {
 #				'-changedParams'=>{'checkSequenceNumber'=>''}),
 #			"Cancel and return to FAQ");
 
-	$rt .= FAQ::OMatic::Help::helpFor($params, 'editItem', "<br>\n");
+	$rt .= FAQ::OMatic::HelpMod::helpFor($params, 'editItem', "<br>\n");
 
 	return $rt;
 }
@@ -1345,12 +1350,14 @@ sub permissionsInfo {
 			.gettext("this answer or category:") },
 	'07' => { 'name'=>'PermModOptions', 'desc'=>
 			gettext("Who can change these moderator options and permissions:") },
-	'08' => { 'name'=>'PermEditGroups', 'global'=>1, 'desc'=>
-			gettext("Who can use the group membership pages:") },
 	'09' => { 'name'=>'PermNewBag', 'global'=>1, 'desc'=>
 			gettext("Who can create new bags:") },
 	'10' => { 'name'=>'PermReplaceBag', 'global'=>1, 'desc'=>
 			gettext("Who can replace existing bags:") },
+	'11' => { 'name'=>'PermInstall', 'global'=>1, 'desc'=>
+			gettext("Who can access the installation/configuration page (use caution!):") },
+	'12' => { 'name'=>'PermEditGroups', 'global'=>1, 'desc'=>
+			gettext("Who can use the group membership pages:") },
 	};
 		# TODO: The global permissions should probably appear
 		# TODO: on a different page. As-is, the administrator must
@@ -1459,7 +1466,7 @@ sub displayModOptionsEditor {
 		# received.
 	$rt .= "</form>\n";
 
-	$rt .= FAQ::OMatic::Help::helpFor($params, 'editModOptions', "<br>\n");
+	$rt .= FAQ::OMatic::HelpMod::helpFor($params, 'editModOptions', "<br>\n");
 
 	return $rt;
 }

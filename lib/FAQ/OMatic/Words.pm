@@ -105,7 +105,7 @@ sub getPrefixes {
     # indexed.
     #
     # default routine returns all substrings
-    my @prefix;
+    my @prefix=();
     my $i = length( $word );
     while( $i ) {
         push @prefix, substr( $word, 0, $i-- );

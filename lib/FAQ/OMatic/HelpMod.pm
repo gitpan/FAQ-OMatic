@@ -32,7 +32,7 @@ use strict;
 ### Online, context-sensitive help system
 ###
 
-package FAQ::OMatic::Help;
+package FAQ::OMatic::HelpMod;
 
 use FAQ::OMatic;
 

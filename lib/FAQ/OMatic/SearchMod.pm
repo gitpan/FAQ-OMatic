@@ -27,12 +27,12 @@
 
 use strict;
 
-### Search.pm
+### SearchMod.pm
 ###
 ### Support for search functions
 ###
 
-package FAQ::OMatic::Search;
+package FAQ::OMatic::SearchMod;
 
 use FAQ::OMatic::Item;
 use FAQ::OMatic::Words;
@@ -41,7 +41,7 @@ use FAQ::OMatic;
 sub openWordDB {
 	return if (defined FAQ::OMatic::getLocal('wordDB'));
 	my %wordDB;
-	if (not dbmopen (%wordDB, "$FAQ::OMatic::Config::metaDir/search", 400)) {
+	if (not dbmopen (%wordDB, "$FAQ::OMatic::Config::metaDir/search", 0400)) {
 		FAQ::OMatic::gripe('abort', "Can't open dbm search database. "
 			."Have you run buildSearchDB? (Should I?)");
 	}

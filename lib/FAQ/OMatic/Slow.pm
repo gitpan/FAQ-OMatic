@@ -44,6 +44,7 @@ use strict;
 package FAQ::OMatic::Slow;
 
 use FAQ::OMatic;
+use FAQ::OMatic::I18N;
 
 my $reloadFrequency = 15;	# seconds
 my $tailSize = 20;			# lines
@@ -133,11 +134,11 @@ sub display {
 	close(SLOW);
 	print "<title>Slow page</title>\n";
 	if (not $params->{'tailSize'}) {
-		print "This page will reload every $reloadFrequency seconds, showing\n";
-		print "the last $tailSize lines of the process output.\n";
+		print gettexta("This page will reload every %0 seconds, showing the last %1 lines of the process output.\n",
+			$reloadFrequency, $tailSize);
 		my $url2 = FAQ::OMatic::makeAref('-command'=>'displaySlow',
 			'-changedParams' => {'_wholeFile' => '1'});
-		print $url2."This link</a> shows the entire process log.\n";
+		print $url2.gettext("This link</a> shows the entire process log.")."\n";
 		print "<hr>\n";
 	}
 	print $cropped;

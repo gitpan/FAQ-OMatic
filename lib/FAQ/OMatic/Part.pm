@@ -474,12 +474,14 @@ sub displayPartEditor {
 		$rt .= "<textarea cols=80 rows=$rows name=_newText wrap=$wrap>";
 	
 		my $text = $self->{'Text'};
+
+		$text = addTitleToFaqomaticReferences($text);
+
 		$text =~ s/&/&amp;/gs;		# all browsers I've met correctly
 		$text =~ s/</&lt;/gs;		# convert textarea entities into the
 									# real thing
 		$text =~ s/>/&gt;/gs;
 	
-		$text = FAQ::OMatic::addTitleToFaqomaticReferences($text);
 		$rt .= $text."</textarea>\n";
 	
 		$rt.="</td>\n";
@@ -504,25 +506,28 @@ sub displayPartEditor {
 	$rt .= "> ".gettext("Hide Attributions")."\n";
 
 	# Type
-	$rt .= "<p><dl>".gettext("Format text as:")."\n<dl>\n";
+	$rt .= "<p><dl>".gettext("Format text as:")."<br>\n\n";
 
 	if ($self->{'Type'} eq 'directory') {
 # TODO: delete this commented block. superseded by submitCatToAns.
 #		if (scalar($self->getChildren()) == 0) {
-#			$rt .= "<br><input type=checkbox name=\"_removeDirectory\" "
+#			$rt .= "<input type=checkbox name=\"_removeDirectory\" "
 #				."value=\"1\"> Remove directory (turning this category "
 #				."item into an answer item) if text box above is empty.\n";
 #		}
-		$rt .= "<br><input type=radio name=\"_Type\" value=\"directory\""
-			."  CHECKED> ".gettext("Directory")."\n";
+		$rt .= "<nobr><input type=radio name=\"_Type\" value=\"directory\""
+			."  CHECKED> ".gettext("Directory")."</nobr>\n";
 	} else {
-		$rt .= "<br><input type=radio name=\"_Type\" value=\"\"";
+		# THANKS: Jim Spath (jes) got rid of <br>s to format more tightly
+		# in Lynx; jonh put one back in, plus some <nobr> pairs to keep
+		# layout from sucking in netscape/ie.
+		$rt .= "<nobr><input type=radio name=\"_Type\" value=\"\"";
 		$rt .= " CHECKED" if ($self->{'Type'} eq '');
-		$rt .= "> ".gettext("Natural text")."\n";
+		$rt .= "> ".gettext("Natural text")."</nobr>\n";
 
-		$rt .= "<br><input type=radio name=\"_Type\" value=\"monospaced\"";
+		$rt .= "<nobr><input type=radio name=\"_Type\" value=\"monospaced\"";
 		$rt .= " CHECKED" if ($self->{'Type'} eq 'monospaced');
-		$rt .= "> ".gettext("Monospaced text (code, tables)")."\n";
+		$rt .= "> ".gettext("Monospaced text (code, tables)")."</nobr>\n";
 
 		# THANKS: John Goerzen supplied the patches to introduce
 		# THANKS: 'html'-type parts.
@@ -535,12 +540,12 @@ sub displayPartEditor {
 			# problem: how can a user authenticate if he should be able
 			# to use HTML?
 		} else {
-	    	$rt .= "<br><input type=radio name=\"_Type\" value=\"html\"";
+	    	$rt .= "<nobr><input type=radio name=\"_Type\" value=\"html\"";
 	    	$rt .= " CHECKED" if ($self->{'Type'} eq 'html');
-	    	$rt .= "> ".gettext("Untranslated HTML")."\n";
+	    	$rt .= "> ".gettext("Untranslated HTML")."</nobr>\n";
 		}
 	}
-	$rt .= "</dl></dl>\n";
+	$rt .= "</dl>\n";
 	$rt.="</td>\n";
 
 	# Submit
@@ -549,7 +554,7 @@ sub displayPartEditor {
 	# to scroll just to get past the rest of the form.
 	$rt.="<td align=left valign=top width=\"50%\">\n";
 	$rt .= "<br><input type=submit name=\"_submit\" value=\"".gettext("Submit Changes")."\">\n";
-	$rt .= "<br><input type=reset name=\"_reset\" value=\"".gettext("Revert")."\">\n";
+	$rt .= "<input type=reset name=\"_reset\" value=\"".gettext("Revert")."\">\n";
 	$rt .= "<input type=hidden name=\"_zzverify\" value=\"zz\">\n";
 		# this lets the submit script check that the whole POST was
 		# received.
@@ -565,6 +570,21 @@ sub displayPartEditor {
 	$rt.="</tr></table>\n";
 
 	return $rt;
+}
+
+# insert [item title] into faqomatic:XX references
+sub addTitleToFaqomaticReferences {
+	my $text = shift;
+	my @splitty = splitLinksFromText($text);
+	for (my $i=1; $i<scalar(@splitty); $i+=2) {
+		$splitty[$i] =~ m/^faqomatic:(.*)$/;
+		my $filename = $1;
+		my $item = new FAQ::OMatic::Item($filename);
+		my $title = $item->getTitle();
+		$title =~ tr/\[\]/\(\)/;	# eliminate []'s
+		$splitty[$i] = "faqomatic[$title]:$filename";
+	}
+	return join('', @splitty);
 }
 
 sub setText {
@@ -605,10 +625,31 @@ sub getChildren {
 # returns a list of all faqomatic: links in this part
 sub getLinks {
 	my $self = shift;
-	
-	my $text = $self->{'Text'};
-	my @dirlist = ($text =~ m/faqomatic:(\S*[^\s.,)\?!])/gs);
+	return getLinksFromText($self->{'Text'});
+}
+
+sub getLinksFromText {
+	my $text = shift;
+	my @splitty = splitLinksFromText($text);
+	my @dirlist = ();
+	for (my $i=1; $i<scalar(@splitty); $i+=2) {
+		# strip off faqomatic: prefixes to leave item names
+		$splitty[$i] =~ s/^faqomatic://;
+		push @dirlist, $splitty[$i];
+	}
 	return @dirlist;
+}
+
+sub splitLinksFromText {
+	# this function determines what is or isn't a faqomatic: link
+	# it returns a split-style alternating array; even indices are
+	# other stuff and odd indices are the faqomatic: links with
+	# the "faqomatic:" still attached.
+	my $text = shift;
+	my @splitty = split(/(faqomatic:[^>\s.,\?!)]+)/, $text);
+	#TODO debug delete
+	#my @splitty = split(/(faqomatic:[^\>]*)/, $text);
+	return @splitty;
 }
 
 # returns list of names of all bags this part references,
@@ -655,10 +696,10 @@ sub mergeDirectory {
 		and ($self->{'Text'} =~ m/\n\nAnswers in this categ/)) {
 		# Insert subcategories above "Answers in this category" header, if
 		# one exists.
-		$self->{'Text'} =~ s/(\n?\n\nAnswers in this categ)/\n\nfaqomatic:$filename$&/s;
+		$self->{'Text'} =~ s/(\n?\n\nAnswers in this categ)/\n\n<faqomatic:$filename>$&/s;
 	} else {
 		# just tack on the end with all the other answers
-		$self->{'Text'} .= "\nfaqomatic:$filename\n";
+		$self->{'Text'} .= "\n<faqomatic:$filename>\n";
 	}
 	my ($id,$aq) = FAQ::OMatic::Auth::getID();			# user is now a coauthor of
 	$self->addAuthor($id) if ($id);				# the directory part
@@ -677,7 +718,30 @@ sub unmergeDirectory {
 	# unmerge by simply "substituting out" the faqomatic link:
 	# THANKS: to erinker@beasys.com for helping me get the whitespace
 	# removal right (or at least better)
-	$self->{'Text'} =~ s/\n?\n? ?faqomatic:$filename//;
+	# THANKS: to "Mark D. Nagel" <nagel@intelenet.net> for finding
+	# structure-corrputing bug where removing 'faqomatic:21' would also
+	# change 'faqomatic:218' into 'faqomatic:21'. The fix was to add
+	# a pattern at the end that forces the match to be complete.
+	# Bad software engineering note: this regex needs to be kept in
+	# agreement with the one in Part::getLinks(), because they both define
+	# the boundaries of a faqomatic: link.
+	my @splitty = splitLinksFromText($self->{'Text'});
+	for (my $i=1; $i<scalar(@splitty); $i+=2) {
+		if ($splitty[$i] eq 'faqomatic:'.$filename) {
+			# found our target
+			# try to remove any surrounding boilerplate
+			$splitty[$i-1] =~ s/\n?\n? ?<?$//s;
+			$splitty[$i] = '';		# delete the faqomatic: ref
+			$splitty[$i+1] =~ s/^>//s;
+			# return happy
+			$self->{'Text'} = join('', @splitty);
+			return;
+		}
+	}
+	# Uh oh, never found the link!
+	die "failed to unmerge $filename from directory of "
+		.$self->{'filename'}
+		.".";
 }
 
 sub addAuthor {

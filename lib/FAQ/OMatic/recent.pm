@@ -32,7 +32,7 @@ package FAQ::OMatic::recent;
 use CGI;
 use FAQ::OMatic::Item;
 use FAQ::OMatic;
-use FAQ::OMatic::Search;
+use FAQ::OMatic::SearchMod;
 
 sub main {
 	my $cgi = FAQ::OMatic::dispatch::cgi();
@@ -40,7 +40,7 @@ sub main {
 	my $params = FAQ::OMatic::getParams($cgi);
 
 	# Get the names of the recent files
-	my $matchset = FAQ::OMatic::Search::getRecentSet($params);
+	my $matchset = FAQ::OMatic::SearchMod::getRecentSet($params);
 
 	# Filter out those in the trash
 	# THANKS: dschulte@facstaff.wisc.edu for the suggestion
@@ -95,7 +95,7 @@ sub main {
 
 	print $rt;
 
-	FAQ::OMatic::Search::closeWordDB();
+	FAQ::OMatic::SearchMod::closeWordDB();
 }
 
 sub byModDate {

@@ -34,6 +34,7 @@ use FAQ::OMatic::Item;
 use FAQ::OMatic;
 use FAQ::OMatic::Auth;
 use FAQ::OMatic::I18N;
+use FAQ::OMatic::HelpMod;
 
 sub main {
 	my $cgi = FAQ::OMatic::dispatch::cgi();
@@ -159,14 +160,16 @@ sub main {
 	}
 	$rt .= $part->displayPartEditor($item, $partnum, $params);
 
-	$rt .= FAQ::OMatic::Help::helpFor($params, 'editPart', "<br>\n");
-	$rt .= FAQ::OMatic::Help::helpFor($params, 'makingLinks', "<br>\n");
-	$rt .= FAQ::OMatic::Help::helpFor($params, 'seeAlso', "<br>\n");
+	$rt .= FAQ::OMatic::HelpMod::helpFor($params, 'editPart', "<br>\n");
+	$rt .= FAQ::OMatic::HelpMod::helpFor($params, 'makingLinks', "<br>\n");
+	$rt .= FAQ::OMatic::HelpMod::helpFor($params, 'seeAlso', "<br>\n");
 
 	# TODO: this will probably be unnecessary once there is a help system.
 	if (FAQ::OMatic::getParam($params, 'editCmds') eq 'hide') {
-		$rt .= "<p>If you later need to edit or delete this text, use the "
-			."[Appearance] page to turn on the expert editing commands.\n";
+		$rt .=
+		    "<p>" .
+		    gettexta("If you later need to edit or delete this text, use the [%0] page to turn on the expert editing commands.",gettext("Appearance")) .
+		    "\n";
 	}
 
 	$rt .= FAQ::OMatic::pageFooter($params, ['help','faq']);

@@ -33,7 +33,7 @@ use CGI;
 use FAQ::OMatic::Item;
 use FAQ::OMatic;
 use FAQ::OMatic::Auth;
-use FAQ::OMatic::Help;
+use FAQ::OMatic::HelpMod;
 use FAQ::OMatic::I18N;
 
 sub main {
@@ -78,44 +78,43 @@ sub main {
 		# no better.
 	} else {
 		if ($what eq 'addItem') {
-			$rt.=gettext("New items can only be added by")." $whoIsAllowed.";
+			$rt.=gettexta("New items can only be added by %0.",$whoIsAllowed);
 		} elsif ($what eq 'addPart') {
-			$rt.=gettext("New text parts can only be added by")." $whoIsAllowed.";
+			$rt.=gettexta("New text parts can only be added by %0.",$whoIsAllowed);
 		} elsif ($what eq 'delPart') {
-			$rt.=gettext("Text parts can only be removed by")." $whoIsAllowed.";
+			$rt.=gettexta("Text parts can only be removed by %0.",$whoIsAllowed);
 		} elsif ($what eq 'editPart' or $what eq 'submitPart') {
 			my $xreason = $params->{'_xreason'} || '';
 			if ($xreason eq 'useHTML') {
-				$rt.=gettext("This part contains raw HTML. To avoid pages with invalid HTML, the moderator has specified that only")." $whoIsAllowed ".gettext("can edit HTML parts.")." ";
-				$rt.=gettext("If you are")." $whoIsAllowed, ".gettext("you may authenticate yourself with this form.");
+				$rt.=gettexta("This part contains raw HTML. To avoid pages with invalid HTML, the moderator has specified that only %0 can edit HTML parts. If you are %0 you may authenticate yourself with this form.",$whoIsAllowed);
 			} elsif ($params->{'_insertpart'}) {
-				$rt.=gettext("Text parts can only be added by")." $whoIsAllowed.";
+				$rt.=gettexta("Text parts can only be added by %0.",$whoIsAllowed);
 			} else {
-				$rt.=gettext("Text parts can only be edited by")." $whoIsAllowed.";
+				$rt.=gettexta("Text parts can only be edited by %0.",$whoIsAllowed);
 			}
 		} elsif ($what eq 'editItem' or $what eq 'submitItem') {
-			$rt.=gettext("The title and options for this item can only be edited by")." $whoIsAllowed.";
+			$rt.=gettexta("The title and options for this item can only be edited by %0.",$whoIsAllowed);
 		} elsif ($what eq 'editModOptions' or $what eq 'submitModOptions') {
-			$rt.=gettext("The moderator options can only be edited by")." $whoIsAllowed.";
+			$rt.=gettexta("The moderator options can only be edited by %0.",$whoIsAllowed);
 		} elsif ($what eq 'moveItem' or $what eq 'submitMove') {
 			if ($whoIsAllowed =~ m/moderator/) {
 				$rt.=gettext("This item can only be moved by someone who can edit both the source and destination parent items.");
 			} else {
-				$rt.=gettext("This item can only be moved by")." $whoIsAllowed.";
+				$rt.=gettexta("This item can only be moved by %0.",$whoIsAllowed);
 			}
 		} elsif ($what eq 'selectBag'
 			or $what eq 'editBag'
 			or $what eq 'submitBag') {
 			my $xreason = $params->{'_xreason'} || '';
 			if ($xreason eq 'replace') {
-				$rt.=gettext("Only")." $whoIsAllowed ".gettext("can replace existing bags.");
+				$rt.=gettexta("Existing bags can only be replaced by %0.",$whoIsAllowed);
 			} else {
-				$rt.=gettext("Only")." $whoIsAllowed ".gettext("can post bags.");
+				$rt.=gettexta("Bags can only be posted by %0.",$whoIsAllowed);
 			}
 		} elsif ($what eq 'install') {
-			$rt.=gettext("The FAQ-O-Matic can only be configured by")." $whoIsAllowed.";
+			$rt.=gettexta("The FAQ-O-Matic can only be configured by %0.",$whoIsAllowed);
 		} else {
-			$rt.=gettext("The operation you attempted")." ($what) ".gettext("can only be done by")." $whoIsAllowed.";
+			$rt.=gettexta("The operation you attempted (%0) can only be done by %1.",$what,$whoIsAllowed);
 		}
 	
 		$rt .= "<ul><li>".gettext("If you have never established a password to use with FAQ-O-Matic, you can")." $newLoginButton.\n";
@@ -138,8 +137,8 @@ sub main {
 	
 		$rt .= "<p><input type=radio name=\"auth\" value=\"none\" checked>\n";
 		$rt .= " ".gettext("No authentication, but my email address is:")."\n";
-		$rt .= "<br>Email: "
-			."<input type=text name=\"_none_id\" value=\"\" size=60>\n";
+		$rt .= "<br>".gettext("Email:")
+			." <input type=text name=\"_none_id\" value=\"\" size=60>\n";
 	}
 
 	$rt .= "<p><input type=radio name=\"auth\" value=\"pass\"";
@@ -162,7 +161,7 @@ sub main {
 #				),
 #			"Cancel and Return to FAQ");
 
-	$rt.=FAQ::OMatic::Help::helpFor($params, 'authenticate');
+	$rt.=FAQ::OMatic::HelpMod::helpFor($params, 'authenticate');
 
 	$rt .= FAQ::OMatic::pageFooter($params, ['help', 'faq']);
 

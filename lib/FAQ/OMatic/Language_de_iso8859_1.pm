@@ -209,8 +209,8 @@ msgstr "Das idfile ist vorhanden."
 msgid "Configuration Main Menu (install module)"
 msgstr "Konfigurationsmenü (Modulinstallation)"
 
-msgid "Perform these tasks in order to prepare your FAQ-O-Matic version"
-msgstr "Führe diese Schritte durch, für FAQ-O-Matic Version"
+msgid "Perform these tasks in order to prepare your FAQ-O-Matic version %0:"
+msgstr "Führe diese Schritte durch, für FAQ-O-Matic Version %0:"
 
 msgid "Define configuration parameters."
 msgstr "Festlegen der Konfigurationsparameter."
@@ -679,22 +679,25 @@ msgstr "Setze Passwort"
 ###
 
 msgid "the administrator of this Faq-O-Matic"
-msgstr "der Administrator von FAQ-O-Matic"
+msgstr "vom Administrator der FAQ-O-Matic"
 
 msgid "someone who has proven their identification"
-msgstr "ein Benutzer, welcher seine Identifikation bewiesen hat"
+msgstr "von Benutzern, die ihre Identifikation bewiesen haben,"
 
 msgid "someone who has offered identification"
-msgstr "ein Benutzer, welcher seine Identifikation eingereicht hat"
+msgstr "von Benutzern, die ihre e-mail Adresse eingegeben haben,"
 
 msgid "anybody"
-msgstr "irgendjemand" 
+msgstr "von allen" 
 
 msgid "the moderator of the item"
-msgstr "dem Moderator des Eintrags"
+msgstr "vom Moderator des Eintrags"
 
-msgid "group members"
-msgstr "Gruppenmitglieder"
+msgid "%0 group members"
+msgstr "von Mitgliedern der Gruppe %0"
+
+msgid "I don't know who"
+msgstr "von (unbekannt)"
 
 ###
 ### Authenticate.pm
@@ -709,62 +712,47 @@ msgstr "ein neues Passwort eingeben"
 msgid "Create a New Login"
 msgstr "ein neues Login erstellen"
 
-msgid "New items can only be added by"
-msgstr "Neue Einträge können nur eingefügt werden von"
+msgid "New items can only be added by %0."
+msgstr "Neue Einträge können nur %0 eingefügt werden."
 
-msgid "New text parts can only be added by"
-msgstr "Neue Texteinträge können nur eingefügt werden von"
+msgid "New text parts can only be added by %0."
+msgstr "Neue Texteinträge können nur %0 eingefügt werden."
 
-msgid "Text parts can only be removed by"
-msgstr "Texteinträge können nur verschoben werden von"
+msgid "Text parts can only be removed by %0."
+msgstr "Texteinträge können nur %0 verschoben werden."
 
-msgid "This part contains raw HTML. To avoid pages with invalid HTML, the moderator has specified that only"
-msgstr "Dieser Eintrag enthält HTML-Code. Um Seiten mit HTML-Code zu vermeiden wurde festgelegt das nur"
+msgid "This part contains raw HTML. To avoid pages with invalid HTML, the moderator has specified that only %0 can edit HTML parts. If you are %0 you may authenticate yourself with this form."
+msgstr "Dieser Eintrag enthält HTML-Code. Um Seiten mit ungültigem HTML-Code zu vermeiden wurde festgelegt, daß er nur von %0 geändert werden darf. Melden Sie sich dazu mit diesem Formular an!"
 
-msgid "can edit HTML parts."
-msgstr "HTML-Seiten erstellen kann."
+msgid "Text parts can only be added by %0."
+msgstr "Texteinträge können nur %0 hinzugefügt werden."
 
-msgid "If you are"
-msgstr "Sind Sie"
+msgid "Text parts can only be edited by %0."
+msgstr "Texteinträge können nur %0 geändert werden."
 
-msgid "you may authenticate yourself with this form."
-msgstr "sollten Sie sich in diesem Formular authentifizieren."
+msgid "The title and options for this item can only be edited by %0."
+msgstr "Der Titel und die Einstellungen für diesen Eintrag können nur %0 geändert werden."
 
-msgid "Text parts can only be added by"
-msgstr "Texteinträge können nur hinzugefügt werden von"
-
-msgid "Text parts can only be edited by"
-msgstr "Texteinträge können nur geändert werden von"
-
-msgid "The title and options for this item can only be edited by"
-msgstr "Der Titel und die Einstellungen für diesen Eintrag können nur geändert werden von"
-
-msgid "The moderator options can only be edited by"
-msgstr "Die Moderator-Einstellungen können nur geändert werden von"
+msgid "The moderator options can only be edited by %0."
+msgstr "Die Moderator-Einstellungen können nur %0 geändert werden."
 
 msgid "This item can only be moved by someone who can edit both the source and destination parent items."
 msgstr "Dieser Einträg kann nur vom rechtmässigem Besitzer verschoben werden."
 
-msgid "This item can only be moved by"
-msgstr "Dieser Eintrag kann nur verschoben werden von"
+msgid "This item can only be moved by %0."
+msgstr "Dieser Eintrag kann nur %0 verschoben werden."
 
-msgid "Only"
-msgstr "Nur"
+msgid "Existing bags can only be replaced by %0."
+msgstr "Dateiobjekte dürfen nur %0 ersetzt werden."
 
-msgid "can replace existing bags."
-msgstr "kann verhandene Datei-Objekte ersetzen."
+msgid "Bags can only be posted by %0."
+msgstr "Datei-Objekte dürfen nur %0 erstellt werden."
 
-msgid "can post bags."
-msgstr "kann Datei-Objekte verschicken."
+msgid "The FAQ-O-Matic can only be configured by %0."
+msgstr "FAQ-O-Matic kann nur %0 konfiguriert."
 
-msgid "The FAQ-O-Matic can only be configured by"
-msgstr "FAQ-O-Matic kann nur konfiguriert werden von"
-
-msgid "The operation you attempted"
-msgstr "Die von Ihnen versuchte Operation"
-
-msgid "can only be done by"
-msgstr "kann nur durchgeführt werden von"
+msgid "The operation you attempted (%0) can only be done by %1."
+msgstr "Die von Ihnen versuchte Operation (%0) kann nur %1 ausgeführt werden."
 
 msgid "If you have never established a password to use with FAQ-O-Matic, you can"
 msgstr "Wenn Sie noch kein Passwort zur Benutzung von FAQ-O-Matic festgelegt haben, können Sie"
@@ -773,7 +761,7 @@ msgid "If you have forgotten your password, you can"
 msgstr "Wenn Sie Ihr Passwort vergessen haben, können Sie"
 
 msgid "If you have already logged in earlier today, it may be that the token I use to identify you has expired. Please log in again."
-msgstr "Wenn Sie schon einmal eingeloggt waren, könnte es sein, daß Ihr Passwort nicht mehr gültig ist. Bitte loggen Sie sich erneut ein."
+msgstr "Wenn Sie schon eingeloggt waren, könnte es sein, daß Ihr Zugangsschlüssel abgelaufen ist ist. Bitte loggen Sie sich erneut ein."
 
 msgid "Please offer one of the following forms of identification:"
 msgstr "Bitte wählen Sie die Art der Identifikation:"
@@ -839,6 +827,9 @@ msgstr "Änderung des"
 
 msgid "text part in"
 msgstr "Texteintrag in"
+
+msgid "If you later need to edit or delete this text, use the [%0] page to turn on the expert editing commands."
+msgstr "Wenn Sie diesen Text später ändern oder löschen wollen, dann benutzen Sie [%0] zur Anzeige der Experten-Kommandos."
 
 ###
 ### Part.pm
@@ -1185,11 +1176,11 @@ msgstr "Nur die oberste Kategorie zeigen"
 msgid "Show This <em>Entire</em> Category"
 msgstr "Die <em>gesamte</em> Kategorie zeigen"
 
-msgid "Show This $whatAmI As Text</a>"
-msgstr "Anzeigen von $whatAmI als Text</a>"
+msgid "Show This %0 As Text"
+msgstr "%0 als Text anzeigen"
 
-msgid "Show This <em>Entire</em> Category As Text</a>"
-msgstr "Anzeigen der <em>gesamten</em> Kategorie als Text</a>"
+msgid "Show This <em>Entire</em> Category As Text"
+msgstr "Anzeigen der <em>gesamten</em> Kategorie als Text"
 
 msgid "Hide Expert Edit Commands"
 msgstr "Erweiterte Funktionen verstecken"

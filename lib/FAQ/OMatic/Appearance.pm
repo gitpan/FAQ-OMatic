@@ -74,12 +74,26 @@ sub cPageHeader {
 		my $pageHeader = $FAQ::OMatic::Config::pageHeader || '';
 		my $page = '';
 		$page .= $type;
+		$page .= "<!DOCTYPE HTML PUBLIC "
+			."\"-//W3C//DTD HTML 4.0 Transitional//EN\">";
 		$page .= "<html><head><title>".FAQ::OMatic::fomTitle()
-			.FAQ::OMatic::pageDesc($params)."</title></head>\n"
-			."<body bgcolor=\"$FAQ::OMatic::Config::backgroundColor\" "
-			."text=$FAQ::OMatic::Config::textColor "
-			."link=$FAQ::OMatic::Config::linkColor "
-			."vlink=$FAQ::OMatic::Config::vlinkColor>\n$pageHeader\n";
+            .FAQ::OMatic::pageDesc($params)."</title></head>\n"
+            ."<body bgcolor=\"$FAQ::OMatic::Config::backgroundColor\" "
+			."text=\"$FAQ::OMatic::Config::textColor\" "
+			."link=\"$FAQ::OMatic::Config::linkColor\" "
+			."vlink=\"$FAQ::OMatic::Config::vlinkColor\">\n";
+
+		# THANKS: to Steve Taylor <staylor@cybernet.com> for sending a
+		# patch to allow file inclusion in page headers/footers. Some
+		# people want to put a lot of HTML in there...
+		if ($pageHeader =~ m#^file=(.*)$#) {
+			# this file= stuff isn't working right yet. Not sure why patterns
+			# aren't doing what I expect.
+			$page .= FAQ::OMatic::cat($1);
+		} else {
+			$page .= "$pageHeader\n";
+		}
+
 		if ($FAQ::OMatic::Config::navigationBlockAtTop || '') {
 			# THANKS to Jim Adler <jima@sr.hp.com> for suggesting
 			# a copy of the nav block at the top of each page.
@@ -104,7 +118,15 @@ sub cPageFooter {
 	} else {
 		my $page = '';
 		$page .= navigationBlock($params, $showLinks);
-		$page .= $FAQ::OMatic::Config::pageFooter || '';
+
+		my $pageFooter = $FAQ::OMatic::Config::pageFooter || '';
+		if ($pageFooter =~ m#^file=(.*)$#) {
+			# this file= stuff isn't working right yet. Not sure why patterns
+			# aren't doing what I expect.
+			$page .= FAQ::OMatic::cat($1);
+		} else {
+			$page .= "$pageFooter\n";
+		}
 		$page .= "</body></html>\n";
 		return $page;
 	}
@@ -143,7 +165,7 @@ sub navigationBlock {
 			FAQ::OMatic::button(
 				FAQ::OMatic::makeAref('-command'=>'searchForm',
 					'-params'=>$params),
-				gettext("Search") . "</a>");
+				gettext("Search"));
 	}
 
 	if ($showLinks->{'appearance'}) {
@@ -166,14 +188,14 @@ sub navigationBlock {
 						FAQ::OMatic::makeAref('-command'=>'faq',
 							'-params'=>$params,
 							'-changedParams'=>{'_recurse'=>''}),
-						gettext("Show Top Category Only") . "</a>");
+						gettext("Show Top Category Only") . "<!-- not -->");
 			} else {
 				push @cells,
 					FAQ::OMatic::button(
 						FAQ::OMatic::makeAref('-command'=>'faq',
 							'-params'=>$params,
 							'-changedParams'=>{'_recurse'=>1}),
-						gettext("Show This <em>Entire</em> Category") . "</a>");
+						gettext("Show This <em>Entire</em> Category") . "<!-- not -->");
 			}
 		} else {
 			push @cells, "";
@@ -187,14 +209,14 @@ sub navigationBlock {
 				FAQ::OMatic::makeAref('-command'=>'faq',
 					'-params'=>$params,
 					'-changedParams'=>{'render'=>'text'}),
-				gettext("Show This $whatAmI As Text</a>"));
+				gettexta("Show This %0 As Text",$whatAmI));
 		if ($item->isCategory() and $showLinks->{'entire'}) {
 			push @cells,
 				FAQ::OMatic::button(
 					FAQ::OMatic::makeAref('-command'=>'faq',
 						'-params'=>$params,
 						'-changedParams'=>{'render'=>'text', '_recurse'=>1}),
-				 gettext("Show This <em>Entire</em> Category As Text</a>"));
+				 gettext("Show This <em>Entire</em> Category As Text"));
 		}
 	}
 
@@ -258,10 +280,12 @@ sub navigationBlock {
 		$page .= "</table>\n"
 			."</td></tr></table>\n";
 	} else {
-		@cells = map { "<br>$_\n" } @cells;
+#		@cells = map { "<br>$_\n" } @cells; 		/jes
+		@cells = map { "$_\n" } @cells;
 		$page .= "\n".join('', @cells)."\n";
 		if ($showLinks->{'faqomatic-home'}) {
-			$page .= "<br>".$software;
+#			$page .= "<br>".$software;		/jes
+			$page .= $software."<br>";
 		}
 	}
 
@@ -481,7 +505,7 @@ sub getColorText {
 	if ($size eq 'edit') {
 		# The editing buttons are smaller so that they'll not look as much like
 		# part of the item being displayed, but more like little intruders.
-		$text = "<font size=-1>${text}</font>";
+		$text = "<font size=\"-1\">${text}</font>";
 	}
 	return ($color,$text);
 }

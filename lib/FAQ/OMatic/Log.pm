@@ -149,7 +149,7 @@ sub summarizeDay {
 
 				# touch the dbm files so we'll see them later
 				if (not dbmopen(%uniquehosts,
-						"$FAQ::OMatic::Config::metaDir/$date.uhdb", 600)) {
+						"$FAQ::OMatic::Config::metaDir/$date.uhdb", 0600)) {
 					FAQ::OMatic::gripe('abort',
 		"FAQ::OMatic::Log::summarizeDay: Can't create $FAQ::OMatic::Config::metaDir/$date.uhdb");
 				}
@@ -163,7 +163,7 @@ sub summarizeDay {
 	# other statistics for the day.
 	if ($FAQ::OMatic::Config::statUniqueHosts) {
 		if (not dbmopen(%uniquehosts,
-				"$FAQ::OMatic::Config::metaDir/$date.uhdb", 400)) {
+				"$FAQ::OMatic::Config::metaDir/$date.uhdb", 0400)) {
 			FAQ::OMatic::gripe('abort',
 				"FAQ::OMatic::Log::summarizeDay: Couldn't open "
 				."dbm file $FAQ::OMatic::Config::metaDir/$date.uhdb. ($!)");

@@ -208,21 +208,35 @@ sub main {
 		}
 		# verify that new and old directory text contain identical set of
 		# faqomatic: links
-		my @oldLinks = sort ($part->{'Text'} =~ m/faqomatic:(\S+)/sg);
-		my @newLinks = sort ($params->{'_newText'} =~ m/faqomatic:(\S+)/sg);
+		my @oldLinks = sort($part->getLinks());
+		my @newLinks = sort(
+			FAQ::OMatic::Part::getLinksFromText($params->{'_newText'}));
+			# Perl sucks sometimes. If you leave the parens of the sort()
+			# in the previous statement, the secret magical Perl bit
+			# 'wantarray' does not get set, and so the return value from
+			# getLinks...() gets all globbed into a single scalar, glued
+			# together with spaces. Aaaargh! I hate how Perl second-guesses me.
+
+		my $error = 0;
 		if (scalar @oldLinks != scalar @newLinks) {
-			FAQ::OMatic::gripe('error', "When editing a directory, you "
-				."may not alter the set of faqomatic:<i>item</i> links in "
-				."directory.");
-		}
-		my $i;
-		for ($i=0; $i<scalar(@oldLinks); $i++) {
-			if ($oldLinks[$i] ne $newLinks[$i]) {
-				FAQ::OMatic::gripe('error', "When editing a directory, you "
-					."may not alter the set of faqomatic:<i>item</i> links in "
-					."directory.");
+			$error = 1;
+		} else {
+			my $i;
+			for ($i=0; $i<scalar(@oldLinks); $i++) {
+				if ($oldLinks[$i] ne $newLinks[$i]) {
+					$error = 1;
+				}
 			}
 		}
+		if ($error) {
+			FAQ::OMatic::gripe('error', "When editing a directory, you "
+				."may not alter the set of faqomatic:<i>item</i> links in "
+				."directory."
+				."<p>".join('',(map {"<br>old: $_\n"} @oldLinks))
+				."<p>".join('',(map {"<br>new: $_\n"} @newLinks))
+				);
+		}
+
 		# the new directory passes the test
 		$part->setText($params->{'_newText'});
 

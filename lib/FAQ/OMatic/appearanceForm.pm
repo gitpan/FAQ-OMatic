@@ -32,6 +32,7 @@ package FAQ::OMatic::appearanceForm;
 use CGI;
 use FAQ::OMatic;
 use FAQ::OMatic::I18N;
+use FAQ::OMatic::HelpMod;
 
 sub main {
 	my $cgi = FAQ::OMatic::dispatch::cgi();
@@ -126,7 +127,7 @@ sub main {
 		."</td></tr>\n";
 	$page.="</table></form>\n";
 
-	$page.=FAQ::OMatic::Help::helpFor($params, 'Appearance Options', "\n");
+	$page.=FAQ::OMatic::HelpMod::helpFor($params, 'Appearance Options', "\n");
 
 	$page.= FAQ::OMatic::pageFooter($params, ['help', 'faq']);
 

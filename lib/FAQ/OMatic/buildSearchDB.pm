@@ -47,7 +47,11 @@ sub build {
 	my $item;
 	foreach $filename (@allItems) {
 		$item = new FAQ::OMatic::Item($filename);
-		$item->extractWords($words);
+		if ($item->isBroken()) {
+			FAQ::OMatic::gripe('debug', 'item/'.$filename.' is broken.');
+		} else {
+			$item->extractWords($words);
+		}
 	}
 
 	my @wordlist = sort keys %{$words};
@@ -60,7 +64,8 @@ sub build {
 	my %wordsdb;
 	my $searchFileName = 'search.'.FAQ::OMatic::nonce();
 	my $searchFilePath = $FAQ::OMatic::Config::metaDir.'/'.$searchFileName;
-	dbmopen %wordsdb, $searchFilePath, 600;
+	dbmopen (%wordsdb, $searchFilePath, 0600);
+		# perl sure is touchy about its octal literals
 	open(INDEXFILE, ">${searchFilePath}.index")
 		|| die "${searchFilePath}.index $!";
 	open(WORDSFILE, ">${searchFilePath}.words")
@@ -97,8 +102,10 @@ sub build {
 	# move temp files into place as the official search database
 	foreach my $from (@searchfiles) {
 		$from =~ m#${searchFileName}([^/]*)$#;
-		my $suffix = $1
-			|| die "$from !~ $searchFileName";
+		my $suffix = $1;
+		if (not defined $suffix) {
+			die "Could not find suffix: $from !~ $searchFileName";
+		}
 		my $to = "${FAQ::OMatic::Config::metaDir}/search${suffix}";
 		rename($from,$to) ||
 			FAQ::OMatic::gripe('debug', "rename($from,$to) failed");

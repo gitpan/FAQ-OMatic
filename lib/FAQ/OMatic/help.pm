@@ -33,7 +33,7 @@ use CGI;
 
 use FAQ::OMatic;
 use FAQ::OMatic::Item;
-use FAQ::OMatic::Help;
+use FAQ::OMatic::HelpMod;
 
 sub main {
 	my $cgi = FAQ::OMatic::dispatch::cgi();
@@ -47,7 +47,7 @@ sub main {
 		'-changedParams'=>{'help'=>1},
 		'-refType'=>'url',
 		'-saveTransients'=>1);
-	$helpUrl = FAQ::OMatic::Help::helpURL($params, $cmd);
+	$helpUrl = FAQ::OMatic::HelpMod::helpURL($params, $cmd);
 #	my $helpUrl = FAQ::OMatic::makeAref('-command'=>'faq',
 #		'-params'=>$params,
 #		'-changedParams'=>{'file'=>'help000'},

@@ -177,13 +177,14 @@ my %defaultProperties = (
 	'PermAddPart' =>		[ 5, 0 ],
 	'PermAddItem' =>		[ 5, 0 ],
 #	'PermEditItem' =>		[ 5, 0 ],		# (deprecated)
-	'PermEditTitle' =>		[ 7, 0 ],		# moderator
+	'PermEditTitle' =>		[ 5, 0 ],		# moderator
 	'PermEditDirectory' =>	[ 7, 0 ],
 	'PermModOptions' =>		[ 7, 0 ],
 	'PermUseHTML' =>		[ 7, 0 ],
 	'PermNewBag' =>			[ 7, 1 ],
 	'PermReplaceBag' =>		[ 7, 1 ],
-	'PermEditGroups' =>		[ "6 Administrators", 1 ],
+	'PermInstall' =>		[ 7, 1 ],
+	'PermEditGroups' =>		[ 7, 1 ],
 	'RelaxChildPerms' =>	[ 'norelax', 0],
 );
 
@@ -478,7 +479,7 @@ sub authError {
 
 	return $staticErrors{$reason} if ($staticErrors{$reason});
 
-	if ($reason == 7) {
+	if ($reason eq '7') {
 		my $modname = '';
 		if ($file ne '') {
 			my $item = new FAQ::OMatic::Item($file);
@@ -488,7 +489,7 @@ sub authError {
 	}
 
 	if ($reason =~ m/^6/) {
-		return FAQ::OMatic::Groups::groupCodeToName($reason)." ".gettext("group members");
+		return gettexta("%0 group members",FAQ::OMatic::Groups::groupCodeToName($reason));
 	}
 
 	return "I don't know who";

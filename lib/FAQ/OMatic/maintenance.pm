@@ -103,6 +103,7 @@ sub main {
 			hprint("--- $i($slow)\n");
 			if (not eval "$i($slow); return 1;") {
 				hprint("*** Task $i failed\n    Error: $@\n");
+				hprint(FAQ::OMatic::stackTrace('html'));
 			}
 		} else {
 			hprint("*** Task $i undefined\n");
@@ -428,7 +429,9 @@ sub invoke {
 	if (not connect(HTTPSOCK, $sin)) {
 		die "maintenance::invoke can't connect(): $!, $@!\n"
 	}
-	print $httpsock "GET $url HTTP/1.0\n\n";
+	print $httpsock "GET $url HTTP/1.0\nHost: $host\n\n";
+		# Thanks to Gabor Melis <gabor.melis@essnet.se> for the "Host:"
+		# header, which makes virtually hosted sites work right.
 	FAQ::OMatic::flush($httpsock);
 		# Thanks to Miro Jurisic <meeroh@MIT.EDU> for this fix.
 
@@ -645,8 +648,18 @@ sub mirrorClient {
 
 	my @bags = grep { m/^bag\s/ } @reply;
 	foreach $line (@bags) {
-		my ($file,$lms) =
-			($line =~ m/bag\s+(\S+)\s+(\S+)/);
+		my ($bagword,$file,$lms) = split(/\s+/, $line);
+		if (not defined($bagword)
+			|| ($bagword ne 'bag')
+			|| not defined($file)) {
+			hprint("bad line: $line");
+			#continue; LEFT OFF
+		}
+		if ((not defined($lms)) || ($lms eq '')) {
+			# some old mirrorServer forgot to send a date --- assume the
+			# file is recently modified.
+			$lms = time();
+		}
 		$file = FAQ::OMatic::Bags::untaintBagName($file);
 		if ($file eq '') {
 			hprint("<br>Tainted bag name in '$line'\n");

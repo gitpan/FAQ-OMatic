@@ -70,9 +70,7 @@ sub saveBagDesc {
 
 sub untaintBagName {
 	# untaint a bag name -- result is either a valid name or ''
-	my $name = shift;
-	$name =~ m/^([\w-.]+)$/;
-	$name = $1 || '';
+	my $name = FAQ::OMatic::untaintFilename(shift());
 	# Don't want user overwriting .desc files with binary bags -- YUK!
 	return '' if ($name =~ m/\.desc$/);
 	return $name;

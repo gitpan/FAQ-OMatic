@@ -33,7 +33,7 @@ use CGI;
 use FAQ::OMatic::Item;
 use FAQ::OMatic;
 use FAQ::OMatic::Auth;
-use FAQ::OMatic::Help;
+use FAQ::OMatic::HelpMod;
 use FAQ::OMatic::I18N;
 
 sub main {
@@ -138,7 +138,7 @@ sub main {
 #	$rt .= FAQ::OMatic::button(FAQ::OMatic::makeAref('faq', {}),
 #			"Cancel and return to FAQ")."\n";
 
-	$rt .= FAQ::OMatic::Help::helpFor($params, 'moveItem');
+	$rt .= FAQ::OMatic::HelpMod::helpFor($params, 'moveItem');
 
 	print $rt;
 

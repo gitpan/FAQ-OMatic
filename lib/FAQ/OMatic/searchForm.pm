@@ -32,6 +32,7 @@ package FAQ::OMatic::searchForm;
 use CGI;
 use FAQ::OMatic;
 use FAQ::OMatic::I18N;
+use FAQ::OMatic::HelpMod;
 
 sub main {
 	my $cgi = FAQ::OMatic::dispatch::cgi();
@@ -86,7 +87,7 @@ sub main {
 #		FAQ::OMatic::makeAref('-command'=>''),
 #		'Return to FAQ')."<br>\n";
 
-	$page.=FAQ::OMatic::Help::helpFor($params,
+	$page.=FAQ::OMatic::HelpMod::helpFor($params,
 		'Search Tips', "<br>");
 
 	$page.= FAQ::OMatic::pageFooter($params, ['help','faq']);

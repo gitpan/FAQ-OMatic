@@ -53,30 +53,31 @@ use FAQ::OMatic::I18N;
 use FAQ::OMatic::ColorPicker;
 use FAQ::OMatic::maintenance;
 
-use vars qw($cgi $params $configInfo);	# file-scoped, mod_perl-safe
-	# ($cgi and $params get re-set on every invocation of main(), so
-	# they shouldn't cache old values. I hope.)
+use vars qw($params $configInfo);	# file-scoped, mod_perl-safe
 
 sub main {
-	$cgi = {};
 	$params = {};
-
-	$cgi = FAQ::OMatic::dispatch::cgi();
-	my $needauth=0;
 
 	if ($FAQ::OMatic::Config::secureInstall) {
 		require FAQ::OMatic::Auth;
 		# make params available to FAQ::OMatic::Auth::getId
-		$params = FAQ::OMatic::getParams($cgi, 'dontlog');
+		$params = FAQ::OMatic::getParams(cgi(), 'dontlog');
 		my ($id,$aq) = FAQ::OMatic::Auth::getID();
+		# THANKS to Joerg Schneider <joergs@mail.deuba.com> for
+		# sending in this patch that lets the admin set the permissions
+		# for who (else) can get to the install page.
 		if (($id ne $FAQ::OMatic::Config::adminAuth) or ($aq<5)) {
-			$needauth = 1;
+			FAQ::OMatic::Auth::ensurePerm('-item'=>'',
+				'-operation'=>'PermInstall',
+				'-restart'=>FAQ::OMatic::commandName(),
+				'-cgi'=>cgi(),
+				'-failexit'=>1);
 		}
 	} elsif (defined($main::temporaryCryptedPassword)) {
 		# secureInstall isn't set -- the temporary password must be
 		# present.
 		my $tcp = $main::temporaryCryptedPassword;
-		my $temppass = $cgi->param('temppass') || '';
+		my $temppass = cgi()->param('temppass') || '';
 		my $crtemppass = crypt($temppass, $tcp);
 		if ($crtemppass ne $tcp) {
 			tempPassPage();
@@ -85,21 +86,16 @@ sub main {
 		# else temp pass matched -- accept it.
 	}
 
-	if ($needauth) {
-		my $url = FAQ::OMatic::makeAref('authenticate',
-			{'_restart' => 'install', '_reason'=>'9' },
-			'url', 'saveTransients');
-		print FAQ::OMatic::redirect($cgi, $url);
-	} elsif (($cgi->param('step')||'') eq 'makeSecure') {
+	if ((cgi()->param('step')||'') eq 'makeSecure') {
 		makeSecureStep();	# don't print text/html header
 	} else {
-		print FAQ::OMatic::header($cgi, '-type'=>"text/html");
-		print $cgi->start_html('-title'=>gettext("Faq-O-Matic Installer"),
+		print FAQ::OMatic::header(cgi(), '-type'=>"text/html");
+		print cgi()->start_html('-title'=>gettext("Faq-O-Matic Installer"),
 								'-bgcolor'=>"#ffffff");
 	
-		doStep($cgi->param('step'));
+		doStep(cgi()->param('step'));
 
-		print $cgi->end_html();
+		print cgi()->end_html();
 	}
 }
 
@@ -122,7 +118,8 @@ sub doStep {
 		my $expr = $step."Step()";
 		eval($expr);
 		if ($@) {
-			displayMessage("$step ".gettext("failed:")." $@", 'default');
+			displayMessage("$step ".gettext("failed:")." $@"
+				.FAQ::OMatic::stackTrace('html'), 'default');
 		}
 	} elsif ($step eq '') {
 		doStep('default');
@@ -332,8 +329,9 @@ sub mainMenuStep {
 	my $par = "";	# "<p>" for more space between items
 
 	$rt.="<h3>".gettext("Configuration Main Menu (install module)")."</h3>\n";
-	$rt.=gettext("Perform these tasks in order to prepare your FAQ-O-Matic version")
-		." $FAQ::OMatic::VERSION:\n<ol>";
+	$rt.=gettexta("Perform these tasks in order to prepare your FAQ-O-Matic version %0:",
+			$FAQ::OMatic::VERSION)
+		."\n<ol>";
 	$rt.="$par<li><a href=\"".installUrl('askConfig')."\">"
 			.checkBoxFor('askConfig')
 			.gettext("Define configuration parameters.")."</a>\n";
@@ -427,7 +425,9 @@ sub mainMenuStep {
 	my $lmstr = $lm
 		? FAQ::OMatic::Item::compactDate($lm)
 		: "never";
-	$rt.="<br>".checkBoxFor('nothing')."Maintenance last run at: $lmstr\n";
+	$rt.="<br>".checkBoxFor('nothing')
+		.gettext("Maintenance last run at:")
+		." $lmstr\n";
 
 	$rt.="$par<li><a href=\"".installUrl('configVersion')."\">"
 		.checkBoxFor('configVersion')
@@ -510,7 +510,7 @@ sub isDone {
 	my $thing = shift;
 
 	return 1 if (($thing eq 'askConfig')
-		&& ($FAQ::OMatic::Config::adminAuth)
+		&& (($FAQ::OMatic::Config::adminAuth||'') ne '')
 		&& not undefinedConfigsExist());
 	return 1 if (($thing eq 'configItem')
 		&& (($FAQ::OMatic::Config::itemDir||'') ne '')
@@ -698,15 +698,21 @@ sub configInfo {
 
 	ci('sep_c', '-sort'=>'c--sep', '-separator', '-desc'=>
 		gettext("<b>Mandatory:</b> Server directory configuration")),
+	ci('serverBase', '-sort'=>'c-a1', '-free', '-desc'=>
+		gettext("Protocol, host, and port parts of the URL to your site. This will be used to construct link URLs. Omit the trailing '/'; for example: <tt>http://www.dartmouth.edu</tt>"),
+		'-default'=>"'".FAQ::OMatic::serverBase()."'" ),
+	ci('cgiURL', '-sort'=>'c-a2', '-free', '-desc'=>
+		gettext("The path part of the URL used to access this CGI script, beginning with '/' and omitting any parameters after the '?'. For example: <tt>/cgi-bin/cgiwrap/jonh/faq.pl</tt>"),
+		'-default'=>"'".FAQ::OMatic::cgiURL()."'" ),
 	ci('serveDir', '-sort'=>'c-c1', '-free', '-desc'=>
 		gettext("Filesystem directory where FAQ-O-Matic will keep item files, image and other bit-bag files, and a cache of generated HTML files. This directory must be accesible directly via the http server. It might be something like /home/faqomatic/public_html/fom-serve/"),'-default'=>"''"),
 	ci('serveURL', '-sort'=>'c-c2', '-free', '-desc'=>
-		gettext("The URL prefix needed to access files in").' <b>$serveDir</b>. '.gettext("It should be relative to the root of the server (omit http://hostname:port, but include a leading /). It should also end with a /.") , '-default'=>"''" ),
+		gettext("The path prexif of the URL needed to access files in").' <b>$serveDir</b>. '.gettext("It should be relative to the root of the server (omit http://hostname:port, but include a leading '/'). It should also end with a '/'.") , '-default'=>"''" ),
 
 	ci('sep_e', '-sort'=>'e--sep', '-separator', '-desc'=>
 		gettext("<i>Optional:</i> Miscellaneous configurations")),
 	ci('language',		'-sort'=>'k-m00',
-		'-choices'=>[ "'en'", "'de_iso8859_1'"],
+		'-choices'=>[ "'en'", "'de_iso8859_1'", "'fr'"],
 		'-desc'=>
 		gettext("Select the display language."),
 		'-default'=>"'en'"),
@@ -719,7 +725,10 @@ sub configInfo {
 		'-default'=>"''", '-desc'=>
 		gettext("If this parameter is set, this FAQ will become a mirror of the one at the given URL. The URL should be the base name of the CGI script of the master FAQ-O-Matic.")),
 	ci('pageHeader',	'-sort'=>'m-p1', '-free', '-mirror', '-desc'=>
-		gettext("An HTML fragment inserted at the top of each page. You might use this to place a corporate logo.")),
+		gettext("An HTML fragment inserted at the top of each page. You might "
+	."use this to place a corporate logo. If this field begins with "
+	."\"file=\", the text will come from the named file in the meta "
+	."directory; otherwise, this field is included verbatim.")),
 	# THANKS to Vicki Brown <vlb@cfcl.com> for demanding a configurable
 	# tableWidth tag. It's a workaround for Netscape's buggy page layout;
 	# it doesn't even help with align=right images.
@@ -728,7 +737,8 @@ sub configInfo {
 		'-default'=>"'width=\"100%\"'",
 		'-free', '-mirror', '-desc'=>
 		gettext("The width= tag in a table. If your").' $pageHeader '.gettext("has")." align=left, ".gettext("you will want to make this empty.")),
-	ci('pageFooter',	'-sort'=>'m-p2', '-free', '-mirror', '-desc'=>
+	ci('pageFooter',	'-sort'=>'m-p2', '-free', '-mirror',
+		'-default' => "'This FAQ administered by ...'", '-desc'=>
 		gettext("An HTML fragment appended to the bottom of each page. You might use this to identify the webmaster for this site.")),
 	ci('adminEmail','-sort'=>'n-e2', '-free', '-choices'=>[ '$adminAuth' ],
 		'-default' => "\$adminAuth",
@@ -891,7 +901,7 @@ sub askConfigStep {
 	my ($left, $right);
 
 	$rt.="<table>\n";
-	$rt.=installUrl('setConfig', 'GET');
+	$rt.=installUrl('setConfig', 'POST'); # long pageHeader can exceed limit of web server
 
 	# Read current configuration
 	my $map = getPotentialConfig();
@@ -997,11 +1007,12 @@ sub setConfigStep {
 	my $notices = '';	#nonproblems
 	my ($left, $right);
 	my $map = getPotentialConfig();
+
 	foreach $left (sort keys %{$map}) {
 		$right = $map->{$left};
-		my $selected = $cgi->param($left."-select") || '';
+		my $selected = cgi()->param($left."-select") || '';
 		if ($selected eq 'free') {
-			$map->{$left} = "'".$cgi->param($left."-free")."'";
+			$map->{$left} = "'".cgi()->param($left."-free")."'";
 		} elsif ($selected ne '') {
 			$map->{$left} = $selected;
 		}
@@ -1048,13 +1059,15 @@ sub checkConfig {
 	}
 	if ($left eq '$adminAuth') {
 		if (not FAQ::OMatic::validEmail($aright)) {
-			return ("$left ($eright) doesn't look like an email address.",
+			return ("$left ($eright) doesn't look like a "
+					."fully-qualified email address.",
 				'fix');
 		}
 	}
 	if ($left eq '$adminEmail' and $right ne '$adminAuth') {
 		if (not FAQ::OMatic::validEmail($aright)) {
-			return ("$left ($eright) doesn't look like an email address.",
+			return ("$left ($eright) doesn't look like a "
+					."fully-qualified email address.",
 				'fix');
 		}
 	}
@@ -1131,8 +1144,8 @@ sub firstItemStep {
 		$item->saveToFile('1');
 		displayMessage("Created an initial category (file=1).");
 	} else {
-		displayMessage("<b>$FAQ::OMatic::Config::itemDir</b> already "
-				."contains a file '1'.");
+		displayMessage(gettexta("<b>%0</b> already contains a file '%1'.",
+			$FAQ::OMatic::Config::itemDir, '1'));
 	}
 	if (not -f "$FAQ::OMatic::Config::itemDir/trash") {
 		my $item = new FAQ::OMatic::Item();
@@ -1143,8 +1156,8 @@ sub firstItemStep {
 		$item->saveToFile('trash');
 		displayMessage("Created a trash category.");
 	} else {
-		displayMessage("<b>$FAQ::OMatic::Config::itemDir</b> already "
-				."contains a 'trash' file.");
+		displayMessage(gettexta("<b>%0</b> already contains a file '%1'.",
+			$FAQ::OMatic::Config::itemDir, 'trash'));
 	}
 	if (not -f "$FAQ::OMatic::Config::itemDir/help000") {
 		my $item = new FAQ::OMatic::Item();
@@ -1155,8 +1168,8 @@ sub firstItemStep {
 		$item->saveToFile('help000');
 		displayMessage("Created a help category.");
 	} else {
-		displayMessage("<b>$FAQ::OMatic::Config::itemDir</b> already "
-				."contains a 'help000' file.");
+		displayMessage(gettexta("<b>%0</b> already contains a file '%1'.",
+			$FAQ::OMatic::Config::itemDir, 'help000'));
 	}
 
 	# The reason for an Items version field is to ensure that
@@ -1192,8 +1205,9 @@ sub copyItemsStep {
 			.scalar(@newList)." items. I don't plan on doing anything "
 			."about this, though. How about you check? :v)");
 	} else {
-		displayMessage("Copied ".scalar(@newList)." items from "
-			."<tt>$oldDir</tt> to <tt>$newDir</tt>.");
+		displayMessage(
+			gettexta("Copied %0 items from <tt>%1</tt> to <tt>%2</tt>.",
+				scalar(@newList), $oldDir, $newDir));
 	}
 	doStep('mainMenu');
 }
@@ -1205,9 +1219,9 @@ sub maintenanceStep {
 
 	# The parameters we'll be passing to the maintenance module
 	# via the CGI dispatch mechanism:
-	my $host = $cgi->server_name();
-	my $port = $cgi->server_port();
-	my $path = $cgi->script_name();
+	my $host = cgi()->virtual_host();
+	my $port = cgi()->server_port();
+	my $path = cgi()->script_name();
 	my $req = $path."?cmd=maintenance&secret=$secret";
 
 	# Figure out a suitable -I include path in case we're picking up FAQ-O-Matic
@@ -1250,7 +1264,15 @@ sub maintenanceStep {
 	# display what we're planning to do, so that resourceful admins
 	# can still install even if our heuristics fail and we have to abort.
 	displayMessage("Attempting to install cron job:\n"
-			."<pre><font size=-1>$cronLine</font></pre>\n");
+			."<pre><font size=\"-1\">$cronLine</font></pre>\n");
+
+	# Set up new maintenance secret immediately, in case the install fails
+	# but a resourceful admin manually installs the displayed crontab line.
+	# THANKS: "Riesland, Dan (MN10)" <Dan.Riesland@HBC.Honeywell.com> for
+	# THANKS: helping to figure this problem out.
+	my $map = readConfig();
+	$map->{'$maintenanceSecret'} = "'$secret'";
+	writeConfig($map);
 
 	# 1999-04-04 hal@dtor.com: we have to be sure to test on triple
 	#  of host, port, path to make sure we have correct entry
@@ -1288,12 +1310,8 @@ sub maintenanceStep {
 		$rt.="'$cmd' failed: ".join('', @msrc)."\n";
 	}
 
-	my $map = readConfig();
-	$map->{'$maintenanceSecret'} = "'$secret'";
-	writeConfig($map);
-
 	if (@oldReplacing) {
-		$rt.=gettext("I replaced this old crontab line, which appears to be an older one for this same FAQ:")."\n<tt><p><font size=-1>\n"
+		$rt.=gettext("I replaced this old crontab line, which appears to be an older one for this same FAQ:")."\n<tt><p><font size=\"-1\">\n"
 			.$oldReplacing[0]
 			."</font></tt>\n";
 	}
@@ -1306,7 +1324,7 @@ sub maintenanceStep {
 			.gettext("appear to take.")."\n"
 			."tab".join("<br>\n",@newTab)
 			.gettext("You better add")."\n"
-			."<pre><font size=-1>$cronLine</font></pre>\n"
+			."<pre><font size=\"-1\">$cronLine</font></pre>\n"
 			.gettext("to some crontab yourself with")." <b><tt>crontab -e</tt></b>.\n",
 			'default', 'abort');
 	}
@@ -1335,8 +1353,7 @@ sub getCurrentCrontab {
 	}
 	if ($systemrc[0] != 0) {
 		displayMessage("crontab -l failed: "
-			.join(',', @systemrc)
-			."<p>".gettext("Please report this problem to")." $FAQ::OMatic::authorAddress",
+			.join(',', @systemrc),
 			'default', 'abort');
 	} else {
 		@oldTab = @{$systemrc[4]};
@@ -1362,7 +1379,7 @@ sub makeSecureStep {
 	# have a password yet
 	my $url = FAQ::OMatic::makeAref('changePass',
 			{'_restart'=>'install', '_admin'=>1}, 'url');
-	FAQ::OMatic::redirect($cgi, $url);
+	FAQ::OMatic::redirect(cgi(), $url);
 }
 
 sub colorSamplerStep {
@@ -1533,34 +1550,46 @@ sub displayMessage {
 	}
 }
 
+sub cgi {
+	# file-scoped $cgi was a bad idea -- if this file gets called
+	# from another, install::cgi may never get initialized.
+	# So here we provide a shortcut to $cgi that is reliable.
+	return $FAQ::OMatic::dispatch::cgi;
+}
+
 sub installUrl {
 	# can't necessarily use makeAref yet, because we're not configured.
 	my $step = shift;
-	my $reftype = shift || 'url';	# 'url', 'GET' supported
+	my $reftype = shift || 'url';	# 'url', 'GET' and 'POST' supported
 	my $cmd = shift || 'install';	# for images, need to specify cmd
 	my $name = shift || '';			# for images, need to specify name
 	my $temppass = shift;
 
 	if (not defined $temppass) {
-		$temppass = $cgi->param('temppass') || '';
+		$temppass = cgi()->param('temppass') || '';
 	}
 
 	my $imarg = ($name) ? ("&name=$name") : '';
 
 	if ($FAQ::OMatic::Config::secureInstall) {
+		# What a hack. When coming from an invocation of install.pm,
+		# this saves the cookie; when called in from outside (such
+		# as from maintenance::mirrorClient), we can't figure
+		# out where to get ahold of $params, so we just discard
+		# the auth cookie. Not like they were going to use it anyway.
+		my $authCookie = defined($params) ? $params->{'auth'} : '';
 		return FAQ::OMatic::makeAref($cmd,
 			{'step'=>$step,
 			'name'=>$name,
-			'auth'=>$params->{'auth'}	# preserve only the cookie
+			'auth'=>$authCookie	# preserve only the cookie
 			},
 			$reftype, 0, 'blastAll');
 	}
 
-	my $url = $cgi->url();
-	$url =~ s/\?[^\?]*$//;	# strip args
-	if ($reftype eq 'GET') {
+	my $url = FAQ::OMatic::serverBase().FAQ::OMatic::cgiURL();
+	if ($reftype eq 'GET' || $reftype eq 'POST') {
 		my $rt = '';
-		$rt .= "<form action=\"$url\" method=\"GET\">\n"
+		$rt .= "<form action=\"$url\" method=\"${reftype}\">\n"
 			."<input type=hidden name=cmd value=install>\n"
 			."<input type=hidden name=step value=$step>\n";
 		if ($temppass ne '') {
@@ -1655,7 +1684,7 @@ sub tempPassPage {
 	$rt .= "<input type=submit name=Submit value=Submit>\n";
 	$rt .= "</form>\n";
 
-	print FAQ::OMatic::header($cgi, '-type'=>"text/html");
+	print FAQ::OMatic::header(cgi(), '-type'=>"text/html");
 	print $rt;
 	FAQ::OMatic::myExit(0);
 }

@@ -32,7 +32,8 @@ package FAQ::OMatic::search;
 use CGI;
 use FAQ::OMatic::Item;
 use FAQ::OMatic;
-use FAQ::OMatic::Search;
+use FAQ::OMatic::SearchMod;
+use FAQ::OMatic::HelpMod;
 use FAQ::OMatic::Appearance;
 use FAQ::OMatic::I18N;
 
@@ -42,7 +43,7 @@ sub main {
 	my $params = FAQ::OMatic::getParams($cgi);
 
 	# Convert user input into a set of searchable words
-	FAQ::OMatic::Search::convertSearchParams($params);
+	FAQ::OMatic::SearchMod::convertSearchParams($params);
 
 	if (scalar(@{$params->{_searchArray}})==0) {
 		my $url = FAQ::OMatic::makeAref('faq', {}, 'url');
@@ -50,7 +51,7 @@ sub main {
 	}
 
 	# Get the names of the matching files
-	my $matchset = FAQ::OMatic::Search::getMatchesForSet($params);
+	my $matchset = FAQ::OMatic::SearchMod::getMatchesForSet($params);
 
 	# Filter out those in the trash
 	# THANKS: dschulte@facstaff.wisc.edu for the suggestion
@@ -92,7 +93,7 @@ sub main {
 		       . "<p>\n";
 	}
 
-	$rt.=FAQ::OMatic::Help::helpFor($params,
+	$rt.=FAQ::OMatic::HelpMod::helpFor($params,
 		'Search Tips', "<br>");
 
 #	$rt.=FAQ::OMatic::button(
@@ -103,7 +104,7 @@ sub main {
 
 	print $rt;
 
-	FAQ::OMatic::Search::closeWordDB();
+	FAQ::OMatic::SearchMod::closeWordDB();
 }
 
 1;

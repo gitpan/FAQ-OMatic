@@ -49,7 +49,25 @@ use vars	# these are mod_perl-safe
 	# variables that get reset on every invocation
 	qw($theParams $theLocals);
 
-$VERSION = '2.702';
+$VERSION = '2.709';
+
+# can't figure out how to get file-scoped variables in mod_perl, so
+# we ensure that they're all file scoped by reseting them in dispatch.
+sub reset {
+	$theParams = {};
+	$theLocals = {};
+}
+
+sub getLocal {
+	my $localname = shift;
+	return $theLocals->{$localname};
+}
+
+sub setLocal {
+	my $localname = shift;
+	my $localvalue = shift;
+	$theLocals->{$localname} = $localvalue;
+}
 
 $authorAddress = 'jonh@cs.dartmouth.edu';
 	# This is never used to automatically send mail to (that's authorEmail),
@@ -118,7 +136,6 @@ sub pageDesc {
 		'insertItem' => 'New %0',	# special case -- varies editItem
 		'editPart' => 'Edit Part in %0 %1',
 		'insertPart' => 'Insert Part in %0 %1',
-		'faq' => $file eq "1" ? "" : '%1',
 		'moveItem' => 'Move %0 %1',
 		'search' => 'Search',
 		'stats' => 'Access Statistics',
@@ -127,8 +144,10 @@ sub pageDesc {
 		'editBag' => 'Upload bag for %0 %1'
 	};
 
-	my $pd = $pageDescs->{$cmd};
-	if ($pd) {
+	my $pd = $pageDescs->{$cmd} || '';
+	if ($cmd eq 'faq') {
+		$rt = $file eq "1" ? "" : $title;
+	} elsif ($pd) {
 		$rt = gettexta($pd, $whatAmI, $title);
 	} else {
 		$rt = "$cmd page";
@@ -147,14 +166,6 @@ sub keyValue {
 sub commandName {
 	my $params = shift || $theParams;
 	return ($params->{'cmd'} || 'faq');
-}
-
-# returns the end of the URL (the CGI name)
-sub cgiName {
-	my $cgi = FAQ::OMatic::dispatch::cgi();
-	my $url = $cgi->url();
-	my $cgiName = ($url =~ m#([^/]*)$#)[0];
-	return $cgiName;
 }
 
 sub shortdate {
@@ -285,10 +296,11 @@ sub faqomaticReferenceRich {
 					'border=0', $item->isCategory(), $params)
 				.$item->getTitle();
 
-	return makeAref('-command'=>'faq',
+	return (makeAref('-command'=>'faq',
+					'-refType'=>'url',
 					'-params'=>$params,
-					'-changedParams'=>{"file"=>$filename})
-			."$title</a>";
+					'-changedParams'=>{"file"=>$filename}),
+			$title);
 }
 
 sub faqomaticReferenceText {
@@ -296,7 +308,7 @@ sub faqomaticReferenceText {
 	my $filename = shift;
 
 	my $item = new FAQ::OMatic::Item($filename);
-	return $item->getTitle();
+	return ('',$item->getTitle());
 }
 
 sub baginlineReference {
@@ -338,13 +350,36 @@ sub baglinkReference {
 	# TODO: deal with this correctly when handling all the variations on
 	# TODO: urls.
 	my $bagUrl = makeBagRef($filename, $params);
-	return "<a href=\"$bagUrl\">"
-		.FAQ::OMatic::ImageRef::getImageRef('baglink', 'border=0', $params)
+	return ($bagUrl,
+		FAQ::OMatic::ImageRef::getImageRef('baglink', 'border=0', $params)
 		.$filename
-		.$size
-		."</a>";
+		.$size);
 }
 
+# The web server passes this information in on every call, but
+# it sometimes comes in broken (broken clients, or users typing
+# in abbreviated host names which won't work if used as part of a URL
+# that's later clicked on by a distant user). So we now let the admin
+# configure these fields; but compute them dynamically until the admin
+# cements the right ones in place.
+sub serverBase {
+	if (defined($FAQ::OMatic::Config::serverBase)
+		&& $FAQ::OMatic::Config::serverBase ne '') {
+		return $FAQ::OMatic::Config::serverBase;
+	}
+	return (hostAndPath())[0];
+}
+
+sub cgiURL {
+	if (defined($FAQ::OMatic::Config::cgiURL)
+		&& $FAQ::OMatic::Config::cgiURL ne '') {
+		return $FAQ::OMatic::Config::cgiURL;
+	}
+	return (hostAndPath())[1];
+}
+
+# compute serverBase and cgiURL dynamically
+# (old code -- the cache isn't nearly as necessary now. :v)
 sub hostAndPath {
 	if (defined getLocal('hapCache')) {
 		return @{getLocal('hapCache')};
@@ -352,7 +387,7 @@ sub hostAndPath {
 
 	my $cgi = FAQ::OMatic::dispatch::cgi();
 	my $cgiUrl = $cgi->url();
-	my ($urlRoot,$urlPath) = $cgiUrl =~ m#^(https?://[^/]+)/(.*)$#;
+	my ($urlRoot,$urlPath) = $cgiUrl =~ m#^(https?://[^/]+)(/.*)$#;
 	if (not defined $urlRoot or not defined $urlPath) {
 		if (not $cgi->protocol() =~ m/^http/i) {
 			FAQ::OMatic::gripe('error', "The server protocol ("
@@ -372,7 +407,7 @@ sub hostAndPath {
 				."\n\n<p>If you are confused, please ask "
 				."$FAQ::OMatic::Config::adminEmail.\n"
 			);
-			# TODO: This seems to happen when you search on two words,
+			# This seems to happen when you search on two words,
 			# then get an <a href> with a %20 in the _highlightWords
 			# field. Turns out KDE's integrated Konquerer browser
 			# version 1.0 has this problem; version 1.1 fixes it.
@@ -388,24 +423,23 @@ sub relativeReference {
 	my $params = shift;
 	my $url = shift;
 
-	my ($urlRoot,$urlPath) = hostAndPath();
-
 	if ($url =~ m#^/#) {
-		return $urlRoot.$url;
+		return FAQ::OMatic::serverBase().$url;
 	}
 
 	# Else url is relative to current directory.
 	# Deal with ..'s. We would leave this to the browser, but we
 	# want to return an URL that works everywhere, not just from the
 	# CGI. (So it works from a cached file or a mirrored file.)
-	my @urlPath = split('/', $urlPath);
+	my @urlPath = split('/', FAQ::OMatic::cgiURL());
+	shift @urlPath;							# shift off first element ('')
 	pop @urlPath;							# pop off last element (CGI name)
 	while (($url =~ m#^../(.*)$#) and (scalar(@urlPath)>0)) {
 		$url = $1;		# strip ../ component...
 		pop @urlPath;	# ...and in exchange, explicitly remove path element
 	}
 	push @urlPath, $url;
-	return $urlRoot."/".join("/",@urlPath);
+	return FAQ::OMatic::serverBase().'/'.join("/",@urlPath);
 }
 
 # THANKS: to steevATtiredDOTcom for suggesting the ability to mangle
@@ -413,6 +447,8 @@ sub relativeReference {
 sub mailtoReference {
 	my $params = shift||{};
 	my $addr = shift || '';
+	my $wantarray = shift || '';
+
 	my $isText = getParam($params, 'render') eq 'text';
 
 	$addr =~ s/^mailto://;	# strip off mailto prefix if it's there
@@ -425,7 +461,17 @@ sub mailtoReference {
 	} elsif ($how eq 'hide') {
 		$addr = 'address-suppressed';
 	}
-	return $isText ? $addr : "<a href=\"mailto:$addr\">$addr</a>";
+	# THANKS to Peter Lawler <sixbynine@ozemail.com.au> for suggesting
+	# that we provide the FAQ-O-Matic's title as the subject line of
+	# mailto: links.
+	my $subject = "subject=".CGI::escape(fomTitle());
+	if ($isText) {
+		return $addr;
+	}
+	my $target = "mailto:${addr}?${subject}";
+	return $wantarray
+		? ($target, $addr)
+		: "<a href=\"$target\">$addr</a>";
 }
 
 # turns link-looking things into actual HTML links, but also turns
@@ -436,25 +482,142 @@ sub insertLinks {
 	my $ishtml = shift || 0;
 	my $isdirectory = shift || 0;
 
+	if (not $ishtml) {
+		# look for <>-delimited URLs; THANKS to Hal Wine for pointing out
+		# <http://www.w3.org/Addressing/URL/5.1_Wrappers.html>, which
+		# proposes this as a 'standard' way of embedding URLs in non-marked-up
+		# text for automatic readers:
+		my @pieces = split(/<([^\s<>]+)>/, $arg);
+			# the result of the previous split() operation is an odd-length
+			# array; odd-numbered indices contain <things> that matched
+			# the angle-bracket regex; even numbered things contain the
+			# rest of the text.
+		my $rt = '';
+		my $i;
+		for ($i=0; $i<scalar(@pieces); $i++) {
+			if ($i&1) {		# odd index -- a <url>-looking thingamadoo
+				$rt .= urlReference($params,$isdirectory,$pieces[$i]);
+			} else {		# even index -- some body text
+				my $tmp = entify($pieces[$i]);
+					# entifying first is bad, because it entifies URLs,
+					# which is wrong. But this is only to preserve the
+					# old behavior; if you want it right, use the new <>
+					# syntax and turn off fuzzy matching.
+					# THANKS: to jon * <jon@clearink.com> for reporting
+					# an instance of entified URLs.
+				# TODO: make fuzzyMatch disable-able.
+				$tmp = fuzzyMatch($params,$ishtml,$isdirectory,$tmp);
+				$rt .= $tmp;
+			}
+		}
+		$arg = $rt;
+	} else {
+		# HTML code gets far less mangling. It's not entified, and
+		# only my made-up URLs get translated into real ones; other
+		# urls are left untouched.
+		$arg = fuzzyMatch($params,$ishtml,$isdirectory,$arg);
+	}
+	return $arg;
+}
+
+sub urlReference {
+	# take an URL from the middle of some text, and wrap it with some <A></A>
+	# tags to make it a link. How to do that depends on the type of
+	# URL.
+	my $params = shift;
+	my $isdirectory = shift;
+	my $arg = shift;	#URL to wrap
+
 	my $sa = $isdirectory ? '-small' : '-also';
 	
-	if (not $ishtml) {
-	    $arg = entify($arg);
-	    $arg =~ s#(https?://[^\s"]*[^\s.,)\?!])#<a href=\"$1\">$1</a>#sg;
-														# absolute URL
-	    $arg =~ s#https?:((?!//)[^\s"]*[^\s.,)\?!])#"<a href=\"".relativeReference($params,$1)."\">$1</a>"#sge;
-														# relative URL
-	    $arg =~ s#(ftp://[^\s"]*[^\s.,)\?!])#<a href=\"$1\">$1</a>#sg;
-	    $arg =~ s#(gopher://[^\s"]*[^\s.,)\?!])#<a href=\"$1\">$1</a>#sg;
-	    $arg =~ s#(telnet://[^\s"]*[^\s.,)\?!])#<a href=\"$1\">$1</a>#sg;
-	    $arg =~ s#(news:[^\s"]*[^\s.,)\?!])#<a href=\"$1\">$1</a>#sg;
-	    $arg =~ s#(mailto:\S+@\S*[^\s.,)\?!])#mailtoReference($params,$1)#sge;
-	}
-	# THANKS: njl25@cam.ac.uk for pointing out the absence of the news: regex
+	# unless we can do better, both the label and the target of the URL
+	# will be whatever we got passed (whatever matched in the text body)
+	my $target = $arg;
+	my $label = $arg;
 
-	$arg =~ s#faqomatic:(\S*[^\s.,)\?!])#faqomaticReference($params,$1,$sa)#sge;
-	$arg =~ s#baginline:(\S*[^\s.,)\?!])#baginlineReference($params,$1)#sge;
-	$arg =~ s#baglink:(\S*[^\s.,)\?!])#baglinkReference($params,$1)#sge;
+	my ($prefix,$rest) = ($arg =~ m/^([^:]+):(.*)$/);
+	if (not defined $prefix) {
+		# match didn't work; this is some sort of link we don't understand.
+	} elsif ($prefix eq 'http' or $prefix eq 'https') {
+		# it's an http-ish URL.
+		# It could be absolute (starts with // and includes hostname),
+		#	in which case we should leave it untouched.
+		# It could be server-relative (starts with /)
+		#	in which case we insert our hostname in case this URL makes it
+		#	a long way away.
+		# It could be path-relative,
+		#	in which case we have to adjust it against our known path
+		#	to become absolute (again in case the URL makes it away from here).
+		if ($rest =~ m#^//#) {
+			$target = $arg;
+		} else {
+			$target = relativeReference($params, $rest);
+		}
+	} elsif ($prefix eq 'ftp'
+		or $prefix eq 'gopher'
+		or $prefix eq 'telnet'
+		or $prefix eq 'news') {
+		$target = $arg;
+	} elsif ($prefix eq 'mailto') {
+		($target,$label) = mailtoReference($params, $rest, 'wantarray');
+	} elsif ($prefix eq 'faqomatic') {
+		# a local reference defined in terms of a FAQ item #,
+		# not a web server path (so that it's meaningful on other mirrors
+		# of this FAQ, for example)
+		($target,$label) = faqomaticReference($params,$rest,$sa);
+	} elsif ($prefix eq 'baginline') {
+		$target = '';
+		$label = baginlineReference($params,$rest);
+	} elsif ($prefix eq 'baglink') {
+		($target,$label) = baglinkReference($params,$rest);
+	}
+
+	# A tough choice: should the readable text of the link be what the
+	# user originally typed (to convey the meaning of a relative link,
+	# for example), or should it be absolute, so that a printed copy of
+	# the FAQ is worth something? I have been choosing the latter, so I'll
+	# stick with it.
+	# I escape() the target here because (a) it's HTML spec, and (b) then
+	# it doesn't have any characters that get 'entified' which (rightfully)
+	# some browsers pass back verbatim to the webserver and everything
+	# breaks. (jon@clearink.com reported an instance of this, but I didn't
+	# track it down until now.)
+	my $result;
+	if ($target ne '') {
+		$result = "<a href=\"$target\">$label</a>";
+	} else {
+		$result = $label;
+	}
+	return $result;
+}
+
+sub fuzzyMatch {
+	# In 2.707 and older FOMs, any text in the body of a text part that
+	# looked remotely like a URL got linkified. The rules for finding
+	# such links (and more importantly, figuring out where they end) were
+	# clumsy and unreliable, so the new prefered method is to put what
+	# you want to get linked in <angle_brackets>. This fuzzy matching
+	# code is retained for admins of older FAQs who don't want their
+	# older-style "magically recognized" links to lose their magic.
+	my $params = shift;
+	my $ishtml = shift;
+	my $isdir = shift;
+	my $arg = shift;	# text to fuzzy-match for URLS
+
+  if (not $ishtml) {
+    $arg =~ s#(https?:[^\s"]*[^\s.,)\?!])#urlReference($params,$isdir,$1)#sge;
+    $arg =~ s#(ftp://[^\s"]*[^\s.,)\?!])#urlReference($params,$isdir,$1)#sge;
+    $arg =~ s#(gopher://[^\s"]*[^\s.,)\?!])#urlReference($params,$isdir,$1)#sge;
+    $arg =~ s#(telnet://[^\s"]*[^\s.,)\?!])#urlReference($params,$isdir,$1)#sge;
+    $arg =~ s#(mailto:\S+@\S*[^\s.,)\?!])#urlReference($params,$isdir,$1)#sge;
+	$arg =~ s#(news:[^\s"]*[^\s.,)\?!])#urlReference($params,$isdir,$1)#sge;
+	# THANKS: njl25@cam.ac.uk for pointing out the absence of the news: regex
+  }
+
+	# These get parsed even in HTML text. They're "value added." :v)
+	$arg =~ s#(faqomatic:\S*[^\s.,)\?!])#urlReference($params,$isdir,$1)#sge;
+	$arg =~ s#(baginline:\S*[^\s.,)\?!])#urlReference($params,$isdir,$1)#sge;
+	$arg =~ s#(baglink:\S*[^\s.,)\?!])#urlReference($params,$isdir,$1)#sge;
 
 	return $arg;
 }
@@ -474,23 +637,6 @@ sub insertLinksText {
 	return $arg;
 }
 
-# insert [item title] into faqomatic:XX references
-sub addTitleToFaqomaticReference {
-	my $filename = shift;
-
-	my $item = new FAQ::OMatic::Item($filename);
-	my $title = $item->getTitle();
-	$title =~ tr/\[\]/\(\)/;	# eliminate []'s
-
-	return "faqomatic[$title]:$filename";
-}
-
-sub addTitleToFaqomaticReferences {
-	my $arg = shift;
-	$arg =~ s#faqomatic:(\S*[^\s.,)\?!])#addTitleToFaqomaticReference($1)#sge;
-	return $arg;
-}
-
 sub entify {
 	my $arg = shift;
 	$arg =~ s/&/&amp;/sg;
@@ -498,24 +644,6 @@ sub entify {
 	$arg =~ s/>/&gt;/sg;
 	$arg =~ s/"/&quot;/sg;
 	return $arg;
-}
-
-# can't figure out how to get file-scoped variables in mod_perl, so
-# we ensure that they're all file scoped by reseting them in dispatch.
-sub reset {
-	$theParams = {};
-	$theLocals = {};
-}
-
-sub getLocal {
-	my $localname = shift;
-	return $theLocals->{$localname};
-}
-
-sub setLocal {
-	my $localname = shift;
-	my $localvalue = shift;
-	$theLocals->{$localname} = $localvalue;
 }
 
 # returns ref to %theParams
@@ -582,6 +710,7 @@ sub defaultParams {
 sub getParam {
 	my $params = shift;
 	my $key = shift;
+	if (not ref $params) { FAQ::OMatic::gripe('debug', stackTrace('html')); };
 	return $params->{$key} if defined($params->{$key});
 	return defaultParams()->{$key} if defined(defaultParams()->{$key});
 	return '';
@@ -704,19 +833,12 @@ sub makeAref {
 	} elsif (not $thisDocIs and
 		($FAQ::OMatic::Config::useServerRelativeRefs || 0)) {
 		# return a server-relative path (starts with /)
-		$cgiName = FAQ::OMatic::dispatch::cgi()->script_name();
+		#$cgiName = FAQ::OMatic::dispatch::cgi()->script_name();
+		$cgiName = FAQ::OMatic::cgiURL();
 	} else {
 		# return an absolute URL (including protocol and server name)
-		$cgiName = FAQ::OMatic::dispatch::cgi()->url();
-		# TODO: the $cgi->url() call uses the host name *supplied by the
-		# client*. That means if the client uses a local abbreviation
-		# ("sitka" instead of "sitka.cs.dartmouth.edu"), then the "absolute"
-		# URL won't really work for anyone in the world. A fix would be
-		# to replace the hostname with $ENV{'SERVER_NAME'} (or, to get
-		# CGI.pm to do it for us, we'd delete $ENV{'HTTP_Host'}). The
-		# risk there is that FAQ-O-Matics on IP-masqueraded servers might
-		# generate the wrong hostname. Probably not, since that name comes
-		# from the web server, but I don't have the means to test it.
+		#$cgiName = FAQ::OMatic::dispatch::cgi()->url();
+		$cgiName = FAQ::OMatic::serverBase().FAQ::OMatic::cgiURL();
 	}
 
 	# collect args in $rt in appropriate form -- hidden fields for
@@ -726,7 +848,14 @@ sub makeAref {
 		if ($refType eq 'POST' or $refType eq 'GET') {
 			# GET or POST form. stash args in hidden fields.
 			$rt .= "<input type=hidden name=\"$i\" value=\""
-				.$newParams{$i}."\">\n";
+				.entify($newParams{$i})."\">\n";
+			# wow, when that entify (analogous to the CGI::escape in the
+			# regular GET case below) was missing, it made for awfully
+			# subtle bugs! If one of the old params has a " in it (such as
+			# would happen if leaving the define-config page and being asked
+			# to stop off at the login page), it didn't get escaped, so the
+			# browser quietly truncated the value, which made us save a bogus
+			# value into the config file. Ouch!
 		} else {
 			# regular GET, not <form> GET. URL-style key=val&key=val
 			$rt.="&".CGI::escape($i)."=".CGI::escape($newParams{$i});
@@ -808,7 +937,7 @@ sub getCacheUrl {
 		} else {
 			# pointer into the cache from elsewhere (the CGI) -- use a full URL
 			# to get them to our cache.
-			return ((hostAndPath())[0])
+			return FAQ::OMatic::serverBase()
 				.$FAQ::OMatic::Config::cacheURL
 				.($paramsForUrl->{'file'}||'1')
 				.".html";
@@ -831,13 +960,14 @@ sub makeBagRef {
 		# Notice that we rely here on bags/ and cache/ being in the
 		# same parent directory. The presence of separate $bagsURL and
 		# $cacheURL configuration items might seem to imply that they're
-		# independent paths, but they're not.
+		# independent paths, but they're not. (So that the previous
+		# comment about a 'portable hierarchy' is true.)
 		return "../bags/$bagName";
 	} elsif (not defined($FAQ::OMatic::Config::bagsURL)) {
 		# put a bad URL in the link to make it obviously fail
 		return "x:";
 	} else {
-		return ((hostAndPath())[0])
+		return FAQ::OMatic::serverBase()
 			.$FAQ::OMatic::Config::bagsURL
 			.$bagName;
 	}
@@ -1183,10 +1313,15 @@ sub mySystem {
 }
 
 sub stackTrace {
+	my $html = shift;
+	my $linesep = ($html)
+		? '<br>'
+		: '';
+
 	my $rt = '';
 	my $i=0;
 	while (my ($pack, $file, $line) = caller($i++)) {
-		$rt .= "$pack $file $line\n";
+		$rt .= "$pack $file ${line}${linesep}\n";
 	}
 	return $rt;
 }
@@ -1346,6 +1481,34 @@ sub quoteText {
 	# this is a workaround.
 
 	return join('', map { $prefix.$_."\n" } split(/\n/, $text));
+}
+
+sub untaintFilename {
+	# strips out most chars but 'A-Za-z0-9_-.' A little overly restrictive,
+	# but good for when you want to read a file but don't want
+	# user sneaking in '../', metachars, shell IFS, or anything
+	# sneaky like that.
+	my $name = shift;
+	if ($name =~ m/^([A-Za-z0-9\_\-\.]+)$/) {
+		return $1;
+	} else {
+		return '';
+	}
+}
+
+sub cat {
+	my $filename = untaintFilename(shift());	# must be in metaDir
+
+	if ($filename eq '') {
+		return "['$filename' has funny characters]";
+	}
+
+	open (CATFILE, "<$FAQ::OMatic::Config::metaDir/$filename")
+		or return "[can't open '$filename': $!]";
+	my @lines = <CATFILE>;
+	close CATFILE;
+
+	return join('', @lines);
 }
 
 'true';

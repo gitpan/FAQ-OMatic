@@ -66,19 +66,19 @@ sub main {
 	my @allItems = sort numerically FAQ::OMatic::getAllItemNames();
 	foreach $file (@allItems) {
 		my $item = new FAQ::OMatic::Item($file);
-		my $lms = $item->{'LastModifiedSecs'};
+		my $lms = $item->{'LastModifiedSecs'} || time();
 		my $whatIsIt = $item->whatAmI();
 		$rt.="item $file $lms $whatIsIt\n";
 	}
 
-	# send meta catalog
+	# send bags catalog
 	my @bagList = grep { not m/\.desc$/ }
 		FAQ::OMatic::getAllItemNames($FAQ::OMatic::Config::bagsDir);
 	my $bagName;
 	foreach $bagName (sort @bagList) {
 		my $item = new FAQ::OMatic::Item($bagName.".desc",
 							$FAQ::OMatic::Config::bagsDir);
-		my $lms = $item->{'LastModifiedSecs'};
+		my $lms = $item->{'LastModifiedSecs'} || time();
 		$rt.="bag $bagName $lms\n";
 	}
 

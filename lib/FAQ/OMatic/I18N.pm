@@ -48,6 +48,7 @@ BEGIN {
 }
 
 sub new {
+	my $class = shift;
 	my $force = shift;
 
 	my $tx = FAQ::OMatic::getLocal('i18n');
